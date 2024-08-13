@@ -1,0 +1,82 @@
+{
+  "genericError": {
+    "title": "🤔 Something went wrong",
+    "desc": "Sorry! Something went wrong. That's all we know.",
+    "desc_detailed": "Sorry! Something went wrong. That's all we know.",
+    "field1": {
+      "title": "Error"
+    }
+  },
+  "serverError": {
+    "title": "😓 Server Error",
+    "desc": "Sorry! Something went wrong on our end.",
+    "desc_detailed": "Sorry! Something went wrong on our end."
+  },
+  "userError": {
+    "title": "🤔 That doesn't look right",
+    "desc": "Looks like you've done something wrong.",
+    "desc_detailed": "Looks like you've done something wrong."
+  },
+  "syntaxError": {
+    "title": "🤔 That doesn't look right",
+    "desc": "The correct syntax for that command is:",
+    "desc_detailed": "The correct syntax for that command is:",
+    "syntaxFieldTitle": "Syntax",
+    "exampleFieldTitle": "Example(s)"
+  },
+  "notFound": {
+    "title": "🔍 Not Found",
+    "desc": "I couldn't find what you were looking for.",
+    "desc_detailed": "I couldn't find the {{resource}} you were looking for."
+  },
+  "blocked": {
+    "title": "🚫 Blocked",
+    "desc": "You're blocked from performing that action.",
+    "desc_detailed": "You're blocked from performing that action for: {{reason}}."
+  },
+  "invalidLocation": {
+    "title": "😶‍🌫️ You can't use that here",
+    "desc": "That action can't be used here.",
+    "desc_detailed": "That action can't be used in here, use it in {{location}}."
+  },
+  "userCooldown": {
+    "title": "⏳ Slow down!",
+    "desc": "You're doing that too fast.",
+    "desc_detailed": "You're doing that too fast. Please wait {{time}} before trying again."
+  },
+  "guildCooldown": {
+    "title": "⏳ Slow down!",
+    "desc": "That action has been done in this server recently.",
+    "desc_detailed": "That action has been done in this server recently. Please wait {{time}} before trying again."
+  },
+  "userAuthority": {
+    "title": "👮 User Authority",
+    "desc": "The person you're trying to perform an action on has more authority than you.",
+    "desc_detailed": "{{user}} has more authority than you. You can't perform that action."
+  },
+  "missingPermission": {
+    "title": "❌ Missing Permission",
+    "desc": "You don't have permission to perform that action.",
+    "desc_detailed": "You need {{permission}} to perform that action."
+  },
+  "botMissingPermission": {
+    "title": "🫤 Missing Permission",
+    "desc": "I don't have permission to perform that action.",
+    "desc_detailed": "I need {{permission}} to perform that action."
+  },
+  "wrongTarget": {
+    "title": "🎯 Wrong Target",
+    "desc": "That's not for you.",
+    "desc_detailed": "That's not for you. That's for {{target}}."
+  },
+  "devOnly": {
+    "title": "👨‍💻 Developer Only",
+    "desc": "That feature is only available to developers.",
+    "desc_detailed": "That feature is only available to developers."
+  },
+  "maintenanceMode": {
+    "title": "🛠️ Maintenance",
+    "desc": "I'm currently in maintenance mode, features are temporarily paused. Try again later.",
+    "desc_detailed": "My features are temporarily paused due to {{reason}}. Try again later."
+  }
+}

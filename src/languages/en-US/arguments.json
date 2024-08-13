@@ -1,0 +1,10 @@
+{
+  "na": "N/A",
+  "no": "No",
+  "yes": "Yes",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "close": "Close",
+  "booleanTrueOptions": "true,t,yes,y,on,enable,enabled",
+  "booleanFalseOptions": "false,f,no,n,off,disable,disabled"
+}

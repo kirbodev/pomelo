@@ -1,0 +1,24 @@
+{
+  "ping": {
+    "commandName": "ping",
+    "commandDescription": "Controlla la latenza del bot e altri dati utili.",
+    "title": "Pong!",
+    "desc": "Attualmente la latenza è {{ping}}ms.",
+    "APILatencyFieldTitle": "Latenza del API",
+    "uptimeFieldTitle": "Tempo di attività"
+  },
+  "cloneEmoji": {
+    "commandName": "clonaemoji",
+    "commandDescription": "Clona un emoji nel server.",
+    "title": "Emoji Clonato",
+    "desc": "L'emoji {{emoji}} é stato clonato nel server."
+  },
+  "help": {
+    "commandName": "aiuto",
+    "commandDescription": "Ottieni aiuto per un comando o un elenco di comandi."
+  },
+  "bigEmoji": {
+    "commandName": "bigemoji",
+    "commandDescription": "Ottieni l'immagine grande e il link di un emoji(s)."
+  }
+}
