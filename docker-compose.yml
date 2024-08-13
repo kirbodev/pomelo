@@ -1,0 +1,16 @@
+services:
+  redis:
+    image: "redis/redis-stack-server:latest"
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data:/data
+      - ./redis.conf:/redis-stack.conf
+  bun:
+    image: "oven/bun:latest"
+    working_dir: "/home/bun/pom"
+    restart: unless-stopped
+    volumes:
+      - ./:/home/bun/pom
+    command: sh -c "bun install -D typescript && bun run build && bun run start"

@@ -1,0 +1,24 @@
+{
+  "vscord.status.details.text.idle": "Doing something else - Idle",
+  "vscord.app.name": "Visual Studio Code",
+  "vscord.status.buttons.button2.active.enabled": true,
+  "vscord.status.buttons.button2.active.label": "Website ✨",
+  "vscord.status.buttons.button2.active.url": "https://kdv.one/",
+  "vscord.status.buttons.button2.enabled": true,
+  "vscord.status.buttons.button2.idle.enabled": true,
+  "vscord.status.buttons.button2.idle.label": "Website ✨",
+  "vscord.status.buttons.button2.idle.url": "https://kdv.one/",
+  "vscord.status.details.text.debugging": "Debugging [REDACTED]{file_extension}",
+  "vscord.status.state.text.debugging": "Debugging: [REDACTED] workspace",
+  "vscord.status.state.text.editing": "Working on [REDACTED]{file_extension}:{current_line}:{current_column}",
+  "vscord.status.state.text.viewing": "Viewing [REDACTED]{file_extension}",
+  "typescript.tsdk": "node_modules\\typescript\\lib",
+  "helium-icon-theme.folders.associations": {
+    "redis": "database",
+    "handlers": "controller",
+    "types": "typescript",
+    "listeners": "review",
+    "utilities": "tools",
+    "preconditions": "plugin"
+  }
+}

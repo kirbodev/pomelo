@@ -1,0 +1,82 @@
+{
+  "genericError": {
+    "title": "🤔 Qualcosa è andato storto",
+    "desc": "Scusa! Qualcosa è andato storto. Quello é tutto quello che sappiamo.",
+    "desc_detailed": "Scusa! Qualcosa è andato storto. Quello é tutto quello che sappiamo.",
+    "field1": {
+      "title": "Errore"
+    }
+  },
+  "serverError": {
+    "title": "😓 Errore del server",
+    "desc": "Scusa! Qualcosa è andato storto sul nostro lato.",
+    "desc_detailed": "Scusa! Qualcosa è andato storto sul nostro lato."
+  },
+  "userError": {
+    "title": "🤔 Quello non sembra giusto",
+    "desc": "Sembra che tu abbia fatto qualcosa sbagliato.",
+    "desc_detailed": "Sembra che tu abbia fatto qualcosa sbagliato."
+  },
+  "syntaxError": {
+    "title": "🤔 Quello non sembra giusto",
+    "desc": "La sintassi corretta per quel comando è:",
+    "desc_detailed": "La sintassi corretta per quel comando è:",
+    "syntaxFieldTitle": "Sintassi",
+    "exampleFieldTitle": "Esempio(i)"
+  },
+  "notFound": {
+    "title": "🔍 Non Trovato",
+    "desc": "Non ho trovato quello che stavi cercando.",
+    "desc_detailed": "Non ho trovato il(i) {{resource}} che stavi cercando."
+  },
+  "blocked": {
+    "title": "🚫 Bloccato",
+    "desc": "Non puoi eseguire quell'azione.",
+    "desc_detailed": "Non puoi eseguire quell'azione per: {{reason}}."
+  },
+  "invalidLocation": {
+    "title": "😶‍🌫️ Non puoi usare quell'azione qui",
+    "desc": "Quell'azione non può essere usata qui.",
+    "desc_detailed": "Quell'azione non può essere usata qui, usala in {{location}}."
+  },
+  "userCooldown": {
+    "title": "⏳ Rallenta un po'",
+    "desc": "Stai eseguendo quell'azione troppo velocemente.",
+    "desc_detailed": "Stai eseguendo quell'azione troppo velocemente. Aspetta {{time}} prima di riprovare."
+  },
+  "guildCooldown": {
+    "title": "⏳ Rallenta un po'",
+    "desc": "Quell'azione è stata eseguita in questo server recentemente.",
+    "desc_detailed": "Quell'azione è stata eseguita in questo server recentemente. Aspetta {{time}} prima di riprovare."
+  },
+  "userAuthority": {
+    "title": "👮 Quella persona ha più autorità",
+    "desc": "La persona su cui stai cercando di eseguire un'azione ha più autorità di te.",
+    "desc_detailed": "{{user}} ha più autorità di te. Non puoi eseguire quell'azione."
+  },
+  "missingPermission": {
+    "title": "❌ Permissioni mancanti",
+    "desc": "Non hai i permessi per eseguire quell'azione.",
+    "desc_detailed": "Hai bisogno di {{permission}} per eseguire quell'azione."
+  },
+  "botMissingPermission": {
+    "title": "🫤 Permissioni mancanti",
+    "desc": "Non ho i permessi per eseguire quell'azione.",
+    "desc_detailed": "Ho bisogno di {{permission}} per eseguire quell'azione."
+  },
+  "wrongTarget": {
+    "title": "🎯 Non è per te!",
+    "desc": "Quello non è per te.",
+    "desc_detailed": "Quello non è per te. È per {{target}}."
+  },
+  "devOnly": {
+    "title": "👨‍💻 Solo per sviluppatori",
+    "desc": "Quel commando è disponibile solo per i sviluppatori del bot.",
+    "desc_detailed": "Quel commando è disponibile solo per i sviluppatori del bot."
+  },
+  "maintenanceMode": {
+    "title": "🛠️ Manutenzione",
+    "desc": "Le mie funzionalità sono temporaneamente sospese per manutenzione, riprova più tardi.",
+    "desc_detailed": "Le mie funzionalità sono temporaneamente sospese a causa di {{reason}}. Riprova più tardi."
+  }
+}

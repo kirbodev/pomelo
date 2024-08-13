@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": [
+    "eslint.config.mjs",
+    ".eslintrc.mjs",
+    "drizzle.config.ts",
+    "tests",
+    "src"
+  ]
+}
