@@ -13,12 +13,12 @@
     "desc_detailed": "Scusa! Qualcosa è andato storto sul nostro lato."
   },
   "userError": {
-    "title": "🤔 Quello non sembra giusto",
+    "title": "🤔 Non sembra giusto",
     "desc": "Sembra che tu abbia fatto qualcosa sbagliato.",
     "desc_detailed": "Sembra che tu abbia fatto qualcosa sbagliato."
   },
   "syntaxError": {
-    "title": "🤔 Quello non sembra giusto",
+    "title": "🤔 Non sembra giusto",
     "desc": "La sintassi corretta per quel comando è:",
     "desc_detailed": "La sintassi corretta per quel comando è:",
     "syntaxFieldTitle": "Sintassi",
@@ -78,5 +78,86 @@
     "title": "🛠️ Manutenzione",
     "desc": "Le mie funzionalità sono temporaneamente sospese per manutenzione, riprova più tardi.",
     "desc_detailed": "Le mie funzionalità sono temporaneamente sospese a causa di {{reason}}. Riprova più tardi."
+  },
+  "invalidBoolean": {
+    "title": "🔛 Booleano non valido",
+    "desc": "Non è un valore booleano valido. ",
+    "desc_detailed": "Non è un valore booleano valido. "
+  },
+  "invalidNumber": {
+    "title": "🔢 Numero non valido",
+    "desc": "Non è un numero valido. ",
+    "desc_detailed": "Non è un numero valido. "
+  },
+  "invalidString": {
+    "title": "🔤 Testo non valido",
+    "desc": "Non è un testo valido. ",
+    "desc_detailed": "Non è un testo valido. "
+  },
+  "invalidOption": {
+    "title": "⭕ Opzione non valida",
+    "desc": "Non è un'opzione valida. ",
+    "desc_detailed": "Non è un'opzione valida. Prova qualcosa come '{{option}}'."
+  },
+  "invalidChannel": {
+    "title": "📢 Canale non valido",
+    "desc": "Non è un canale valido. ",
+    "desc_detailed": "Non è un canale valido. "
+  },
+  "invalidRole": {
+    "title": "📢 Ruolo non valido",
+    "desc": "Non è un ruolo valido. ",
+    "desc_detailed": "Non è un ruolo valido. "
+  },
+  "invalidMention": {
+    "title": "📢 Menzione non valida",
+    "desc": "Non è una menzione/ID utente valido. Prova qualcosa come '@persona' o '1234567890123456789'.",
+    "desc_detailed": "Non è una menzione/ID utente valido. Prova qualcosa come '@persona' o '1234567890123456789'."
+  },
+  "invalidDuration": {
+    "title": "⏱️ Durata non valida",
+    "desc": "Non è una durata valida. Prova qualcosa come '10s' o '10m'.",
+    "desc_detailed": "Non è una durata valida. Prova qualcosa come '10s' o '10m'."
+  },
+  "durationTooLong": {
+    "title": "⏱️ Durata troppo lunga",
+    "desc": "E' troppo lungo. Prova qualcosa più corto.",
+    "desc_detailed": "E' troppo lungo. Prova qualcosa più corto che {{length}}."
+  },
+  "durationTooShort": {
+    "title": "⏱️ Durata troppo corta",
+    "desc": "E' troppo corto. Prova qualcosa più lungo.",
+    "desc_detailed": "E' troppo corto. Prova qualcosa più lungo che {{length}}."
+  },
+  "stringTooLong": {
+    "title": "➕ Testo troppo lungo",
+
+    "desc": "E' troppo lungo. Prova qualcosa più corto.",
+    "desc_detailed": "E' troppo lungo. Il massimo è {{length}} caratteri."
+  },
+  "stringTooShort": {
+    "title": "➖ Testo troppo corto",
+    "desc": "E' troppo breve. ",
+    "desc_detailed": "E' troppo breve. Il minimo è {{length}} caratteri."
+  },
+  "numberTooLarge": {
+    "title": "➕ Numero troppo grande",
+    "desc": "E' troppo grande. Prova qualcosa più piccolo.",
+    "desc_detailed": "E' troppo grande. Prova qualcosa più piccolo di {{length}}."
+  },
+  "numberTooSmall": {
+    "title": "➖ Numero troppo piccolo",
+    "desc": "E' troppo piccolo. Prova qualcosa più grande.",
+    "desc_detailed": "E' troppo piccolo. Prova qualcosa più grande di {{length}}."
+  },
+  "invalidType": {
+    "title": "🔰 Tipo non valido",
+    "desc": "Non è quello che mi aspettavo.",
+    "desc_detailed": "Mi aspettavo un(a) {{expected}}, ma ho ricevuto un(a) {{received}}."
+  },
+  "invalidAttachment": {
+    "title": "📎 Allegato non valido",
+    "desc": "Non è un allegato valido o non é di un tipo supportato. ",
+    "desc_detailed": "Non è un allegato valido o non é di un tipo supportato. Verifica che l'allegato sia uno dei seguenti tipi: `{{types}}`."
   }
 }

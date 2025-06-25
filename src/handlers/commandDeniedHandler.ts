@@ -13,9 +13,9 @@ import {
 import { fetchT, type TFunction } from "@sapphire/plugin-i18next";
 import EmbedUtils from "../utilities/embedUtils.js";
 import { LanguageKeys, LanguageKeyValues } from "../lib/i18n/languageKeys.js";
-import ms from "ms";
+import ms from "../lib/helpers/ms.js";
 import { extractVariables } from "../lib/i18n/utils.js";
-import { PermissionsBitField } from "discord.js";
+import { Message, MessageFlags, PermissionsBitField } from "discord.js";
 import { Colors } from "../lib/colors.js";
 
 type ErroredPayloads =
@@ -55,11 +55,30 @@ export default async function handler(
     embed.addField(
       t(LanguageKeys.Errors.GenericError.field1.title),
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      `\`${error.identifier ?? error.message}\``
+      `\`${error.identifier || error.message || error.name || "???"}\``
     );
   }
 
-  void interaction.reply({ embeds: [embed], ephemeral: true });
+  const options = {
+    embeds: [embed]
+  }
+
+  if (interaction instanceof Message) {
+    void interaction.reply(options);
+    return;
+  }
+
+  if (!interaction.deferred && !interaction.replied) {
+    await interaction.deferReply({
+      flags: MessageFlags.Ephemeral
+    });
+  }
+
+  void interaction.followUp({
+    ...options, ...{
+      flags: MessageFlags.Ephemeral
+    }
+  });
 }
 
 function fillVariables(

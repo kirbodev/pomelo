@@ -1,0 +1,52 @@
+{
+  "current": "Current",
+  "change": "Change",
+  "default": {
+    "name": "Default",
+    "description": "The default for this option is `{{default}}`."
+  },
+  "override": {
+    "name": "Overridden",
+    "description": "This is overridden by server admins."
+  },
+  "user": {
+    "locale": {
+      "name": "Language",
+      "description": "The language the bot will use. Server admins can override this per-server."
+    },
+    "preferEphemeral": {
+      "name": "Prefer Ephemeral",
+      "description": "Whether the bot should prefer ephemeral (hidden) messages over regular messages. Server admins can override this per-server."
+    }
+  },
+  "guild": {
+    "locale": {
+      "name": "Language",
+      "description": "The language the bot will use in this server. The user's language is used by default if this isn't forced using 'Force Language'."
+    },
+    "forceLocale": {
+      "name": "Force Language",
+      "description": "Force the bot to use the language set in this server instead of the user's language."
+    },
+    "prefix": {
+      "name": "Prefix",
+      "description": "The prefix the bot will use for commands."
+    },
+    "features": {
+      "name": "Features",
+      "description": "The features enabled/disabled in this server."
+    },
+    "logChannel": {
+      "name": "Log Channel",
+      "description": "The channel the bot will log moderation actions to."
+    },
+    "forceEphemeral": {
+      "name": "Force Ephemeral",
+      "description": "Whether the bot should force ephemeral (hidden) messages."
+    },
+    "ephemeralDeletionTimeout": {
+      "name": "Ephemeral Deletion Time",
+      "description": "The time in seconds before the bot deletes ephemeral messages. This includes messages like AFK notices. *Not to be confused with ephemeral interactions.*"
+    }
+  }
+}

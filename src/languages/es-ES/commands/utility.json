@@ -1,0 +1,52 @@
+{
+  "ping": {
+    "commandName": "ping",
+    "commandDescription": "Verifique la latencia del bot y otros datos útiles.",
+    "title": "¡Pong!",
+    "desc": "Actualmente la latencia es {{latency}}.",
+    "APILatencyFieldTitle": "Latencia API",
+    "uptimeFieldTitle": "Tiempo de actividad"
+  },
+  "cloneEmoji": {
+    "commandName": "clonemoji",
+    "commandDescription": "Clona un emoji en el server.",
+    "title": "Emoji clonado",
+    "desc": "El emoji {{emoji}} fue clonado en el server."
+  },
+  "help": {
+    "commandName": "ayudo",
+    "commandDescription": "Obtenga ayudo con un comando o una lista de comandos."
+  },
+  "bigEmoji": {
+    "commandName": "bigemoji",
+    "commandDescription": "Obtenga la imagen grande y el enlace de un emoji(s)."
+  },
+  "settings": {
+    "commandName": "ajustes",
+    "commandDescription": "Administre su configuración o la del server.",
+    "subcommandUserName": "usuario",
+    "subcommandGuildName": "server",
+    "subcommandUserDescription": "Administre su configuración.",
+    "subcommandGuildDescription": "Administrar la configuración del server."
+  },
+  "afk": {
+    "commandName": "afk",
+    "commandDescription": "Establezca su estado AFK.",
+    "messageFieldName": "mensaje",
+    "messageFieldDescription": "El mensaje a mostrar cuando estás AFK.",
+    "durationFieldName": "duración",
+    "durationFieldDescription": "La duración de su estado AFK.",
+    "attachmentFieldName": "adjunto",
+    "attachmentFieldDescription": "El archivo adjunto a mostrar cuando estás AFK.",
+    "title": "AFK Establecido",
+    "desc": "Has establecido tu estado AFK.",
+    "desc_with_message": "Has establecido tu estado AFK con el mensaje: {{message}}.",
+    "desc_with_duration": "Has establecido tu estado AFK hasta {{time}}.",
+    "desc_with_message_and_duration": "Has establecido tu estado AFK con el mensaje: {{message}} hasta {{time}}.",
+    "overwriteNote": "Su estado AFK anterior ha sido sobrescrito.",
+    "activeTitle": "AFK",
+    "activeDescription": "{{user}} está AFK.",
+    "activeDescription_multiple": "{{users}} y {{last_user}} están AFK.",
+    "activeReason": "Razón"
+  }
+}

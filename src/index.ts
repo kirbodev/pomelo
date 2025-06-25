@@ -5,13 +5,16 @@ import "@sapphire/plugin-i18next/register";
 import "@sapphire/plugin-utilities-store/register";
 import "@sapphire/plugin-scheduled-tasks/register";
 import * as Sentry from "@sentry/bun";
+import { libsqlIntegration } from "sentry-integration-libsql-client";
 import { container, LogLevel, SapphireClient } from "@sapphire/framework";
-import { GatewayIntentBits, Partials } from "discord.js";
+import { GatewayIntentBits, Locale, Message, Partials } from "discord.js";
 import { config } from "./config.js";
 import { PostHog } from "posthog-node";
-import packageJson from "../package.json" assert { type: "json" };
-import { db } from "./db/index.js";
+import packageJson from "../package.json" with { type: "json" };
+import { db, turso } from "./db/index.js";
 import redis from "./db/redis/index.js";
+import { i18next } from "@sapphire/plugin-i18next";
+import { fallbackLanguage } from "./lib/i18n/utils.js";
 
 // Init sentry
 
@@ -35,6 +38,7 @@ Sentry.init({
     Sentry.onUnhandledRejectionIntegration(),
     Sentry.requestDataIntegration(),
     Sentry.sessionTimingIntegration(),
+    libsqlIntegration(turso, Sentry),
   ],
 });
 
@@ -44,7 +48,7 @@ container.version = packageJson.version;
 
 container.analytics = new PostHog(process.env.POSTHOG_KEY, {
   host: "https://eu.i.posthog.com",
-  // disabled: !!process.env.DEV,
+  disabled: !!process.env.DEV,
 });
 
 container.db = db;
@@ -68,7 +72,7 @@ declare module "@sapphire/framework" {
 }
 
 // Start client
-
+const defaultPrefix = ",";
 const client = new SapphireClient({
   intents: [
     GatewayIntentBits.MessageContent,
@@ -82,7 +86,7 @@ const client = new SapphireClient({
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildInvites,
     GatewayIntentBits.GuildIntegrations,
-    GatewayIntentBits.GuildEmojisAndStickers,
+    GatewayIntentBits.GuildExpressions,
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.DirectMessageReactions,
     GatewayIntentBits.DirectMessageTyping,
@@ -93,7 +97,7 @@ const client = new SapphireClient({
   partials: [Partials.Channel],
   loadMessageCommandListeners: true,
   caseInsensitiveCommands: true,
-  defaultPrefix: ",",
+  defaultPrefix: defaultPrefix,
   defaultCooldown: {
     delay: 1000,
     filteredUsers: config.owners,
@@ -116,25 +120,37 @@ const client = new SapphireClient({
         (await container.redis.jsonGet(context.guild.id, "GuildSettings"));
 
       if (guildSettings?.locale && guildSettings.forceLocale)
-        return guildSettings.locale;
-      if (userSettings?.locale) return userSettings.locale;
+        return fallbackLanguage(guildSettings.locale);
+      if (userSettings?.locale) return fallbackLanguage(userSettings.locale);
 
       const { interactionLocale, interactionGuildLocale } = context;
       const locale = interactionLocale ?? interactionGuildLocale;
-      if (locale) return locale;
+      // Recalculate instead of using supportedLocales because the import will make it undefined
+      const supportedLocales = Array.isArray(i18next.options.supportedLngs)
+        ? i18next.options.supportedLngs.filter((lang: string) => lang !== "cimode")
+        : [];
+      if (locale && locale in supportedLocales) return locale;
 
-      if (guildSettings?.locale) return guildSettings.locale;
+      if (guildSettings?.locale && guildSettings.locale in supportedLocales)
+        return guildSettings.locale;
 
-      return "en-US";
+      // Fallback to English, just uses function in case of language like spanishLATAM
+      return locale ? fallbackLanguage(locale) : Locale.EnglishUS;
     },
-    i18next: (_: string[], languages: string[]) => ({
-      supportedLngs: languages,
-      preload: languages,
-      returnObjects: true,
-      returnEmptyString: false,
-      load: "all",
-      fallbackLng: "en-US",
-    }),
+    i18next: (_: string[], languages: string[]) => {
+      return {
+        supportedLngs: languages,
+        preload: languages,
+        returnObjects: true,
+        returnEmptyString: false,
+        load: "all",
+        fallbackLng: {
+          "es-419": ["es-ES"],
+          uk: ["ru"],
+          default: ["en-US"],
+        },
+      };
+    },
   },
   logger: {
     level: process.env.DEV ? LogLevel.Debug : LogLevel.Info,
@@ -148,6 +164,14 @@ const client = new SapphireClient({
         db: 1,
       },
     },
+  },
+  fetchPrefix: async (msg: Message) => {
+    if (!msg.guildId) return defaultPrefix;
+    const guildSettings = await container.redis.jsonGet(
+      msg.guildId,
+      "GuildSettings"
+    );
+    return guildSettings?.prefix ?? defaultPrefix;
   },
 });
 

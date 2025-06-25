@@ -13,7 +13,9 @@
     "start:full": "bun run build && bun --env-file=.env.local run ./dist/src/index.js'",
     "dev": "bun run scripts/chokidar.js",
     "sentry:sourcemaps": "sentry-cli sourcemaps inject --org pomelo-ik --project pomelo ./dist && sentry-cli sourcemaps upload --org pomelo-ik --project pomelo ./dist",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "repository": {
     "type": "git",
@@ -31,7 +33,8 @@
   "homepage": "https://github.com/kirbodev/pomelo#readme",
   "devDependencies": {
     "@eslint/js": "^9.5.0",
-    "@swc/cli": "^0.4.0",
+    "@swc/cli": "^0.7.7",
+    "@swc/core": "^1.12.1",
     "@types/bun": "^1.1.6",
     "@types/eslint__js": "^8.42.3",
     "@types/ms": "^0.7.34",
@@ -48,13 +51,14 @@
     "typescript-eslint": "^7.13.1"
   },
   "dependencies": {
-    "@libsql/client": "^0.6.2",
+    "@libsql/client": "^0.15.9",
     "@sapphire/discord-utilities": "^3.3.0",
     "@sapphire/discord.js-utilities": "^7.3.0",
     "@sapphire/framework": "^5.2.1",
     "@sapphire/plugin-i18next": "^7.1.2",
     "@sapphire/plugin-logger": "^4.0.2",
     "@sapphire/plugin-scheduled-tasks": "^10.0.1",
+    "@sapphire/plugin-subcommands": "^7.0.0",
     "@sapphire/plugin-utilities-store": "^2.0.2",
     "@sapphire/utilities": "^3.16.2",
     "@sentry/bun": "^8.11.0",
@@ -63,18 +67,26 @@
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.30.10",
     "fuse.js": "^7.0.0",
+    "googleapis": "^150.0.1",
     "ioredis": "^5.4.1",
     "ms": "^2.1.3",
     "nanoid": "^5.0.7",
+    "next-auth": "^4.24.11",
     "node-emoji": "^2.1.3",
     "otpauth": "^9.3.1",
     "posthog-node": "^4.0.1",
     "qrcode": "^1.5.3",
+    "sentry-integration-libsql-client": "^1.3.0",
+    "sharp": "^0.34.2",
+    "uuid": "^11.1.0",
     "zod": "^3.23.8"
   },
   "trustedDependencies": [
+    "@sentry/cli",
+    "@swc/core",
     "es5-ext",
     "esbuild",
-    "msgpackr-extract"
+    "msgpackr-extract",
+    "sharp"
   ]
 }

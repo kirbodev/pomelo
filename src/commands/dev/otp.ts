@@ -10,6 +10,7 @@ import {
   ChatInputCommandInteraction,
   ComponentType,
   Message,
+  MessageFlags,
 } from "discord.js";
 import qrcode from "qrcode";
 import { Colors } from "../../lib/colors.js";
@@ -18,7 +19,7 @@ import { db } from "../../db/index.js";
 import { devs } from "../../db/schema.js";
 import { TOTP, Secret } from "otpauth";
 import { nanoid } from "nanoid";
-import CommandUtils from "../../utilities/commandUtils.js";
+import CommandUtils, { PomeloReplyType } from "../../utilities/commandUtils.js";
 
 export class UserCommand extends CommandUtils.DevCommand {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -73,7 +74,7 @@ export class UserCommand extends CommandUtils.DevCommand {
     const confirmed = await confirmation.waitForResponse(interaction, {
       embeds: [embed],
       ...(interaction instanceof ChatInputCommandInteraction && {
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral
       }),
     });
     if (!confirmed.response) {
@@ -90,9 +91,9 @@ export class UserCommand extends CommandUtils.DevCommand {
             interaction
               .reply({
                 embeds: [embed],
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
               })
-              .catch(() => {});
+              .catch(() => { });
           });
       } else {
         await interaction.delete().catch(() => {
@@ -100,7 +101,7 @@ export class UserCommand extends CommandUtils.DevCommand {
             .reply({
               embeds: [embed],
             })
-            .catch(() => {});
+            .catch(() => { });
         });
       }
       return null;
@@ -123,10 +124,15 @@ export class UserCommand extends CommandUtils.DevCommand {
         )
         .setColor(Colors.Error)
         .setTimestamp();
-      await interaction.reply({
-        embeds: [embed],
-        ephemeral: true,
-      });
+      await this.reply(
+        interaction,
+        {
+          embeds: [embed],
+        },
+        {
+          type: PomeloReplyType.Sensitive,
+        }
+      );
       return;
     }
     const intentButton = await this.confirmAction(interaction);
@@ -170,7 +176,7 @@ export class UserCommand extends CommandUtils.DevCommand {
         embeds: [embed],
         files: [attachment],
         ...(interaction instanceof ChatInputCommandInteraction && {
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         }),
         components: [confirmButton],
         fetchReply: true,
@@ -192,7 +198,7 @@ export class UserCommand extends CommandUtils.DevCommand {
         .setTimestamp();
       await intentButton.followUp({
         embeds: [embed],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -209,10 +215,15 @@ export class UserCommand extends CommandUtils.DevCommand {
         .setDescription("Your OTP code was invalid. Setup has been cancelled.")
         .setColor(Colors.Error)
         .setTimestamp();
-      await modalInteraction.interaction.reply({
-        embeds: [embed],
-        ephemeral: true,
-      });
+      await this.reply(
+        modalInteraction.interaction,
+        {
+          embeds: [embed],
+        },
+        {
+          type: PomeloReplyType.Sensitive,
+        }
+      );
       return;
     }
     await db.insert(devs).values({
@@ -226,9 +237,14 @@ export class UserCommand extends CommandUtils.DevCommand {
       )
       .setColor(Colors.Success)
       .setTimestamp();
-    await modalInteraction.interaction.reply({
-      embeds: [modalEmbed],
-      ephemeral: true,
-    });
+    await this.reply(
+      modalInteraction.interaction,
+      {
+        embeds: [modalEmbed],
+      },
+      {
+        type: PomeloReplyType.Sensitive,
+      }
+    );
   }
 }

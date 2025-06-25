@@ -1,0 +1,52 @@
+{
+  "current": "Actual",
+  "change": "Cambiar",
+  "default": {
+    "name": "Predeterminado",
+    "description": "La configuración predeterminada para esta opción es `{{default}}`."
+  },
+  "override": {
+    "name": "Anulado",
+    "description": "Esto es anulado por los administradores del server."
+  },
+  "user": {
+    "locale": {
+      "name": "Idioma",
+      "description": "El idioma que utilizará el bot. Los administradores del server pueden anular esta configuración."
+    },
+    "preferEphemeral": {
+      "name": "Preferir mensajes efímeros",
+      "description": "Si el bot debe preferir mensajes efímeros (ocultos) en lugar de mensajes normales. Los administradores del server pueden anular esta configuración."
+    }
+  },
+  "guild": {
+    "locale": {
+      "name": "Idioma",
+      "description": "El idioma que utilizará el bot en este server. La configuración del usuario es utilizada por defecto si esta no fue forzada utilizando 'Forzar Idioma'."
+    },
+    "forceLocale": {
+      "name": "Forzar Idioma",
+      "description": "Obliga al bot a utilizar el idioma configurado en este server en lugar del del usuario."
+    },
+    "prefix": {
+      "name": "Prefijo",
+      "description": "El prefijo que usará el bot para los comandos."
+    },
+    "features": {
+      "name": "Funcionalidad",
+      "description": "Las funciones habilitadas/deshabilitadas en este server."
+    },
+    "logChannel": {
+      "name": "Canal de registro",
+      "description": "El canal donde el bot registra las acciones de moderación."
+    },
+    "forceEphemeral": {
+      "name": "Forzar mensajes efímeros",
+      "description": "Si el bot debe forzar mensajes efímeros (ocultos)."
+    },
+    "ephemeralDeletionTimeout": {
+      "name": "Tiempo de eliminación de mensajes efímeros",
+      "description": "El tiempo en segundos antes de que el bot elimine los mensajes efímeros. Esto incluye mensajes como los avisos de AFK. *No confundir con interacciones efímeras.*"
+    }
+  }
+}

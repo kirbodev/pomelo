@@ -1,4 +1,5 @@
 import {
+  actionIsButtonOrMenu,
   isMessageButtonInteractionData,
   isMessageChannelSelectInteractionData,
   isMessageMentionableSelectInteractionData,
@@ -6,8 +7,12 @@ import {
   isMessageStringSelectInteractionData,
   isMessageUserSelectInteractionData,
   PaginatedMessage,
+  safelyReplyToInteraction,
+  type AnyInteractableInteraction,
   type PaginatedMessageAction,
-  type PaginatedMessageActionStringMenu,
+  type PaginatedMessageActionContext,
+  type PaginatedMessageComponentUnion,
+  type PaginatedMessageInteractionUnion,
   type PaginatedMessageOptions,
   type PaginatedMessageResolvedPage,
   type PaginatedMessageWrongUserInteractionReplyFunction,
@@ -27,6 +32,7 @@ import {
   MentionableSelectMenuBuilder,
   MentionableSelectMenuComponent,
   Message,
+  MessageFlags,
   RoleSelectMenuBuilder,
   RoleSelectMenuComponent,
   StringSelectMenuBuilder,
@@ -34,16 +40,21 @@ import {
   User,
   UserSelectMenuBuilder,
   UserSelectMenuComponent,
+  type ButtonComponentData,
+  type InteractionButtonComponentData,
+  type InteractionEditReplyOptions,
   type InteractionReplyOptions,
   type MessageActionRowComponentBuilder,
   type MessageReplyOptions,
-  type SelectMenuComponentOptionData,
 } from "discord.js";
 import { nanoid } from "nanoid";
 import { fetchT } from "../lib/i18n/utils.js";
 import EmbedUtils from "./embedUtils.js";
 import { LanguageKeys } from "../lib/i18n/languageKeys.js";
 import { Colors } from "../lib/colors.js";
+import { isNullish, isObject, type Awaitable } from "@sapphire/utilities";
+import { createPartitionedMessageRow } from "@sapphire/discord.js-utilities";
+import { PomeloReplyType } from "./commandUtils.js";
 
 export type ButtonConfirmationButtonOptions = {
   text: string;
@@ -70,6 +81,10 @@ type PrivateButtonConfirmationOptions = ButtonConfirmationOptions & {
   };
 };
 
+type PomeloPaginatedMessageOptions = PaginatedMessageOptions & {
+  cache?: boolean;
+};
+
 const defaults: ButtonConfirmationOptions = {
   timeout: 1000 * 60 * 10,
   buttons: {
@@ -94,6 +109,7 @@ export default class ComponentUtils extends Utility {
 
   public async disableButtons(msg: Message) {
     const updatedComponents = msg.components.map((row) => {
+      if (row.type !== ComponentType.ActionRow) return row;
       return new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
         row.components.map((component) => {
           if (component instanceof ButtonComponent)
@@ -228,9 +244,86 @@ export default class ComponentUtils extends Utility {
     }
   };
 
-  static PomeloPaginatedMessage = class PomeloPaginatedMessage extends PaginatedMessage {
-    public constructor(data?: PaginatedMessageOptions) {
+  static EphemeralButton = class EphemeralButton extends ButtonBuilder {
+    customId: string;
+
+    public constructor(rawData?: InteractionButtonComponentData) {
+      const customId = nanoid();
+      const defaults: Partial<ButtonComponentData> = {
+        style: ButtonStyle.Secondary,
+        emoji: "👁️",
+        type: ComponentType.Button,
+      };
+      const data = {
+        ...defaults,
+        ...rawData,
+        customId,
+      };
       super(data);
+
+      this.customId = customId;
+    }
+
+    public async waitForResponse(
+      interaction: AnyInteractableInteraction | Message,
+      timeout = 1000 * 60 * 10
+    ) {
+      const i = await interaction.channel
+        ?.awaitMessageComponent({
+          filter: (i) => i.customId === this.customId,
+          time: timeout,
+          componentType: ComponentType.Button,
+        })
+        .catch(() => null);
+      if (!i) return null;
+      return await this.execute(i);
+    }
+
+    public async execute(interaction: ButtonInteraction) {
+      const message = interaction.message;
+
+      const filteredComponents = message.components
+        .map((row) => {
+          if (row.type !== ComponentType.ActionRow)
+            return row;
+          return new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
+            row.components
+              .map((component: unknown) => {
+                if (
+                  !(
+                    component instanceof ButtonComponent &&
+                    component.customId === this.customId
+                  )
+                )
+                  return component;
+              })
+              .filter(
+                (component: unknown) => component !== undefined
+              ) as unknown as MessageActionRowComponentBuilder[]
+          );
+        })
+        .filter((row: any) => row.components.length > 0);
+
+      return await interaction
+        .reply({
+          content: message.content,
+          embeds: message.embeds,
+          components: filteredComponents,
+          flags: MessageFlags.Ephemeral,
+        })
+        .catch((e) => console.error(e));
+    }
+  };
+
+  static PomeloPaginatedMessage = class PomeloPaginatedMessage extends PaginatedMessage {
+    #thisMazeWasNotMeantForYouContent = {
+      content: "This maze wasn't meant for you...what did you do.",
+    };
+    public cache = true;
+
+    public constructor(data?: PomeloPaginatedMessageOptions) {
+      super(data);
+      this.cache = data?.cache ?? true;
     }
 
     protected wrongUserInteractionReply: PaginatedMessageWrongUserInteractionReplyFunction =
@@ -247,19 +340,164 @@ export default class ComponentUtils extends Utility {
               )
               .setColor(Colors.Error),
           ],
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         };
       };
+
+    private _getAction(
+      customId: string,
+      index: number
+    ): PaginatedMessageAction | undefined {
+      const action = this.actions.get(customId);
+      if (action) return action;
+      return this.pageActions.at(index)?.get(customId);
+    }
+
+    protected override async handleCollect(
+      targetUser: User,
+      channel: Message["channel"],
+      interaction: PaginatedMessageInteractionUnion
+    ): Promise<void> {
+      if (interaction.user.id === targetUser.id) {
+        // Update the response to the latest interaction
+        this.response = interaction;
+
+        const action = this._getAction(interaction.customId, this.index);
+        if (isNullish(action)) {
+          throw new Error("There was no action for the provided custom ID");
+        }
+
+        if (actionIsButtonOrMenu(action) && action.run) {
+          const previousIndex = this.index;
+
+          const resp = await action.run({
+            interaction,
+            handler: this,
+            author: targetUser,
+            channel,
+            response: this.response!,
+            collector: this.collector!,
+          });
+
+          if (!this.stopPaginatedMessageCustomIds.includes(action.customId)) {
+            const newIndex =
+              previousIndex === this.index ? previousIndex : this.index;
+
+            const updateOptions = await this.resolvePage(
+              this.response,
+              targetUser,
+              newIndex
+            );
+
+            // If the response is null, don't do anything
+            if (resp === null) return;
+            if (resp && isObject(resp)) {
+              if (resp.edit) {
+                interaction.replied
+                  ? await interaction.editReply(resp)
+                  : await interaction.update(resp);
+              } else {
+                await container.utilities.commandUtils.reply(
+                  interaction,
+                  resp,
+                  {
+                    type: PomeloReplyType.Error,
+                  }
+                );
+              }
+            } else {
+              await safelyReplyToInteraction({
+                messageOrInteraction: interaction,
+                interactionEditReplyContent: updateOptions,
+                interactionReplyContent: {
+                  ...this.#thisMazeWasNotMeantForYouContent,
+                  flags: MessageFlags.Ephemeral,
+                },
+                componentUpdateContent: updateOptions,
+              });
+            }
+          }
+        }
+      } else {
+        const interactionReplyOptions = await this.wrongUserInteractionReply(
+          targetUser,
+          interaction.user,
+          this.resolvePaginatedMessageInternationalizationContext(
+            interaction,
+            targetUser
+          )
+        );
+
+        await interaction.reply(
+          isObject(interactionReplyOptions)
+            ? interactionReplyOptions
+            : {
+              content: interactionReplyOptions,
+              flags: MessageFlags.Ephemeral,
+              allowedMentions: { users: [], roles: [] },
+            }
+        );
+      }
+    }
+
+    public async resolvePage(
+      messageOrInteraction: Message | AnyInteractableInteraction,
+      target: User,
+      index: number
+    ): Promise<PaginatedMessageResolvedPage> {
+      // If the message was already processed, do not load it again IF the cache is enabled:
+      const message = this.messages[index];
+      if (!isNullish(message) && this.cache) {
+        return message;
+      }
+
+      // Load the page and return it:
+      const resolvedPage = await this.handlePageLoad(this.pages[index], index);
+      if (resolvedPage.actions) {
+        this.addPageActions(resolvedPage.actions, index);
+      }
+
+      const pageSpecificActions = this.pageActions.at(index);
+      const resolvedComponents: PaginatedMessageComponentUnion[] = [];
+
+      if (this.pages.length > 1) {
+        const sharedActions = await this.handleActionLoad(
+          [...this.actions.values()],
+          messageOrInteraction,
+          target
+        );
+        const sharedComponents = createPartitionedMessageRow(sharedActions);
+
+        resolvedComponents.push(...sharedComponents);
+      }
+
+      if (pageSpecificActions) {
+        const pageActions = await this.handleActionLoad(
+          [...pageSpecificActions.values()],
+          messageOrInteraction,
+          target
+        );
+        const pageComponents = createPartitionedMessageRow(pageActions);
+
+        resolvedComponents.push(...pageComponents);
+      }
+
+      const resolved = { ...resolvedPage, components: resolvedComponents };
+      this.messages[index] = resolved;
+
+      return resolved;
+    }
   };
 
   static MenuPaginatedMessage = class MenuPaginatedMessage extends ComponentUtils.PomeloPaginatedMessage {
-    public constructor(data?: PaginatedMessageOptions) {
+    public constructor(data?: PomeloPaginatedMessageOptions) {
       super(data);
-      // const selector = PaginatedMessage.defaultActions.find(
-      //   (action) => action.type === ComponentType.StringSelect
-      // );
-      // if (!selector) return;
-      // super.setActions([this.getMenuAction()], false);
+      super.setActions(
+        PaginatedMessage.defaultActions.filter(
+          (action) => action.type === ComponentType.StringSelect
+        ),
+        false
+      );
     }
 
     protected override handleActionLoad(
@@ -294,10 +532,13 @@ export default class ComponentUtils extends Utility {
                 ...(interaction.customId ===
                   "@sapphire/paginated-messages.goToPage" && {
                   options: await Promise.all(
-                    this.pages.map((_page, index) => {
-                      const page = _page instanceof Function ? null : _page;
+                    this.pages.map(async (_page, index) => {
+                      const page =
+                        _page instanceof Function
+                          ? await _page(index, this.pages, this)
+                          : _page;
                       const embed = EmbedBuilder.from(
-                        page?.embeds?.[0] ?? new EmbedBuilder()
+                        page.embeds?.[0] ?? new EmbedBuilder()
                       );
 
                       return {
@@ -317,40 +558,24 @@ export default class ComponentUtils extends Utility {
         )
       );
     }
-
-    public getMenuAction(): PaginatedMessageActionStringMenu {
-      return {
-        type: ComponentType.StringSelect,
-        customId: "menu_select",
-        options: this.messages
-          .map((m, i) => {
-            if (!m) return null;
-            const title = this.getEmbedTitle(m) ?? `Menu Item ${i.toString()}`;
-            return {
-              label: title,
-              value: i.toString(),
-            } satisfies SelectMenuComponentOptionData;
-          })
-          .filter((o): o is SelectMenuComponentOptionData => o !== null),
-        run({ handler, interaction }) {
-          if (interaction.componentType !== ComponentType.StringSelect) return;
-          const index = parseInt(interaction.values[0]);
-          handler.setIndex(index);
-        },
-      };
-    }
-
-    private getEmbedTitle(
-      message: PaginatedMessageResolvedPage
-    ): string | null {
-      if (!message.embeds?.[0]) return null;
-      return EmbedBuilder.from(message.embeds[0]).data.title ?? null;
-    }
   };
 }
 
 declare module "@sapphire/plugin-utilities-store" {
   export interface Utilities {
     componentUtils: ComponentUtils;
+  }
+}
+
+declare module "@sapphire/discord.js-utilities" {
+  export interface PaginatedMessageActionRun {
+    run?(
+      context: PaginatedMessageActionContext
+    ): Awaitable<
+      | (InteractionReplyOptions & { edit?: false })
+      | (InteractionEditReplyOptions & { edit: true })
+      | null
+      | void
+    >;
   }
 }

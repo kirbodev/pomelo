@@ -1,0 +1,52 @@
+{
+  "current": "Attuale",
+  "change": "Cambia",
+  "default": {
+    "name": "Predefinito",
+    "description": "L'impostazione predefinita per questa opzione è `{{default}}`."
+  },
+  "override": {
+    "name": "Annullato",
+    "description": "Questo è annullato dagli amministratori del server."
+  },
+  "user": {
+    "locale": {
+      "name": "Lingua",
+      "description": "La lingua che il bot userà. Gli amministratori del server possono sovrascrivere questa impostazione in base al server."
+    },
+    "preferEphemeral": {
+      "name": "Preferisci messaggi effimeri",
+      "description": "Se il bot deve preferire messaggi effimeri (nascosti) al posto di messaggi normali. Gli amministratori del server possono sovrascrivere questa impostazione in base al server."
+    }
+  },
+  "guild": {
+    "locale": {
+      "name": "Lingua",
+      "description": "La lingua che il bot userà in questo server. La lingua dell'utente viene utilizzata per impostazione predefinita se questa lingua non viene forzata utilizzando 'Forza Lingua'."
+    },
+    "forceLocale": {
+      "name": "Forza Lingua",
+      "description": "Forza il bot a utilizzare la lingua impostata in questo server invece di quella dell'utente."
+    },
+    "prefix": {
+      "name": "Prefisso",
+      "description": "Il prefisso che il bot userà per i comandi."
+    },
+    "features": {
+      "name": "Funzionalità",
+      "description": "Le funzionalità abilitate/disabilitate in questo server."
+    },
+    "logChannel": {
+      "name": "Canale di Registro",
+      "description": "Il canale in cui il bot registra le azioni di moderazione."
+    },
+    "forceEphemeral": {
+      "name": "Forza messaggi effimeri",
+      "description": "Se il bot deve forzare messaggi effimeri (nascosti)."
+    },
+    "ephemeralDeletionTimeout": {
+      "name": "Tempo di eliminazione dei messaggi effimeri",
+      "description": "Il tempo in secondi prima che il bot elimini i messaggi effimeri. Questo include messaggi come gli avvisi di AFK. *Da non confondere con le interazioni effimere.*"
+    }
+  }
+}

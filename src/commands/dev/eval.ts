@@ -6,7 +6,7 @@ import {
   ChatInputCommandInteraction,
   ModalSubmitInteraction,
 } from "discord.js";
-import CommandUtils from "../../utilities/commandUtils.js";
+import CommandUtils, { PomeloReplyType } from "../../utilities/commandUtils.js";
 import { inspect } from "bun";
 import { Colors } from "../../lib/colors.js";
 import { EmbedLimits } from "@sapphire/discord-utilities";
@@ -89,9 +89,14 @@ export class UserCommand extends CommandUtils.DevCommand {
       .setDescription(`\`\`\`js\n${result}\`\`\``)
       .setColor(errored ? Colors.Error : Colors.Success)
       .setTimestamp();
-    await interaction.reply({
-      embeds: [embed],
-      ephemeral: true,
-    });
+    await this.reply(
+      interaction,
+      {
+        embeds: [embed],
+      },
+      {
+        type: PomeloReplyType.Sensitive,
+      }
+    );
   }
 }

@@ -22,8 +22,8 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       description: "Get help for a command or a list of commands.",
       requiredClientPermissions: [PermissionFlagsBits.EmbedLinks],
       detailedDescription: {
-        examples: [""],
-        syntax: "",
+        examples: ["", "settings"],
+        syntax: "[command]",
       },
     });
   }
@@ -80,7 +80,12 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       template: new EmbedUtils.EmbedConstructor().setColor(Colors.Default),
     });
     for (const command of commands) {
-      if (!CommandUtils.isUserEligible(interaction.member, command.name))
+      if (
+        !this.container.utilities.commandUtils.isUserEligible(
+          interaction.member,
+          command.name
+        )
+      )
         continue;
       const prefix = this.container.client.options.defaultPrefix as string;
       const desc =

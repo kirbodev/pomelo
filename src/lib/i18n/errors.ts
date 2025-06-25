@@ -1,5 +1,5 @@
 import { FT, T, type CapitalizedObjectKeys } from "../types/utils.js";
-import errors from "../../languages/en-US/errors.json" assert { type: "json" };
+import errors from "../../languages/en-US/errors.json" with { type: "json" };
 
 export default {
   Blocked: {
@@ -95,5 +95,124 @@ export default {
     desc: T("errors:wrongTarget.desc"),
     title: T("errors:wrongTarget.title"),
     desc_detailed: FT<{ target: string }>("errors:wrongTarget.desc_detailed"),
+  },
+  InvalidBoolean: {
+    desc: T("errors:invalidBoolean.desc"),
+    title: T("errors:invalidBoolean.title"),
+    desc_detailed: T("errors:invalidBoolean.desc_detailed"),
+  },
+  InvalidNumber: {
+    desc: T("errors:invalidNumber.desc"),
+    title: T("errors:invalidNumber.title"),
+    desc_detailed: T("errors:invalidNumber.desc_detailed"),
+  },
+  InvalidString: {
+    desc: T("errors:invalidString.desc"),
+    title: T("errors:invalidString.title"),
+    desc_detailed: T("errors:invalidString.desc_detailed"),
+  },
+  InvalidOption: {
+    desc: T("errors:invalidOption.desc"),
+    title: T("errors:invalidOption.title"),
+    desc_detailed: FT<{ option: string }>("errors:invalidOption.desc_detailed"),
+  },
+  InvalidChannel: {
+    desc: T("errors:invalidChannel.desc"),
+    title: T("errors:invalidChannel.title"),
+    desc_detailed: FT<{ length: number }>(
+      "errors:invalidChannel.desc_detailed"
+    ),
+  },
+  InvalidRole: {
+    desc: T("errors:invalidRole.desc"),
+    title: T("errors:invalidRole.title"),
+    desc_detailed: FT<{ length: number }>("errors:invalidRole.desc_detailed"),
+  },
+  InvalidMention: {
+    desc: T("errors:invalidMention.desc"),
+    title: T("errors:invalidMention.title"),
+    desc_detailed: FT<{ length: number }>(
+      "errors:invalidMention.desc_detailed"
+    ),
+  },
+  InvalidDuration: {
+    desc: T("errors:invalidDuration.desc"),
+    title: T("errors:invalidDuration.title"),
+    desc_detailed: T("errors:invalidDuration.desc_detailed"),
+  },
+  StringTooLong: {
+    desc: T("errors:stringTooLong.desc"),
+    title: T("errors:stringTooLong.title"),
+    desc_detailed: FT<{ length: number }>("errors:stringTooLong.desc_detailed"),
+  },
+  StringTooShort: {
+    desc: T("errors:stringTooShort.desc"),
+    title: T("errors:stringTooShort.title"),
+    desc_detailed: FT<{ length: number }>(
+      "errors:stringTooShort.desc_detailed"
+    ),
+  },
+  DurationTooLong: {
+    desc: T("errors:durationTooLong.desc"),
+    title: T("errors:durationTooLong.title"),
+    desc_detailed: FT<{ length: number }>(
+      "errors:durationTooLong.desc_detailed"
+    ),
+  },
+  DurationTooShort: {
+    desc: T("errors:durationTooShort.desc"),
+    title: T("errors:durationTooShort.title"),
+    desc_detailed: FT<{ length: number }>(
+      "errors:durationTooShort.desc_detailed"
+    ),
+  },
+  NumberTooLarge: {
+    desc: T("errors:numberTooLarge.desc"),
+    title: T("errors:numberTooLarge.title"),
+    desc_detailed: FT<{ length: number }>(
+      "errors:numberTooLarge.desc_detailed"
+    ),
+  },
+  NumberTooSmall: {
+    desc: T("errors:numberTooSmall.desc"),
+    title: T("errors:numberTooSmall.title"),
+    desc_detailed: FT<{ length: number }>(
+      "errors:numberTooSmall.desc_detailed"
+    ),
+  },
+  InvalidType: {
+    desc: T("errors:invalidType.desc"),
+    title: T("errors:invalidType.title"),
+    desc_detailed: T("errors:invalidType.desc_detailed"),
+  },
+  InvalidAttachment: {
+    desc: T("errors:invalidAttachment.desc"),
+    title: T("errors:invalidAttachment.title"),
+    desc_detailed: T("errors:invalidAttachment.desc_detailed"),
+  },
+  FileTooLarge: {
+    desc: T("errors:fileTooLarge.desc"),
+    title: T("errors:fileTooLarge.title"),
+    desc_detailed: T("errors:fileTooLarge.desc_detailed"),
+  },
+  NoEmail: {
+    desc: T("errors:noEmail.desc"),
+    title: T("errors:noEmail.title"),
+    desc_detailed: T("errors:noEmail.desc_detailed"),
+  },
+  AuthError: {
+    desc: T("errors:authError.desc"),
+    title: T("errors:authError.title"),
+    desc_detailed: T("errors:authError.desc_detailed"),
+  },
+  NoneFound: {
+    desc: T("errors:noneFound.desc"),
+    title: T("errors:noneFound.title"),
+    desc_detailed: T("errors:noneFound.desc_detailed"),
+  },
+  MissingScopes: {
+    desc: T("errors:missingScopes.desc"),
+    title: T("errors:missingScopes.title"),
+    desc_detailed: T("errors:missingScopes.desc_detailed"),
   },
 } as CapitalizedObjectKeys<typeof errors>;

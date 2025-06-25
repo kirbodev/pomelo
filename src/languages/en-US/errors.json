@@ -78,5 +78,110 @@
     "title": "🛠️ Maintenance",
     "desc": "I'm currently in maintenance mode, features are temporarily paused. Try again later.",
     "desc_detailed": "My features are temporarily paused due to {{reason}}. Try again later."
+  },
+  "invalidBoolean": {
+    "title": "🔛 Invalid Boolean",
+    "desc": "That's not a valid boolean. Try 'true' or 'false'.",
+    "desc_detailed": "That's not a valid boolean. Try 'true' or 'false'."
+  },
+  "invalidNumber": {
+    "title": "🔢 Invalid Number",
+    "desc": "That's not a valid number. Try a number.",
+    "desc_detailed": "That's not a valid number. Try a number."
+  },
+  "invalidString": {
+    "title": "🔤 Invalid Text",
+    "desc": "That's not a valid string. Try some text.",
+    "desc_detailed": "That's not a valid string. Try a(n) {{string_type}}."
+  },
+  "invalidOption": {
+    "title": "⭕ Invalid Option",
+    "desc": "That's not a valid option. Try one of the options.",
+    "desc_detailed": "That's not a valid option. Try something like '{{option}}'."
+  },
+  "invalidChannel": {
+    "title": "📢 Invalid Channel",
+    "desc": "That's not a valid channel. Try something like '#channel' or '1234567890123456789'.",
+    "desc_detailed": "That's not a valid channel. Try something like '#channel' or '1234567890123456789'."
+  },
+  "invalidRole": {
+    "title": "📢 Invalid Role",
+    "desc": "That's not a valid role. Try something like '@role' or '1234567890123456789'.",
+    "desc_detailed": "That's not a valid role. Try something like '@role' or '1234567890123456789'."
+  },
+  "invalidMention": {
+    "title": "📢 Invalid Mention",
+    "desc": "That's not a valid mention/user ID. Try something like '@person' or '1234567890123456789'.",
+    "desc_detailed": "That's not a valid mention. Try something like '@person' or '1234567890123456789'."
+  },
+  "invalidDuration": {
+    "title": "⏱️ Invalid Duration",
+    "desc": "That's not a valid duration. Try something like '10s' or '10m'.",
+    "desc_detailed": "That's not a valid duration. Try something like '10s' or '10m'."
+  },
+  "durationTooLong": {
+    "title": "⏱️ Duration Too Long",
+    "desc": "That's too long. Try something shorter.",
+    "desc_detailed": "That's too long. Try something shorter than {{length}}."
+  },
+  "durationTooShort": {
+    "title": "⏱️ Duration Too Short",
+    "desc": "That's too short. Try something longer.",
+    "desc_detailed": "That's too short. Try something longer than {{length}}."
+  },
+  "stringTooLong": {
+    "title": "➕ String Too Long",
+    "desc": "That's too long. Try something shorter.",
+    "desc_detailed": "That's too long. Try something shorter than {{length}} characters."
+  },
+  "stringTooShort": {
+    "title": "➖ String Too Short",
+    "desc": "That's too short. Try something longer.",
+    "desc_detailed": "That's too short. Try something longer than {{length}} characters."
+  },
+  "numberTooLarge": {
+    "title": "➕ Number Too Large",
+    "desc": "That number is too large. Try something smaller.",
+    "desc_detailed": "That number is too large. Try something smaller than {{length}}."
+  },
+  "numberTooSmall": {
+    "title": "➖ Number Too Small",
+    "desc": "That number is too small. Try something larger.",
+    "desc_detailed": "That number is too small. Try something larger than {{length}}."
+  },
+  "invalidType": {
+    "title": "🔰 Invalid Type",
+    "desc": "That's not what I was expecting.",
+    "desc_detailed": "I was expecting a(n) {{expected}}, but I received {{received}}."
+  },
+  "invalidAttachment": {
+    "title": "📎 Invalid Attachment",
+    "desc": "That's not a valid attachment or not a supported file type.",
+    "desc_detailed": "That's not a valid attachment or not a supported file type. Make sure it's one of the supported file types: `{{types}}`."
+  },
+  "fileTooLarge": {
+    "title": "📎 File Too Large",
+    "desc": "That file is too large. Try something smaller.",
+    "desc_detailed": "That file is too large. Try something smaller than {{length}}."
+  },
+  "noEmail": {
+    "title": "✉️ No Email",
+    "desc": "No email found for this account.",
+    "desc_detailed": "No email found for this account."
+  },
+  "authError": {
+    "title": "🔐 Authentication Failed",
+    "desc": "Failed to authenticate.",
+    "desc_detailed": "Failed to authenticate."
+  },
+  "noneFound": {
+    "title": "❌ None Found",
+    "desc": "The resource(s) you were looking for couldn't be found.",
+    "desc_detailed": "The {{resource}} you were looking for couldn't be found."
+  },
+  "missingScopes": {
+    "title": "❓ Missing Scopes",
+    "desc": "You need to grant all the required scopes to use this feature.",
+    "desc_detailed": "You need to grant all the required scopes to use this feature."
   }
 }
