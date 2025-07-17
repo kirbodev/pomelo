@@ -6,7 +6,7 @@ import {
   ChatInputCommandInteraction,
   ModalSubmitInteraction,
 } from "discord.js";
-import CommandUtils from "../../utilities/commandUtils.js";
+import CommandUtils, { PomeloReplyType } from "../../utilities/commandUtils.js";
 
 export class UserCommand extends CommandUtils.DevCommand {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -75,17 +75,22 @@ export class UserCommand extends CommandUtils.DevCommand {
     reason?: string
   ) {
     maintainanceMode.set(on, reason);
-    await interaction.reply({
-      embeds: [
-        new EmbedUtils.EmbedConstructor() //
-          .setTitle("Maintainance Mode")
-          .setDescription(
-            `Maintainance mode is now ${on ? "on" : "off"}${
-              reason ? ` with reason: ${reason}` : ""
-            }.`
-          ),
-      ],
-      ephemeral: true,
-    });
+    await this.reply(
+      interaction,
+      {
+        embeds: [
+          new EmbedUtils.EmbedConstructor() //
+            .setTitle("Maintainance Mode")
+            .setDescription(
+              `Maintainance mode is now ${on ? "on" : "off"}${
+                reason ? ` with reason: ${reason}` : ""
+              }.`
+            ),
+        ],
+      },
+      {
+        type: PomeloReplyType.Sensitive,
+      }
+    );
   }
 }

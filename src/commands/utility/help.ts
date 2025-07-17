@@ -9,7 +9,12 @@ import {
   fetchT,
   i18next,
 } from "@sapphire/plugin-i18next";
-import { Message, PermissionFlagsBits } from "discord.js";
+import {
+  Message,
+  PermissionFlagsBits,
+  MessageFlags,
+  ApplicationIntegrationType,
+} from "discord.js";
 import { LanguageKeys } from "../../lib/i18n/languageKeys.js";
 import CommandUtils from "../../utilities/commandUtils.js";
 import ComponentUtils from "../../utilities/componentUtils.js";
@@ -22,8 +27,8 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       description: "Get help for a command or a list of commands.",
       requiredClientPermissions: [PermissionFlagsBits.EmbedLinks],
       detailedDescription: {
-        examples: [""],
-        syntax: "",
+        examples: ["", "settings"],
+        syntax: "[command]",
       },
     });
   }
@@ -37,6 +42,10 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       )
         .setName(this.name)
         .setDescription(this.description)
+        .setIntegrationTypes([
+          ApplicationIntegrationType.GuildInstall,
+          ApplicationIntegrationType.UserInstall,
+        ])
         .addStringOption((option) =>
           option
             .setName("command")
@@ -57,6 +66,10 @@ export class UserCommand extends CommandUtils.PomeloCommand {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction
   ) {
+    await interaction.deferReply({
+      flags: MessageFlags.Ephemeral,
+    });
+
     const commandName = interaction.options.getString("command");
     await this.execute(interaction, commandName);
   }
@@ -71,7 +84,6 @@ export class UserCommand extends CommandUtils.PomeloCommand {
     commandName: string | null
   ) {
     const t = await fetchT(interaction);
-    if (!interaction.member) return;
     let commands = this.getCommands();
     if (commandName)
       commands = commands.filter((command) => command.name === commandName);
@@ -80,7 +92,13 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       template: new EmbedUtils.EmbedConstructor().setColor(Colors.Default),
     });
     for (const command of commands) {
-      if (!CommandUtils.isUserEligible(interaction.member, command.name))
+      if (
+        interaction.member &&
+        !this.container.utilities.commandUtils.isUserEligible(
+          interaction.member,
+          command.name
+        )
+      )
         continue;
       const prefix = this.container.client.options.defaultPrefix as string;
       const desc =

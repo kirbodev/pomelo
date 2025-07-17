@@ -1,0 +1,77 @@
+{
+  "ping": {
+    "commandName": "ping",
+    "commandDescription": "Verifique la latencia del bot y otros datos útiles.",
+    "title": "¡Pong!",
+    "desc": "Actualmente la latencia es {{latency}}.",
+    "APILatencyFieldTitle": "Latencia API",
+    "uptimeFieldTitle": "Tiempo de actividad"
+  },
+  "cloneEmoji": {
+    "commandName": "clonaremoji",
+    "commandDescription": "Clona un emoji en el server.",
+    "title": "Emoji clonado",
+    "desc": "El emoji {{emoji}} fue clonado en el server."
+  },
+  "help": {
+    "commandName": "ayuda",
+    "commandDescription": "Obtenga ayuda con un comando o una lista de comandos."
+  },
+  "bigEmoji": {
+    "commandName": "grandeemoji",
+    "commandDescription": "Obtenga la imagen grande y el enlace de un emoji(s)."
+  },
+  "settings": {
+    "commandName": "ajustes",
+    "commandDescription": "Administre su configuración o la del server.",
+    "subcommandUserName": "usuario",
+    "subcommandGuildName": "server",
+    "subcommandUserDescription": "Administre su configuración.",
+    "subcommandGuildDescription": "Administrar la configuración del server."
+  },
+  "afk": {
+    "commandName": "afk",
+    "commandDescription": "Establezca su estado AFK.",
+    "messageFieldName": "mensaje",
+    "messageFieldDescription": "El mensaje a mostrar cuando estás AFK.",
+    "durationFieldName": "duración",
+    "durationFieldDescription": "La duración de su estado AFK.",
+    "attachmentFieldName": "adjunto",
+    "attachmentFieldDescription": "El archivo adjunto a mostrar cuando estás AFK.",
+    "title": "AFK Establecido",
+    "desc": "Has establecido tu estado AFK.",
+    "desc_with_message": "Has establecido tu estado AFK con el mensaje: {{message}}.",
+    "desc_with_duration": "Has establecido tu estado AFK hasta {{time}}.",
+    "desc_with_message_and_duration": "Has establecido tu estado AFK con el mensaje: {{message}} hasta {{time}}.",
+    "overwriteNote": "Su estado AFK anterior ha sido sobrescrito.",
+    "activeTitle": "AFK",
+    "activeDescription": "{{user}} está AFK.",
+    "activeDescription_multiple": "{{users}} y {{last_user}} están AFK.",
+    "activeReason": "Razón",
+    "activeUntil": "Hasta",
+    "removeTitle": "AFK Removido",
+    "removeDescription": "Has dejado de estar AFK. Has estado AFK durante {{time}}.",
+    "removeTip": "Puedes detenerlo añadiendo --afk a tu mensaje.",
+    "blockedAfk": "No puedes mencionar a ese usuario porque está AFK."
+  },
+  "afklink": {
+    "commandName": "afklink",
+    "commandDescription": "Enlace su calendario de Google para que Pomelo automáticamente establezca su estado AFK cuando esté ocupado.",
+    "title": "Enlace Google Calendar",
+    "desc": "Haz clic en el botón a continuación para enlazar tu calendario de Google. Una vez que enlaces tu calendario, haz clic en ID de enlace. Se te pedirá un código de enlace.",
+    "button": "Enlace",
+    "successTitle": "Calendario de Google Enlazado",
+    "successDesc": "Tu calendario de Google ha sido enlazado a Pomelo.",
+    "calendarsFieldTitle": "Calendarios",
+    "linkId": "ID de enlace",
+    "selectCalendars": "Seleccionar calendarios",
+    "selectCalendarsDescription": "Selecciona los calendarios que deseas enlazar a Pomelo."
+  },
+  "afkget": {
+    "commandName": "afkget",
+    "commandDescription": "Obtenga el estado AFK de un usuario",
+    "contextName": "Obtener AFK",
+    "userFieldName": "usuario",
+    "userFieldDescription": "El usuario del que obtener el estado AFK"
+  }
+}

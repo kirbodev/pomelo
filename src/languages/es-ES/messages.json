@@ -1,0 +1,10 @@
+{
+  "afkAutoModChanged": {
+    "title": "¡Regla de AutoMod AFK cambiada!",
+    "desc": "Se detectó un cambio/eliminación en la regla de AutoMod creada por Pomelo. La regla ha sido restablecida a su estado predeterminado. La regla es requerida para que la configuración \"Bloquear menciones AFK\" funcione."
+  },
+  "onboarding": {
+    "title": "¡Gracias por agregar Pomelo!",
+    "desc": "Como Pomelo está en alpha/beta, es posible que necesites aceptar nuevas características o cambiar la configuración cuando se agreguen. Este canal se utilizará para notificarte de estos cambios. Deberías ejecutar `/ajustes server` para actualizar tus configuraciones para que se ajusten a tu server."
+  }
+}

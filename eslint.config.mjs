@@ -12,6 +12,6 @@ export default tseslint.config(
     ignores: ["dist/**", "scripts/**"],
   },
   pluginJs.configs.recommended,
-  ...i18next.configs.recommended,
+  i18next.configs["flat/recommended"],
   ...tseslint.configs.strictTypeChecked
 );

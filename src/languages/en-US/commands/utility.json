@@ -28,5 +28,50 @@
     "subcommandGuildName": "guild",
     "subcommandUserDescription": "Manage user settings.",
     "subcommandGuildDescription": "Manage server settings."
+  },
+  "afk": {
+    "commandName": "afk",
+    "commandDescription": "Set your AFK status.",
+    "messageFieldName": "message",
+    "messageFieldDescription": "The message to display when you are AFK.",
+    "durationFieldName": "duration",
+    "durationFieldDescription": "The duration of your AFK status.",
+    "attachmentFieldName": "attachment",
+    "attachmentFieldDescription": "The attachment to display when you are AFK.",
+    "title": "AFK Set",
+    "desc": "You are now AFK.",
+    "desc_with_message": "You are now AFK with the message: {{message}}.",
+    "desc_with_duration": "You are now AFK until {{time}}.",
+    "desc_with_message_and_duration": "You are now AFK with the message: {{message}} until {{time}}.",
+    "overwriteNote": "Your previous AFK status has been overwritten.",
+    "activeTitle": "AFK",
+    "activeDescription": "{{user}} is currently AFK.",
+    "activeDescription_multiple": "{{users}} and {{last_user}} are currently AFK.",
+    "activeReason": "Reason",
+    "activeUntil": "Until",
+    "removeTitle": "AFK Removed",
+    "removeDescription": "You are no longer AFK. You were AFK for {{time}}.",
+    "removeTip": "You can stop this by suffixing your message with --afk",
+    "blockedAfk": "You cannot ping that user because they're AFK."
+  },
+  "afklink": {
+    "commandName": "afklink",
+    "commandDescription": "Link your Google Calendar to Pomelo to automatically set your AFK status when you're busy.",
+    "title": "Link Google Calendar",
+    "desc": "Click the button below to link your Google Calendar. Once you link your calendar, click Link ID. You will be prompted for a link code.",
+    "button": "Link",
+    "successTitle": "Google Calendar Linked",
+    "successDesc": "Your Google Calendar has been linked to Pomelo.",
+    "calendarsFieldTitle": "Calendars",
+    "linkId": "Link ID",
+    "selectCalendars": "Select Calendars",
+    "selectCalendarsDescription": "Select the calendars you want to link to Pomelo."
+  },
+  "afkget": {
+    "commandName": "afkget",
+    "commandDescription": "Get a user's afk status",
+    "contextName": "Get AFK",
+    "userFieldName": "user",
+    "userFieldDescription": "The user to get the afk status of"
   }
 }

@@ -1,0 +1,183 @@
+{
+  "genericError": {
+    "title": "🤔 Algo salió mal",
+    "desc": "¡Disculpe! Algo salió mal. Eso es todo lo que sé.",
+    "desc_detailed": "¡Disculpe! Algo salió mal. Eso es todo lo que sé.",
+    "field1": {
+      "title": "Error"
+    }
+  },
+  "serverError": {
+    "title": "😓 Error del server",
+    "desc": "¡Disculpe! Algo salió mal en nuestro lado.",
+    "desc_detailed": "¡Disculpe! Algo salió mal en nuestro lado."
+  },
+  "userError": {
+    "title": "🤔 Eso no parece correcto",
+    "desc": "Parece que hiciste algo mal.",
+    "desc_detailed": "Parece que hiciste algo mal."
+  },
+  "syntaxError": {
+    "title": "🤔 Eso no parece correcto",
+    "desc": "La sintaxis correcta para ese comando es:",
+    "desc_detailed": "La sintaxis correcta para ese comando es:",
+    "syntaxFieldTitle": "Sintaxis",
+    "exampleFieldTitle": "Ejemplo(s)"
+  },
+  "notFound": {
+    "title": "🔍 No encontrado",
+    "desc": "No encontré lo que estabas buscando.",
+    "desc_detailed": "No encontré el(los) {{resource}} que estabas buscando."
+  },
+  "blocked": {
+    "title": "🚫 Bloqueado",
+    "desc": "No puedes realizar esa acción.",
+    "desc_detailed": "No puedes realizar esa acción para: {{reason}}."
+  },
+  "invalidLocation": {
+    "title": "😶‍🌫️ No puedes usar esa acción aquí",
+    "desc": "Esa acción no se puede utilizar aquí.",
+    "desc_detailed": "Esa acción no se puede usar aquí, úsala en {{location}}."
+  },
+  "userCooldown": {
+    "title": "⏳ Baja un poco el ritmo",
+    "desc": "Estás realizando esa acción demasiado rápido.",
+    "desc_detailed": "Estás realizando esa acción demasiado rápido. Por favor, espera {{time}} antes de intentarlo de nuevo."
+  },
+  "guildCooldown": {
+    "title": "⏳ Baja un poco el ritmo",
+    "desc": "Esa acción se realizó en este servidor recientemente.",
+    "desc_detailed": "Esa acción se realizó en este servidor recientemente. Por favor, espera {{time}} antes de intentarlo de nuevo."
+  },
+  "userAuthority": {
+    "title": "👮 Esa persona tiene más autoridad",
+    "desc": "La persona a la que intentas realizar una acción tiene más autoridad que tú.",
+    "desc_detailed": "{{user}} él tiene más autoridad que tú. No puedes realizar esa acción."
+  },
+  "missingPermission": {
+    "title": "❌ Permisos faltantes",
+    "desc": "No tienes permiso para realizar esa acción.",
+    "desc_detailed": "Necesitas {{permission}} para realizar esa acción."
+  },
+  "botMissingPermission": {
+    "title": "🫤 Permisos faltantes",
+    "desc": "No tengo permisos para realizar esa acción.",
+    "desc_detailed": "Necesito {{permission}} para realizar esa acción."
+  },
+  "wrongTarget": {
+    "title": "🎯 ¡No es para ti!",
+    "desc": "Eso no es para ti.",
+    "desc_detailed": "Eso no es para ti. Es para {{target}}."
+  },
+  "devOnly": {
+    "title": "👨‍💻 Solo para programadores",
+    "desc": "Ese comando sólo está disponible para los programadores del bot.",
+    "desc_detailed": "Ese comando sólo está disponible para los programadores del bot."
+  },
+  "maintenanceMode": {
+    "title": "🛠️ Mantenimiento",
+    "desc": "Mis funciones están suspendidas temporalmente por mantenimiento, inténtalo de nuevo más tarde.",
+    "desc_detailed": "Mis funciones están suspendidas temporalmente debido a {{reason}}. "
+  },
+  "invalidBoolean": {
+    "title": "🔛 Booleano no válido",
+    "desc": "Este no es un valor booleano válido. ",
+    "desc_detailed": "Este no es un valor booleano válido. "
+  },
+  "invalidNumber": {
+    "title": "🔢 Número no válido",
+    "desc": "No es un número válido. ",
+    "desc_detailed": "No es un número válido. "
+  },
+  "invalidString": {
+    "title": "🔤 Texto no válido",
+    "desc": "No es un texto válido. ",
+    "desc_detailed": "No es un texto válido. "
+  },
+  "invalidOption": {
+    "title": "⭕ Opción no válida",
+    "desc": "No es una opción válida. ",
+    "desc_detailed": "No es una opción válida. {{option}}'."
+  },
+  "invalidChannel": {
+    "title": "📢 Canal no válido",
+    "desc": "Este no es un canal válido. ",
+    "desc_detailed": "Este no es un canal válido. "
+  },
+  "invalidRole": {
+    "title": "📢 Rol no válido",
+    "desc": "No es un rol válido. ",
+    "desc_detailed": "No es un rol válido. "
+  },
+  "invalidMention": {
+    "title": "📢 Mención no válida",
+    "desc": "Esta no es una mención/ID de usuario válida. ",
+    "desc_detailed": "Esta no es una mención/ID de usuario válida. "
+  },
+  "invalidDuration": {
+    "title": "⏱️ Duración no válida",
+    "desc": "Eso no es una duración válida. Intenta algo como '10s' o '10m'.",
+    "desc_detailed": "Eso no es una duración válida. Intenta algo como '10s' o '10m'."
+  },
+  "durationTooLong": {
+    "title": "⏱️ Duración demasiado larga",
+    "desc": "Eso es demasiado largo. Intenta algo más corto.",
+    "desc_detailed": "Eso es demasiado largo. Intenta algo más corto que {{length}}."
+  },
+  "durationTooShort": {
+    "title": "⏱️ Duración demasiado corta",
+    "desc": "Eso es demasiado corto. Intenta algo más largo.",
+    "desc_detailed": "Eso es demasiado corto. Intenta algo más largo que {{length}}."
+  },
+  "stringTooLong": {
+    "title": "➕ Texto demasiado largo",
+
+    "desc": "Eso es demasiado corto. ",
+    "desc_detailed": "Es demasiado largo. El máximo es {{length}} caracteres."
+  },
+  "stringTooShort": {
+    "title": "➖ Texto demasiado corto",
+    "desc": "Eso es demasiado corto. ",
+    "desc_detailed": "Es demasiado corto. El mínimo es {{length}} caracteres."
+  },
+  "numberTooLarge": {
+    "title": "➕ Número demasiado grande",
+    "desc": "Eso es demasiado grande. ",
+    "desc_detailed": "Eso es demasiado grande. El máximo es {{length}}."
+  },
+  "numberTooSmall": {
+    "title": "➖ Número demasiado pequeño",
+    "desc": "Eso es demasiado pequeño. ",
+    "desc_detailed": "Eso es demasiado pequeño. El mínimo es {{length}}."
+  },
+  "invalidType": {
+    "title": "🔰 Tipo no válido",
+    "desc": "Eso no es lo que esperaba.",
+    "desc_detailed": "Esperaba un(a) {{expected}}, pero recibí un(a) {{received}}."
+  },
+  "invalidAttachment": {
+    "title": "📎 Adjunto no válido",
+    "desc": "Eso no es un adjunto válido o no tiene una extensión válida.",
+    "desc_detailed": "Eso no es un adjunto válido o no tiene una extensión válida. Asegúrate de que el adjunto sea uno de los siguientes tipos: `{{types}}`."
+  },
+  "authError": {
+    "title": "🔐 Error de autenticación",
+    "desc": "No se pudo autenticar.",
+    "desc_detailed": "No se pudo autenticar."
+  },
+  "noneFound": {
+    "title": "❌ No encontrado",
+    "desc": "No se encontró lo que estabas buscando.",
+    "desc_detailed": "No se encontró el(los) {{resource}} que estabas buscando."
+  },
+  "missingScopes": {
+    "title": "❓ Permisos faltantes",
+    "desc": "Debes conceder todos los permisos necesarios para usar esta funcionalidad.",
+    "desc_detailed": "Debes conceder todos los permisos necesarios para usar esta funcionalidad."
+  },
+  "notAFK": {
+    "title": "❌ No AFK",
+    "desc": "Ese usuario no está AFK.",
+    "desc_detailed": "Ese usuario no está AFK."
+  }
+}

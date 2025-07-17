@@ -5,6 +5,12 @@
   "cancel": "Cancel",
   "confirm": "Confirm",
   "close": "Close",
+  "enable": "Enable",
+  "disable": "Disable",
   "booleanTrueOptions": "true,t,yes,y,on,enable,enabled",
-  "booleanFalseOptions": "false,f,no,n,off,disable,disabled"
+  "booleanFalseOptions": "false,f,no,n,off,disable,disabled",
+  "user": "user",
+  "channel": "channel",
+  "role": "role",
+  "message": "message"
 }

@@ -2,13 +2,14 @@ import { Command } from "@sapphire/framework";
 import EmbedUtils from "../../utilities/embedUtils.js";
 import { container } from "@sapphire/framework";
 import { config } from "../../config.js";
-import ms from "ms";
+import ms from "../../lib/helpers/ms.js";
 import {
   ButtonInteraction,
   ChatInputCommandInteraction,
+  MessageFlags,
   ModalSubmitInteraction,
 } from "discord.js";
-import CommandUtils from "../../utilities/commandUtils.js";
+import CommandUtils, { PomeloReplyType } from "../../utilities/commandUtils.js";
 
 export class UserCommand extends CommandUtils.DevCommand {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -58,19 +59,25 @@ export class UserCommand extends CommandUtils.DevCommand {
     }
     const time = Math.round(performance.now() - now);
     // internationalisation is not needed for dev commands
-    await interaction.reply({
-      embeds: [
-        new EmbedUtils.EmbedConstructor() //
-          .setTitle("Reloaded")
-          .setDescription(`Do not rely on reloading to update utilities.
+    await this.reply(
+      interaction,
+      {
+        embeds: [
+          new EmbedUtils.EmbedConstructor() //
+            .setTitle("Reloaded")
+            .setDescription(`Do not rely on reloading to update utilities.
             Reloaded the following pieces in ${ms(time)}:
                 - ${[...container.stores.values()]
                   .map((store) => store.name)
                   .join("\n- ")}`),
-      ],
-      ...(interaction instanceof ChatInputCommandInteraction && {
-        ephemeral: true,
-      }),
-    });
+        ],
+        ...(interaction instanceof ChatInputCommandInteraction && {
+          flags: MessageFlags.Ephemeral,
+        }),
+      },
+      {
+        type: PomeloReplyType.Sensitive,
+      }
+    );
   }
 }

@@ -2,7 +2,9 @@
 import { Locale } from "discord.js";
 import { z } from "zod";
 
-// ONLY USE THIS FOR TESTING
+const ChannelRegex = /^\d{17,20}$/gm;
+
+//NOTE - ONLY USE THIS FOR TESTING
 export const Test = z.object({
   a: z.string(),
   b: z.number().optional(),
@@ -34,13 +36,9 @@ export const UserSettings = z.object({
     })
     .default(new Date()),
   locale: z.nativeEnum(Locale),
+  preferEphemeral: z.boolean().default(true),
+  allowUrgentPings: z.boolean().default(true),
 });
-export type UserSettings = z.infer<typeof UserSettings>;
-
-enum FeatureType {
-  Command = "command",
-  Module = "module",
-}
 
 export const GuildSettings = z.object({
   createdAt: z
@@ -56,20 +54,18 @@ export const GuildSettings = z.object({
   locale: z.nativeEnum(Locale).default(Locale.EnglishUS),
   forceLocale: z.boolean().default(false),
   prefix: z.string().min(1).max(5).default(","),
-  features: z
-    .array(
-      z.object({
-        name: z.string(),
-        enabled: z.boolean(),
-        type: z.nativeEnum(FeatureType),
-        requiredRole: z.string().optional(),
-      })
-    )
-    .default([]),
-  logChannel: z.string().optional(),
+  logChannel: z.string().regex(ChannelRegex).optional(),
+  forceEphemeral: z.boolean().default(false),
+  ephemeralDeletionTimeout: z
+    .number({
+      coerce: true,
+    })
+    .min(3)
+    .max(60)
+    .default(10),
+  afkEnabled: z.boolean().default(true),
+  blockAfkMentions: z.boolean().default(true),
 });
-
-export type GuildSettings = z.infer<typeof GuildSettings>;
 
 export const Afk = z.object({
   startedAt: z
@@ -81,9 +77,11 @@ export const Afk = z.object({
     .date({
       coerce: true,
     })
-    .default(new Date()),
-  guildId: z.string().optional(),
+    .nullable()
+    .default(null),
   text: z.string().min(1).max(512).optional(),
+  attachment: z.string().optional(),
+  eventId: z.string().optional(),
 });
 
 export type Afk = z.infer<typeof Afk>;

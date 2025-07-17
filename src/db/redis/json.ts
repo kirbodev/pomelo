@@ -148,6 +148,43 @@ export class PomeloRedis extends Redis {
     )) as number;
   }
 
+  /**
+   * Gets all the keys with a certain pattern in a topic (or all keys if no pattern is provided)
+   * @param topic The topic to get keys from (schema)
+   * @param pattern The pattern to match
+   * @remarks This operation is intense
+   * @returns Array of keys
+   */
+  async jsonKeys(
+    topic: keyof typeof Schemas,
+    pattern?: string
+  ): Promise<string[]> {
+    if (!topics.includes(topic)) throw new Error("Invalid topic | Not found");
+    const keyBuffers = await this.keysBuffer(`${topic}:${pattern ?? "*"}`);
+    const keys = keyBuffers.map((key) =>
+      key.toString().replace(`${topic}:`, "")
+    );
+    return keys;
+  }
+
+  /**
+   * Gets all the values with a certain pattern in a topic (or all values if no pattern is provided)
+   * @param topic The topic to get values from (schema)
+   * @param pattern The pattern to match
+   * @returns Array of values
+   */
+  async jsonGetAll<T extends keyof typeof Schemas>(
+    topic: T,
+    pattern?: string
+  ): Promise<NonNullable<z.TypeOf<(typeof Schemas)[T]>>[]> {
+    if (!topics.includes(topic)) throw new Error("Invalid topic | Not found");
+    const keys = await this.jsonKeys(topic, pattern);
+    const values = await Promise.all(
+      keys.map((key) => this.jsonGet(key, topic))
+    );
+    return values.filter((value) => value !== null);
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private nullable<TSchema extends z.AnyZodObject>(schema: TSchema) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument

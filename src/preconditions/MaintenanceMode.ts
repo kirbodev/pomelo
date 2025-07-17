@@ -33,7 +33,7 @@ export class MaintenancePrecondition extends AllFlowsPrecondition {
       : config.owners.includes(id)
       ? this.ok()
       : this.error({
-          identifier: LanguageKeyValues.Errors.MaintenanceMode as string,
+          identifier: LanguageKeyValues.Errors.MaintenanceMode,
           context: reason
             ? {
                 reason: reason,

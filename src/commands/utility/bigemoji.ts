@@ -5,6 +5,7 @@ import {
   ComponentType,
   EmbedBuilder,
   Message,
+  MessageFlags,
   PermissionFlagsBits,
   PermissionsBitField,
 } from "discord.js";
@@ -69,6 +70,10 @@ export class UserCommand extends CommandUtils.PomeloCommand {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction
   ) {
+    await interaction.deferReply({
+      flags: MessageFlags.Ephemeral,
+    });
+
     const emojis = interaction.options.getString("emojis", true);
     await this.execute(interaction, emojis);
   }
@@ -111,8 +116,10 @@ export class UserCommand extends CommandUtils.PomeloCommand {
           type: ComponentType.Button,
           emoji: "📤",
           label: "Clone",
-          run: async (context: PaginatedMessageActionContext) =>
-            this.cloneEmoji(context, emojis[i]),
+          run: (context: PaginatedMessageActionContext) => {
+            void this.cloneEmoji(context, emojis[i]);
+            return null;
+          },
         },
         i
       );
@@ -137,7 +144,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
         PermissionFlagsBits.CreateGuildExpressions
       )
     ) {
-      return await interaction.followUp({
+      await interaction.followUp({
         embeds: [
           new EmbedUtils.EmbedConstructor()
             .setTitle(t(LanguageKeys.Errors.MissingPermission.title))
@@ -153,8 +160,9 @@ export class UserCommand extends CommandUtils.PomeloCommand {
             )
             .setColor(Colors.Error),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
+      return;
     }
 
     if (
@@ -165,7 +173,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
         PermissionFlagsBits.ManageGuildExpressions
       )
     ) {
-      return await interaction.followUp({
+      await interaction.followUp({
         embeds: [
           new EmbedUtils.EmbedConstructor()
             .setTitle(t(LanguageKeys.Errors.BotMissingPermission.title))
@@ -181,8 +189,9 @@ export class UserCommand extends CommandUtils.PomeloCommand {
             )
             .setColor(Colors.Error),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
+      return;
     }
 
     const emojiName =
@@ -208,7 +217,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
         (error instanceof Error ? error.message : "Unknown error")
           .replaceAll("`", "\\`")
           .slice(0, EmbedLimits.MaximumFieldValueLength - 12) + "...";
-      return await interaction.followUp({
+      await interaction.followUp({
         embeds: [
           new EmbedUtils.EmbedConstructor()
             .setTitle(t(LanguageKeys.Errors.GenericError.title))
@@ -218,8 +227,9 @@ export class UserCommand extends CommandUtils.PomeloCommand {
               `\`\`\`js${errMessage}\`\`\``
             ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
+      return;
     }
 
     await interaction.followUp({
@@ -234,7 +244,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
           .setColor(Colors.Success)
           .setThumbnail(clone.imageURL()),
       ],
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
