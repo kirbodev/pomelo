@@ -18,6 +18,10 @@ import {
   type InteractionReplyOptions,
   type MessageReplyOptions,
   MessageFlags,
+  Guild,
+  type InteractionReplyOptions,
+  type MessageReplyOptions,
+  MessageFlags,
 } from "discord.js";
 import { db } from "../db/index.js";
 import { eq } from "drizzle-orm";
@@ -26,6 +30,10 @@ import { nanoid } from "nanoid";
 import EmbedUtils from "./embedUtils.js";
 import ComponentUtils from "./componentUtils.js";
 import { Colors } from "../lib/colors.js";
+import {
+  UserError,
+  type Args,
+  type DetailedDescriptionCommandObject,
 import {
   UserError,
   type Args,
@@ -40,10 +48,27 @@ import { config } from "../config.js";
 import type { z } from "zod";
 import handler from "../handlers/commandDeniedHandler.js";
 import { Subcommand } from "@sapphire/plugin-subcommands";
+import type { z } from "zod";
+import handler from "../handlers/commandDeniedHandler.js";
+import { Subcommand } from "@sapphire/plugin-subcommands";
 
 export type OTPConfirmationResponse = {
   allowed: boolean;
   dev: Dev | null;
+};
+
+export enum PomeloReplyType {
+  Success,
+  Error,
+  Sensitive,
+}
+
+export type PomeloReplyOptions = {
+  type: PomeloReplyType;
+};
+
+type PomeloErrorOptions = Partial<UserError.Options> & {
+  error: keyof typeof LanguageKeyValues.Errors;
 };
 
 export enum PomeloReplyType {
@@ -100,6 +125,7 @@ export default class CommandUtils extends Utility {
   }
 
   public async getCommandName(command: AnyInteractableInteraction | Message) {
+  public async getCommandName(command: AnyInteractableInteraction | Message) {
     if (command instanceof Message) {
       const prefix = [
         ...((await this.container.client.fetchPrefix(command)) ?? []),
@@ -142,7 +168,24 @@ export default class CommandUtils extends Utility {
     }
     return result;
   }
+  }
 
+  public async getUserSettings(
+    user: User | string
+  ): Promise<z.infer<typeof UserSettings> | null> {
+    const userId = typeof user === "string" ? user : user.id;
+    const settings = await this.container.redis.jsonGet(userId, "UserSettings");
+    return settings;
+  }
+
+  public async getGuildSettings(guild: Guild | string) {
+    const guildId = typeof guild === "string" ? guild : guild.id;
+    const settings = await this.container.redis.jsonGet(
+      guildId,
+      "GuildSettings"
+    );
+    return settings;
+  }
   public async getUserSettings(
     user: User | string
   ): Promise<z.infer<typeof UserSettings> | null> {
@@ -223,7 +266,43 @@ export default class CommandUtils extends Utility {
       ])
       .setColor(Colors.Error)
       .setTimestamp();
+  public async sendSyntaxError(
+    interaction: AnyInteractableInteraction | Message,
+    command: Command
+  ) {
+    const t = await fetchT(interaction);
+    const desc =
+      command.detailedDescription as DetailedDescriptionCommandObject;
+    const prefix = this.container.client.options.defaultPrefix as string;
+    const examples = desc.examples
+      .map((ex) => `${prefix}${this.name} ${ex}`)
+      .join("\n");
+    const syntax = `${prefix}${this.name} ${desc.syntax}`;
+    const embed = new EmbedUtils.EmbedConstructor()
+      .setTitle(t(LanguageKeys.Errors.SyntaxError.title))
+      .setDescription(t(LanguageKeys.Errors.SyntaxError.desc))
+      .setFields([
+        {
+          name: t(LanguageKeys.Errors.SyntaxError.syntaxFieldTitle),
+          value: `\`\`\`${syntax}\`\`\``,
+        },
+        {
+          name: t(LanguageKeys.Errors.SyntaxError.exampleFieldTitle),
+          value: examples,
+        },
+      ])
+      .setColor(Colors.Error)
+      .setTimestamp();
 
+    // type issues in discord.js
+    if (
+      interaction instanceof ModalSubmitInteraction ||
+      interaction instanceof ButtonInteraction ||
+      interaction instanceof StringSelectMenuInteraction
+    ) {
+      await this.reply(
+        interaction,
+        {
     // type issues in discord.js
     if (
       interaction instanceof ModalSubmitInteraction ||
@@ -243,6 +322,15 @@ export default class CommandUtils extends Utility {
       await this.reply(
         interaction,
         {
+        },
+        {
+          type: PomeloReplyType.Error,
+        }
+      );
+    } else if (interaction instanceof Message) {
+      await this.reply(
+        interaction,
+        {
           embeds: [embed],
         },
         {
@@ -253,7 +341,24 @@ export default class CommandUtils extends Utility {
       await this.reply(
         interaction,
         {
+        },
+        {
+          type: PomeloReplyType.Error,
+        }
+      );
+    } else {
+      await this.reply(
+        interaction,
+        {
           embeds: [embed],
+          flags: MessageFlags.Ephemeral,
+        },
+        {
+          type: PomeloReplyType.Error,
+        }
+      );
+    }
+  }
           flags: MessageFlags.Ephemeral,
         },
         {
@@ -524,6 +629,7 @@ export default class CommandUtils extends Utility {
         await interaction.reply({
           embeds: [embed],
           flags: MessageFlags.Ephemeral,
+          flags: MessageFlags.Ephemeral,
         });
         return null;
       }
@@ -537,6 +643,7 @@ export default class CommandUtils extends Utility {
             .setTimestamp();
           await interaction.reply({
             embeds: [embed],
+            flags: MessageFlags.Ephemeral,
             flags: MessageFlags.Ephemeral,
           });
           return null;
