@@ -51,7 +51,7 @@
   },
   "afklink": {
     "commandName": "afklink",
-    "commandDescription": "Collega il tuo calendario di Google per permettere a Pomelo di impostare automaticamente lo stato AFK quando sei occupato.",
+    "commandDescription": "Collega il tuo calendario per impostare automaticamente il tuo stato AFK quando sei occupato.",
     "title": "Collega il calendario di Google",
     "desc": "Clicca sul pulsante sottostante per collegare il tuo calendario di Google. Una volta collegato il calendario, clicca su ID di collegamento. Ti verrà richiesto un codice di collegamento.",
     "button": "Collega",
