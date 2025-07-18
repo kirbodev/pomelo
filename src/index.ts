@@ -32,7 +32,6 @@ Sentry.init({
     Sentry.dedupeIntegration(),
     Sentry.extraErrorDataIntegration(),
     Sentry.functionToStringIntegration(),
-    Sentry.modulesIntegration(),
     Sentry.onUncaughtExceptionIntegration(),
     Sentry.onUnhandledRejectionIntegration(),
     Sentry.requestDataIntegration(),
