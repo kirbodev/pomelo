@@ -17,25 +17,15 @@ import { fallbackLanguage } from "./lib/i18n/utils.js";
 
 // Init sentry
 
+const integrations = Sentry.getDefaultIntegrations({}).filter((integration) => integration.name !== 'Http')
+
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 1.0,
   // debug: !!process.env.DEV,
   enabled: !process.env.DEV,
   environment: process.env.DEV ? "development" : "production",
-  integrations: [
-    Sentry.captureConsoleIntegration({
-      levels: ["error"],
-    }),
-    Sentry.consoleIntegration(),
-    Sentry.contextLinesIntegration(),
-    Sentry.dedupeIntegration(),
-    Sentry.extraErrorDataIntegration(),
-    Sentry.functionToStringIntegration(),
-    Sentry.onUncaughtExceptionIntegration(),
-    Sentry.onUnhandledRejectionIntegration(),
-    Sentry.requestDataIntegration(),
-  ],
+  integrations
 });
 
 // Modify container
