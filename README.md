@@ -44,6 +44,11 @@ Pomelo's stack is a bit different from the meta. It uses a dual-database system,
 
 It's also built using Sapphire, a modern framework for Discord bots. It's built on top of Discord.js and provides a lot of features out of the box, such as i18n, pagination, and more.
 
+## Run it yourself
+
+You'll need Bun. Clone the repository and run `bun install` and `bun run dev`.
+You'll also need to create a valid .env file. You can find an example in .env.example.
+
 ## Use of Artificial Intelligence
 
 AI was used to generate some of the code in this project. Mainly using Windsurf for autocomplete and some refactoring, and Claude for some code generation. Either way, all AI generated code was double-checked (and probably re-written tbh).

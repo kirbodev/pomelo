@@ -7,10 +7,13 @@
   "scripts": {
     "test": "jest",
     "build": "swc -f ./src/**/* ./package.json -d dist -D --sync",
+    "build:linux": "swc ./src ./package.json -d dist -D",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "start": "bun --env-file=.env.local run ./dist/src/index.js",
     "start:full": "bun run build && bun run start",
+    "start:prod": "bun run build && bun run ./dist/src/index.js",
+    "start:linux": "bun run build:linux && bun run ./dist/src/index.js",
     "dev": "bun run scripts/chokidar.js",
     "sentry:sourcemaps": "sentry-cli sourcemaps inject --org pomelo-ik --project pomelo ./dist && sentry-cli sourcemaps upload --org pomelo-ik --project pomelo ./dist",
     "db:studio": "drizzle-kit studio",
