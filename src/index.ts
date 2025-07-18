@@ -19,14 +19,17 @@ import { fallbackLanguage } from "./lib/i18n/utils.js";
 
 const integrations = Sentry.getDefaultIntegrations({}).filter((integration) => integration.name !== 'Http')
 
-Sentry.init({
+const sentryClient = new Sentry.BunClient({
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 1.0,
   // debug: !!process.env.DEV,
   enabled: !process.env.DEV,
+  transport: Sentry.makeFetchTransport,
+  stackParser: Sentry.defaultStackParser,
   environment: process.env.DEV ? "development" : "production",
   integrations
 });
+sentryClient.init();
 
 // Modify container
 
