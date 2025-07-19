@@ -48,7 +48,6 @@ export class LookForMentionsListener extends Listener {
     for (const mention of mentions) {
       const afk = await this.container.redis.jsonGet(mention, "Afk");
       if (!afk) continue;
-      if (new Date(afk.endsAt ?? 0) < new Date()) continue;
       afks.set(mention, afk);
     }
 
