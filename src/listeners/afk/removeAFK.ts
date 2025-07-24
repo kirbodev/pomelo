@@ -145,7 +145,8 @@ export class RemoveAFKListener extends Listener {
 
     void response
       .awaitMessageComponent({
-        filter: (i) => i.customId === buttonId,
+        filter: (i) =>
+          i.customId === buttonId && i.user.id === message.author.id,
         componentType: ComponentType.Button,
         time:
           (guildSettings?.ephemeralDeletionTimeout ??
@@ -154,7 +155,7 @@ export class RemoveAFKListener extends Listener {
       .catch(() => null)
       .then(async (i) => {
         if (!i) return;
-        await this.handleButton(i, afkData, t, message.author.id);
+        await this.handleButton(i, afkData, t);
         void this.container.utilities.componentUtils.disableButtons(response);
       });
   }
@@ -162,10 +163,8 @@ export class RemoveAFKListener extends Listener {
   public async handleButton(
     interaction: ButtonInteraction,
     afkData: Afk,
-    t: TFunction,
-    userId: string
+    t: TFunction
   ) {
-    if (interaction.user.id !== userId) return;
     await interaction.deferReply({
       flags: MessageFlags.Ephemeral,
     });
