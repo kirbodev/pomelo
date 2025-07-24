@@ -1,23 +1,13 @@
 import { container, Events, Listener } from "@sapphire/framework";
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonInteraction,
-  ComponentType,
-  Message,
-  MessageFlags,
-} from "discord.js";
+import { ButtonInteraction, Message, MessageFlags } from "discord.js";
 import type { Afk } from "../../db/redis/schema.js";
 import EmbedUtils from "../../utilities/embedUtils.js";
 import { fetchT, type TFunction } from "@sapphire/plugin-i18next";
 import { LanguageKeys } from "../../lib/i18n/languageKeys.js";
 import ComponentUtils from "../../utilities/componentUtils.js";
-import {
-  MessageBuilder,
-  type AnyInteractableInteraction,
-} from "@sapphire/discord.js-utilities";
-import { DEFAULT_EPHEMERAL_DELETION_TIMEOUT } from "../../lib/helpers/constants.js";
+import { MessageBuilder } from "@sapphire/discord.js-utilities";
 import { convertToDiscordTimestamp } from "../../lib/helpers/timestamp.js";
+import { getAFKData, sendAFKEmbed } from "../../lib/helpers/afk.js";
 
 export class LookForMentionsListener extends Listener {
   public constructor(
@@ -46,7 +36,7 @@ export class LookForMentionsListener extends Listener {
 
     const afks = new Map<string, Afk>();
     for (const mention of mentions) {
-      const afk = await this.container.redis.jsonGet(mention, "Afk");
+      const afk = await getAFKData(mention);
       if (!afk) continue;
       afks.set(mention, afk);
     }
@@ -55,108 +45,6 @@ export class LookForMentionsListener extends Listener {
 
     return sendAFKEmbed(afks, message);
   }
-}
-
-export async function sendAFKEmbed(
-  afks: Map<string, Afk>,
-  message: Message | AnyInteractableInteraction,
-  withButton = true,
-  deleteMsg = true
-) {
-  if (!(message instanceof Message)) {
-    if (!message.inGuild()) return;
-  }
-  const guildSettings = message.guildId
-    ? await container.redis.jsonGet(message.guildId, "GuildSettings")
-    : null;
-
-  const ephemeralBtn = new ComponentUtils.EphemeralButton();
-  const ephemeralRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    ephemeralBtn
-  );
-
-  const t = await fetchT(message);
-
-  const users = Array.from(afks.keys());
-
-  const description =
-    users.length > 1
-      ? t(LanguageKeys.Commands.Utility.Afk.activeDescription_multiple, {
-          users: users
-            .slice(0, -1)
-            .map((user) => `<@${user}>`)
-            .join(", "),
-          last_user: `<@${users[users.length - 1]}>`,
-        })
-      : t(LanguageKeys.Commands.Utility.Afk.activeDescription, {
-          user: `<@${users[0]}>`,
-        });
-
-  const summary = new EmbedUtils.EmbedConstructor()
-    .setTitle(t(LanguageKeys.Commands.Utility.Afk.activeTitle))
-    .setDescription(description);
-
-  let messageAttachment;
-  if (afks.size === 1) {
-    const afk = Array.from(afks.values())[0];
-    if (afk.text)
-      summary.addField(
-        t(LanguageKeys.Commands.Utility.Afk.activeReason),
-        afk.text
-      );
-    if (afk.attachment) {
-      messageAttachment = afk.attachment;
-      summary.setThumbnail(afk.attachment);
-    }
-    if (afk.endsAt) {
-      summary.addField(
-        t(LanguageKeys.Commands.Utility.Afk.activeUntil),
-        convertToDiscordTimestamp(new Date(afk.endsAt).getTime(), "f")
-      );
-    }
-  }
-
-  const args = {
-    embeds: [summary],
-    components: withButton ? [ephemeralRow] : [],
-    files: messageAttachment ? [messageAttachment] : undefined,
-  };
-  const response =
-    message instanceof Message
-      ? await message.reply(args)
-      : message.deferred || message.replied
-      ? await message.editReply(args)
-      : await (await message.reply(args)).fetch();
-
-  const timeToDelete =
-    (guildSettings?.ephemeralDeletionTimeout ??
-      DEFAULT_EPHEMERAL_DELETION_TIMEOUT) * 1000;
-
-  if (withButton) {
-    const interacted = new Map<
-      string,
-      InstanceType<typeof ComponentUtils.MenuPaginatedMessage>
-    >();
-    response.channel
-      .createMessageComponentCollector({
-        componentType: ComponentType.Button,
-        filter: (interaction) =>
-          interaction.isButton() &&
-          interaction.customId === ephemeralBtn.customId,
-        time: timeToDelete,
-      })
-      .on("collect", (btn) => {
-        void handleButton(btn, afks, interacted);
-      });
-  }
-
-  if (deleteMsg) {
-    setTimeout(() => {
-      void response.delete().catch();
-    }, timeToDelete);
-  }
-
-  return response;
 }
 
 export async function handleButton(

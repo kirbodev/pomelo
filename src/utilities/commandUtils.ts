@@ -18,6 +18,7 @@ import {
   type InteractionReplyOptions,
   type MessageReplyOptions,
   MessageFlags,
+  InteractionResponse,
 } from "discord.js";
 import { db } from "../db/index.js";
 import { eq } from "drizzle-orm";
@@ -40,6 +41,7 @@ import { config } from "../config.js";
 import type { z } from "zod";
 import handler from "../handlers/commandDeniedHandler.js";
 import { Subcommand } from "@sapphire/plugin-subcommands";
+import { objectKeys } from "@sapphire/utilities";
 
 export type OTPConfirmationResponse = {
   allowed: boolean;
@@ -133,9 +135,7 @@ export default class CommandUtils extends Utility {
   public getPermissionNames(permissions: PermissionsBitField): string[] {
     const result = [];
 
-    for (const perm of Object.keys(PermissionsBitField.Flags)) {
-      //@ts-expect-error - TS doesn't like this but it's fine
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    for (const perm of objectKeys(PermissionsBitField.Flags)) {
       if (permissions.has(PermissionsBitField.Flags[perm])) {
         result.push(perm);
       }
@@ -182,8 +182,8 @@ export default class CommandUtils extends Utility {
   ) {
     const error: UserError = {
       name: "UserError",
-      message: "???",
-      context: {},
+      message: rawError.message ?? "???",
+      context: rawError.context ?? {},
       // identifier is typed as string but could be undefined (?)
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       identifier: rawError.error ?? "",
@@ -274,9 +274,13 @@ export default class CommandUtils extends Utility {
       ? MessageReplyOptions
       : InteractionReplyOptions,
     pomeloOptions: PomeloReplyOptions
-  ) {
-    if (interaction instanceof Message)
-      return await interaction.reply(generalOptions as MessageReplyOptions);
+  ): Promise<T extends Message ? Message : InteractionResponse> {
+    if (interaction instanceof Message) {
+      const message = await interaction.reply(
+        generalOptions as MessageReplyOptions
+      );
+      return message as T extends Message ? Message : never;
+    }
     const options = generalOptions as InteractionReplyOptions;
     const settings = await this.getUserSettings(interaction.user);
     const guildSettings = interaction.guild
@@ -295,17 +299,19 @@ export default class CommandUtils extends Utility {
     //NOTE - Announcements should be injected here
 
     if (interaction.deferred || interaction.replied)
-      return await interaction.editReply({
+      return (await interaction.editReply({
         ...replyOptions,
         flags: undefined,
-      });
+      })) as T extends Message ? Message : never;
     if (interaction.isMessageComponent())
-      return await interaction.update({
+      return (await interaction.update({
         ...replyOptions,
         flags: undefined,
-      });
+      })) as T extends Message ? never : InteractionResponse;
 
-    return await interaction.reply(replyOptions);
+    return (await interaction.reply(replyOptions)) as T extends Message
+      ? never
+      : InteractionResponse;
   }
 
   static PomeloCommand = class PomeloCommand extends Command {

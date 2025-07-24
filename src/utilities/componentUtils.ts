@@ -315,9 +315,7 @@ export default class ComponentUtils extends Utility {
           components: filteredComponents,
           flags: MessageFlags.Ephemeral,
         })
-        .catch((e: unknown) => {
-          console.error(e);
-        });
+        .catch(() => null);
     }
   };
 

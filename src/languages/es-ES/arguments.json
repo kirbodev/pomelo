@@ -10,5 +10,6 @@
   "user": "usuario",
   "channel": "canal",
   "role": "rol",
-  "message": "mensaje"
+  "message": "mensaje",
+  "attachment": "adjunto"
 }

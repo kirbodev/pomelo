@@ -15,7 +15,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
-      enabled: false,
+      //enabled: false,
       description: "Check the bot's latency and other useful information.",
       requiredClientPermissions: [PermissionFlagsBits.EmbedLinks],
       detailedDescription: {
@@ -59,6 +59,8 @@ export class UserCommand extends CommandUtils.PomeloCommand {
     const ws = interaction.client.ws.ping;
 
     const t = await fetchT(interaction);
+
+    void this.container.tasks.create("syncCalendar", 1000);
 
     await this.reply(
       interaction,

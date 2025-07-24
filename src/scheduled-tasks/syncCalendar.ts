@@ -6,6 +6,7 @@ import { getCalendar, getCalendarEvents } from "../lib/helpers/calendar.js";
 import { DateTime } from "luxon";
 import { convertToDiscordTimestamp } from "../lib/helpers/timestamp.js";
 import { Emojis } from "../lib/emojis.js";
+import { deleteAFKData, getAFKData } from "../lib/helpers/afk.js";
 
 export class SyncCalendarTask extends ScheduledTask {
   public constructor(
@@ -93,6 +94,8 @@ export class SyncCalendarTask extends ScheduledTask {
             const lastModified = event.updated ? new Date(event.updated) : null;
 
             if (!existingEvent) {
+              // the event is marked as being "free"
+              if (event.transparency === "transparent") continue;
               if (startTime > now) {
                 const delay = startTime.getTime() - now.getTime();
                 if (delay > 0 && delay < 365 * 24 * 60 * 60 * 1000) {
@@ -149,6 +152,34 @@ export class SyncCalendarTask extends ScheduledTask {
               existingEvent.startTime.getTime() !== startTime.getTime() ||
               existingEvent.endTime.getTime() !== endTime.getTime()
             ) {
+              if (event.transparency === "transparent") {
+                if (existingEvent.taskId) {
+                  try {
+                    await this.container.tasks.delete(existingEvent.taskId);
+                  } catch (error) {
+                    this.container.logger.warn(
+                      `Failed to delete task ${existingEvent.taskId}:`,
+                      error
+                    );
+                  }
+                }
+
+                if (existingEvent.afkActive) {
+                  try {
+                    await deleteAFKData(acc.userId);
+                  } catch (error) {
+                    this.container.logger.warn(
+                      `Failed to delete AFK for user ${acc.userId}:`,
+                      error
+                    );
+                  }
+                }
+
+                await db
+                  .delete(syncedEvents)
+                  .where(eq(syncedEvents.eventId, existingEvent.eventId));
+              }
+
               const eventHasStarted = startTime <= now;
               const eventHasEnded = endTime <= now;
               const eventIsActive = eventHasStarted && !eventHasEnded;
@@ -167,7 +198,7 @@ export class SyncCalendarTask extends ScheduledTask {
 
                 if (existingEvent.afkActive) {
                   try {
-                    await this.container.redis.jsonDel(acc.userId, "Afk");
+                    await deleteAFKData(acc.userId);
                   } catch (error) {
                     this.container.logger.warn(
                       `Failed to delete AFK for user ${acc.userId}:`,
@@ -219,7 +250,7 @@ export class SyncCalendarTask extends ScheduledTask {
                   try {
                     await this.container.tasks.delete(existingEvent.taskId);
                   } catch (error) {
-                    console.warn(
+                    this.container.logger.warn(
                       `Failed to delete task ${existingEvent.taskId}:`,
                       error
                     );
@@ -265,7 +296,7 @@ export class SyncCalendarTask extends ScheduledTask {
 
                 if (existingEvent.afkActive) {
                   try {
-                    await this.container.redis.jsonDel(acc.userId, "Afk");
+                    await deleteAFKData(acc.userId);
                   } catch (error) {
                     this.container.logger.warn(
                       `Failed to delete AFK for user ${acc.userId}:`,
@@ -304,7 +335,7 @@ export class SyncCalendarTask extends ScheduledTask {
 
               if (existingEvent.afkActive) {
                 try {
-                  await this.container.redis.jsonDel(acc.userId, "Afk");
+                  await deleteAFKData(acc.userId);
                 } catch (error) {
                   this.container.logger.warn(
                     `Failed to delete AFK for user ${acc.userId}:`,
@@ -339,7 +370,7 @@ export class SyncCalendarTask extends ScheduledTask {
     newEndTime: Date,
     newStartTime: Date
   ) {
-    const currentAfk = await this.container.redis.jsonGet(userId, "Afk");
+    const currentAfk = await getAFKData(userId);
     if (!currentAfk) return;
 
     await this.container.redis.jsonSet(userId, "Afk", {

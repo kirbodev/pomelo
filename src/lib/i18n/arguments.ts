@@ -16,4 +16,5 @@ export default {
   Channel: T("arguments:channel"),
   Role: T("arguments:role"),
   Message: T("arguments:message"),
+  Attachment: T("arguments:attachment"),
 } as CapitalizedObjectKeys<typeof args>;

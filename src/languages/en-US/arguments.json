@@ -12,5 +12,6 @@
   "user": "user",
   "channel": "channel",
   "role": "role",
-  "message": "message"
+  "message": "message",
+  "attachment": "attachment"
 }

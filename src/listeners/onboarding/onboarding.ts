@@ -9,6 +9,9 @@ import {
 import EmbedUtils from "../../utilities/embedUtils.js";
 import { LanguageKeys } from "../../lib/i18n/languageKeys.js";
 import { Colors } from "../../lib/colors.js";
+import { GuildSettings } from "../../db/redis/schema.js";
+import { fallbackLanguage } from "../../lib/i18n/utils.js";
+import type z from "zod";
 
 export class OnboardingListener extends Listener {
   public constructor(
@@ -29,6 +32,11 @@ export class OnboardingListener extends Listener {
       "GuildSettings"
     );
     if (settings) return;
+
+    const newSettings = GuildSettings.parse({
+      locale: fallbackLanguage(guild.preferredLocale),
+    } as z.infer<typeof GuildSettings>);
+    await this.container.redis.jsonSet(guild.id, "GuildSettings", newSettings);
 
     const t = await fetchT(guild);
     const updateChannel = await OnboardingListener.findModChannel(guild);

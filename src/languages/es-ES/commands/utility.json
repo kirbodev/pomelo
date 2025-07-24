@@ -52,7 +52,20 @@
     "removeTitle": "AFK Removido",
     "removeDescription": "Has dejado de estar AFK. Has estado AFK durante {{time}}.",
     "removeTip": "Puedes detenerlo añadiendo --afk a tu mensaje.",
-    "blockedAfk": "No puedes mencionar a ese usuario porque está AFK."
+    "blockedAfk": "No puedes mencionar a ese usuario porque está AFK.",
+    "recommended": [
+      "Vuelvo en un rato",
+      "Durmiendo",
+      "En clase",
+      "En el trabajo",
+      "Manejando",
+      "En el gym",
+      "Estudiando",
+      "Descansando",
+      "De compras",
+      "Con amigos",
+      "Jugando"
+    ]
   },
   "afklink": {
     "commandName": "afklink",

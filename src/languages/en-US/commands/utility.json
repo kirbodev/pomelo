@@ -52,7 +52,22 @@
     "removeTitle": "AFK Removed",
     "removeDescription": "You are no longer AFK. You were AFK for {{time}}.",
     "removeTip": "You can stop this by suffixing your message with --afk",
-    "blockedAfk": "You cannot ping that user because they're AFK."
+    "blockedAfk": "You cannot ping that user because they're AFK.",
+    "recommended": [
+      "Be back soon",
+      "Sleeping",
+      "At school",
+      "At work",
+      "Driving",
+      "At the gym",
+      "Studying",
+      "Getting stuff done",
+      "Resting",
+      "Shopping",
+      "Running errands",
+      "Out with friends",
+      "Playing games"
+    ]
   },
   "afklink": {
     "commandName": "afklink",
@@ -73,5 +88,14 @@
     "contextName": "Get AFK",
     "userFieldName": "user",
     "userFieldDescription": "The user to get the afk status of"
+  },
+  "afkremove": {
+    "commandName": "afkremove",
+    "commandDescription": "Remove a user's afk status",
+    "contextName": "Remove AFK",
+    "userFieldName": "user",
+    "userFieldDescription": "The user to remove the afk status of",
+    "desc": "Removed {{user}}'s AFK status.",
+    "autoStatusNote": "An automatic AFK status is also active. You will need to re-run the command if you wish to remove it."
   }
 }

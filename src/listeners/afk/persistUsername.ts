@@ -1,5 +1,6 @@
 import { Events, Listener } from "@sapphire/framework";
 import type { GuildMember } from "discord.js";
+import { getAFKData } from "../../lib/helpers/afk.js";
 
 export class PersistUsernameListener extends Listener {
   public constructor(
@@ -17,7 +18,7 @@ export class PersistUsernameListener extends Listener {
     if (!oldMember.nickname?.startsWith("[AFK] ")) return;
     if (member.nickname?.startsWith("[AFK] ")) return;
 
-    const afkData = await this.container.redis.jsonGet(member.id, "Afk");
+    const afkData = await getAFKData(member.id);
     if (!afkData) return;
 
     if (afkData.endsAt && afkData.endsAt.getTime() > Date.now()) return;

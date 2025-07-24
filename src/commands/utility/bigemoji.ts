@@ -10,7 +10,7 @@ import {
   PermissionsBitField,
 } from "discord.js";
 import CommandUtils from "../../utilities/commandUtils.js";
-import { EmbedLimits, TwemojiRegex } from "@sapphire/discord-utilities";
+import { TwemojiRegex } from "@sapphire/discord-utilities";
 import { Colors } from "../../lib/colors.js";
 import type { PaginatedMessageActionContext } from "@sapphire/discord.js-utilities";
 import { fetchT } from "@sapphire/plugin-i18next";
@@ -83,6 +83,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       void this.sendSyntaxError(message);
       return null;
     });
+    console.log(emojis);
     if (!emojis) return;
     await this.execute(message, emojis);
   }
@@ -173,23 +174,13 @@ export class UserCommand extends CommandUtils.PomeloCommand {
         PermissionFlagsBits.ManageGuildExpressions
       )
     ) {
-      await interaction.followUp({
-        embeds: [
-          new EmbedUtils.EmbedConstructor()
-            .setTitle(t(LanguageKeys.Errors.BotMissingPermission.title))
-            .setDescription(
-              t(LanguageKeys.Errors.BotMissingPermission.desc_detailed, {
-                permission:
-                  this.container.utilities.commandUtils.getPermissionNames(
-                    new PermissionsBitField(
-                      PermissionFlagsBits.CreateGuildExpressions
-                    )
-                  ),
-              })
-            )
-            .setColor(Colors.Error),
-        ],
-        flags: MessageFlags.Ephemeral,
+      void this.error(interaction, this, {
+        error: "MissingPermission",
+        context: {
+          permission: this.container.utilities.commandUtils.getPermissionNames(
+            new PermissionsBitField(PermissionFlagsBits.CreateGuildExpressions)
+          ),
+        },
       });
       return;
     }
@@ -213,21 +204,11 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       });
 
     if (!clone) {
-      const errMessage =
-        (error instanceof Error ? error.message : "Unknown error")
-          .replaceAll("`", "\\`")
-          .slice(0, EmbedLimits.MaximumFieldValueLength - 12) + "...";
-      await interaction.followUp({
-        embeds: [
-          new EmbedUtils.EmbedConstructor()
-            .setTitle(t(LanguageKeys.Errors.GenericError.title))
-            .setDescription(t(LanguageKeys.Errors.GenericError.desc))
-            .addField(
-              t(LanguageKeys.Errors.GenericError.field1.title),
-              `\`\`\`js${errMessage}\`\`\``
-            ),
-        ],
-        flags: MessageFlags.Ephemeral,
+      void this.error(interaction, this, {
+        error: "GenericError",
+        context: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
       });
       return;
     }

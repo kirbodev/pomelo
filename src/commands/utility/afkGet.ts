@@ -13,7 +13,7 @@ import {
   applyNameLocalizedBuilder,
 } from "@sapphire/plugin-i18next";
 import { getOptionLocalizations } from "../../lib/i18n/utils.js";
-import { sendAFKEmbed } from "../../listeners/afk/lookForMentions.js";
+import { getAFKData, sendAFKEmbed } from "../../lib/helpers/afk.js";
 import { ApplicationIntegrationType } from "discord.js";
 
 export class AfkGetCommand extends CommandUtils.PomeloCommand {
@@ -97,8 +97,8 @@ export class AfkGetCommand extends CommandUtils.PomeloCommand {
       | Message,
     userId: string
   ) {
-    const afkData = await this.container.redis.jsonGet(userId, "Afk");
-    if (!afkData || new Date(afkData.endsAt ?? 0) < new Date()) {
+    const afkData = await getAFKData(userId);
+    if (!afkData) {
       void this.error(interaction, this, {
         error: "NotAFK",
       });

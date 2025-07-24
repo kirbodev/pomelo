@@ -1,8 +1,6 @@
 import { ScheduledTask } from "@sapphire/plugin-scheduled-tasks";
 import type { Account } from "../db/schema.js";
-import { convertToDiscordTimestamp } from "../lib/helpers/timestamp.js";
-import { Emojis } from "../lib/emojis.js";
-import { AfkCommand } from "../commands/utility/afk.js";
+import { createAutoAFKMessage, setAfk } from "../lib/helpers/afk.js";
 
 export class AfkCalendarTask extends ScheduledTask {
   public constructor(
@@ -36,27 +34,12 @@ export class AfkCalendarTask extends ScheduledTask {
     const startTime = new Date(data.startTime);
     const endTime = new Date(data.endTime);
 
-    await AfkCommand.setAfk(data.userId, {
+    await setAfk(`${data.userId}AUTO`, {
       startedAt: startTime,
       endsAt: endTime,
-      text: AfkCalendarTask.createAutoAFKMessage(startTime, endTime),
+      text: createAutoAFKMessage(startTime, endTime),
       eventId: data.eventId,
     });
-  }
-
-  static createAutoAFKMessage(newStartTime: Date, newEndTime: Date) {
-    const startTime = newStartTime.getTime();
-    const endTime = newEndTime.getTime();
-    const timeOverflow = endTime - startTime;
-    let longTime = false;
-    if (timeOverflow > 24 * 60 * 60 * 1000) {
-      longTime = true;
-    }
-
-    return `${Emojis.Automatic} ${convertToDiscordTimestamp(
-      startTime,
-      longTime ? "f" : "t"
-    )} - ${convertToDiscordTimestamp(endTime, longTime ? "f" : "t")}`;
   }
 }
 

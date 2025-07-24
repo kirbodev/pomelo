@@ -44,4 +44,8 @@ export function FT<TArgs, TReturn = string>(
   return k as TypedFT<TArgs, TReturn>;
 }
 
+export function ArrayT<T>(k: string): Array<T> {
+  return k as unknown as Array<T>;
+}
+
 export type NullPartial<T> = { [P in keyof T]?: T[P] | null };

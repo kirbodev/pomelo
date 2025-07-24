@@ -220,4 +220,9 @@ export default {
     title: T("errors:notAFK.title"),
     desc_detailed: T("errors:notAFK.desc_detailed"),
   },
+  NotInGuild: {
+    desc: T("errors:notInGuild.desc"),
+    title: T("errors:notInGuild.title"),
+    desc_detailed: T("errors:notInGuild.desc_detailed"),
+  },
 } as CapitalizedObjectKeys<typeof errors>;

@@ -1,4 +1,4 @@
-import { FT, T, type CapitalizedObjectKeys } from "../../types/utils.js";
+import { ArrayT, FT, T, type CapitalizedObjectKeys } from "../../types/utils.js";
 import utility from "../../../languages/en-US/commands/utility.json" with { type: "json" };
 
 export default {
@@ -70,7 +70,8 @@ export default {
     removeTitle: T("commands/utility:afk.removeTitle"),
     removeDescription: T("commands/utility:afk.removeDescription"),
     removeTip: T("commands/utility:afk.removeTip"),
-    blockedAfk: T("commands/utility:afk.blockedAfk")
+    blockedAfk: T("commands/utility:afk.blockedAfk"),
+    recommended: ArrayT<string>("commands/utility:afk.recommended"),
   },
   Afklink: {
     commandName: T("commands/utility:afklink.commandName"),
@@ -91,5 +92,14 @@ export default {
     contextName: T("commands/utility:afkget.contextName"),
     userFieldName: T("commands/utility:afkget.userFieldName"),
     userFieldDescription: T("commands/utility:afkget.userFieldDescription"),
+  },
+  Afkremove: {
+    commandName: T("commands/utility:afkremove.commandName"),
+    commandDescription: T("commands/utility:afkremove.commandDescription"),
+    contextName: T("commands/utility:afkremove.contextName"),
+    userFieldName: T("commands/utility:afkremove.userFieldName"),
+    userFieldDescription: T("commands/utility:afkremove.userFieldDescription"),
+    desc: T("commands/utility:afkremove.desc"),
+    autoStatusNote: T("commands/utility:afkremove.autoStatusNote"),
   },
 } as CapitalizedObjectKeys<typeof utility>;

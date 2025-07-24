@@ -1,6 +1,6 @@
 {
   "genericError": {
-    "title": "🤔 Something went wrong",
+    "title": "<:pomerror:1397677382214615161> Something went wrong",
     "desc": "Sorry! Something went wrong. That's all we know.",
     "desc_detailed": "Sorry! Something went wrong. That's all we know.",
     "field1": {
@@ -8,184 +8,189 @@
     }
   },
   "serverError": {
-    "title": "😓 Server Error",
+    "title": "<:servererror:1397678354039312424> Server Error",
     "desc": "Sorry! Something went wrong on our end.",
     "desc_detailed": "Sorry! Something went wrong on our end."
   },
   "userError": {
-    "title": "🤔 That doesn't look right",
+    "title": "<:confused:1397678924011409542> That doesn't look right",
     "desc": "Looks like you've done something wrong.",
     "desc_detailed": "Looks like you've done something wrong."
   },
   "syntaxError": {
-    "title": "🤔 That doesn't look right",
+    "title": "<:confused:1397678924011409542> That doesn't look right",
     "desc": "The correct syntax for that command is:",
     "desc_detailed": "The correct syntax for that command is:",
     "syntaxFieldTitle": "Syntax",
     "exampleFieldTitle": "Example(s)"
   },
   "notFound": {
-    "title": "🔍 Not Found",
+    "title": "<:searchoff:1397680383641911418> Not Found",
     "desc": "I couldn't find what you were looking for.",
     "desc_detailed": "I couldn't find the {{resource}} you were looking for."
   },
   "blocked": {
-    "title": "🚫 Blocked",
+    "title": "<:block:1397680563040817152> Blocked",
     "desc": "You're blocked from performing that action.",
     "desc_detailed": "You're blocked from performing that action for: {{reason}}."
   },
   "invalidLocation": {
-    "title": "😶‍🌫️ You can't use that here",
+    "title": "<:wronglocation:1397680782876606584> You can't use that here",
     "desc": "That action can't be used here.",
     "desc_detailed": "That action can't be used in here, use it in {{location}}."
   },
   "userCooldown": {
-    "title": "⏳ Slow down!",
+    "title": "<:hourglass:1397681368439193620> Slow down!",
     "desc": "You're doing that too fast.",
     "desc_detailed": "You're doing that too fast. Please wait {{time}} before trying again."
   },
   "guildCooldown": {
-    "title": "⏳ Slow down!",
+    "title": "<:hourglass:1397681368439193620> Slow down!",
     "desc": "That action has been done in this server recently.",
     "desc_detailed": "That action has been done in this server recently. Please wait {{time}} before trying again."
   },
   "userAuthority": {
-    "title": "👮 User Authority",
+    "title": "<:authority:1397687694108131419> User Authority",
     "desc": "The person you're trying to perform an action on has more authority than you.",
     "desc_detailed": "{{user}} has more authority than you. You can't perform that action."
   },
   "missingPermission": {
-    "title": "❌ Missing Permission",
+    "title": "<:permissions:1397681744181985331> Missing Permission",
     "desc": "You don't have permission to perform that action.",
     "desc_detailed": "You need {{permission}} to perform that action."
   },
   "botMissingPermission": {
-    "title": "🫤 Missing Permission",
+    "title": "<:permissions:1397681744181985331> Missing Permission",
     "desc": "I don't have permission to perform that action.",
     "desc_detailed": "I need {{permission}} to perform that action."
   },
   "wrongTarget": {
-    "title": "🎯 Wrong Target",
+    "title": "<:wrongperson:1397687936602079382> Wrong Target",
     "desc": "That's not for you.",
     "desc_detailed": "That's not for you. That's for {{target}}."
   },
   "devOnly": {
-    "title": "👨‍💻 Developer Only",
+    "title": "<:pomelo:1397688084858142802> Developer Only",
     "desc": "That feature is only available to developers.",
     "desc_detailed": "That feature is only available to developers."
   },
   "maintenanceMode": {
-    "title": "🛠️ Maintenance",
+    "title": "<:construction:1397688310335537202> Maintenance",
     "desc": "I'm currently in maintenance mode, features are temporarily paused. Try again later.",
     "desc_detailed": "My features are temporarily paused due to {{reason}}. Try again later."
   },
   "invalidBoolean": {
-    "title": "🔛 Invalid Boolean",
+    "title": "<:boolean:1397688720496525402> Invalid Boolean",
     "desc": "That's not a valid boolean. Try 'true' or 'false'.",
     "desc_detailed": "That's not a valid boolean. Try 'true' or 'false'."
   },
   "invalidNumber": {
-    "title": "🔢 Invalid Number",
+    "title": "<:number:1397688864897892423> Invalid Number",
     "desc": "That's not a valid number. Try a number.",
     "desc_detailed": "That's not a valid number. Try a number."
   },
   "invalidString": {
-    "title": "🔤 Invalid Text",
+    "title": "<:string:1397689028039675914> Invalid Text",
     "desc": "That's not a valid string. Try some text.",
     "desc_detailed": "That's not a valid string. Try a(n) {{string_type}}."
   },
   "invalidOption": {
-    "title": "⭕ Invalid Option",
+    "title": "<:block:1397680563040817152> Invalid Option",
     "desc": "That's not a valid option. Try one of the options.",
     "desc_detailed": "That's not a valid option. Try something like '{{option}}'."
   },
   "invalidChannel": {
-    "title": "📢 Invalid Channel",
+    "title": "<:block:1397680563040817152> Invalid Channel",
     "desc": "That's not a valid channel. Try something like '#channel' or '1234567890123456789'.",
     "desc_detailed": "That's not a valid channel. Try something like '#channel' or '1234567890123456789'."
   },
   "invalidRole": {
-    "title": "📢 Invalid Role",
+    "title": "<:block:1397680563040817152> Invalid Role",
     "desc": "That's not a valid role. Try something like '@role' or '1234567890123456789'.",
     "desc_detailed": "That's not a valid role. Try something like '@role' or '1234567890123456789'."
   },
   "invalidMention": {
-    "title": "📢 Invalid Mention",
+    "title": "<:block:1397680563040817152> Invalid Mention",
     "desc": "That's not a valid mention/user ID. Try something like '@person' or '1234567890123456789'.",
     "desc_detailed": "That's not a valid mention. Try something like '@person' or '1234567890123456789'."
   },
   "invalidDuration": {
-    "title": "⏱️ Invalid Duration",
+    "title": "<:hourglassoff:1397692063658545152> Invalid Duration",
     "desc": "That's not a valid duration. Try something like '10s' or '10m'.",
     "desc_detailed": "That's not a valid duration. Try something like '10s' or '10m'."
   },
   "durationTooLong": {
-    "title": "⏱️ Duration Too Long",
+    "title": "<:hourglassoff:1397692063658545152> Duration Too Long",
     "desc": "That's too long. Try something shorter.",
     "desc_detailed": "That's too long. Try something shorter than {{length}}."
   },
   "durationTooShort": {
-    "title": "⏱️ Duration Too Short",
+    "title": "<:hourglassoff:1397692063658545152> Duration Too Short",
     "desc": "That's too short. Try something longer.",
     "desc_detailed": "That's too short. Try something longer than {{length}}."
   },
   "stringTooLong": {
-    "title": "➕ String Too Long",
+    "title": "<:string:1397689028039675914> String Too Long",
     "desc": "That's too long. Try something shorter.",
     "desc_detailed": "That's too long. Try something shorter than {{length}} characters."
   },
   "stringTooShort": {
-    "title": "➖ String Too Short",
+    "title": "<:string:1397689028039675914> String Too Short",
     "desc": "That's too short. Try something longer.",
     "desc_detailed": "That's too short. Try something longer than {{length}} characters."
   },
   "numberTooLarge": {
-    "title": "➕ Number Too Large",
+    "title": "<:number:1397688864897892423> Number Too Large",
     "desc": "That number is too large. Try something smaller.",
     "desc_detailed": "That number is too large. Try something smaller than {{length}}."
   },
   "numberTooSmall": {
-    "title": "➖ Number Too Small",
+    "title": "<:number:1397688864897892423> Number Too Small",
     "desc": "That number is too small. Try something larger.",
     "desc_detailed": "That number is too small. Try something larger than {{length}}."
   },
   "invalidType": {
-    "title": "🔰 Invalid Type",
+    "title": "<:block:1397680563040817152> Invalid Type",
     "desc": "That's not what I was expecting.",
     "desc_detailed": "I was expecting a(n) {{expected}}, but I received {{received}}."
   },
   "invalidAttachment": {
-    "title": "📎 Invalid Attachment",
+    "title": "<:attachmenterror:1397690751680254042> Invalid Attachment",
     "desc": "That's not a valid attachment or not a supported file type.",
     "desc_detailed": "That's not a valid attachment or not a supported file type. Make sure it's one of the supported file types: `{{types}}`."
   },
+  "notInGuild": {
+    "title": "<:wronglocation:1397680782876606584> You can't use that here",
+    "desc": "That action is only available in a guild.",
+    "desc_detailed": "That action is only available in a guild."
+  },
   "fileTooLarge": {
-    "title": "📎 File Too Large",
+    "title": "<:attachmenterror:1397690751680254042> File Too Large",
     "desc": "That file is too large. Try something smaller.",
     "desc_detailed": "That file is too large. Try something smaller than {{length}}."
   },
   "noEmail": {
-    "title": "✉️ No Email",
+    "title": "<:noemail:1397690990399193128> No Email",
     "desc": "No email found for this account.",
     "desc_detailed": "No email found for this account."
   },
   "authError": {
-    "title": "🔐 Authentication Failed",
+    "title": "<:authentication:1397691368557645845> Authentication Failed",
     "desc": "Failed to authenticate.",
     "desc_detailed": "Failed to authenticate."
   },
   "noneFound": {
-    "title": "❌ None Found",
+    "title": "<:searchoff:1397680383641911418> None Found",
     "desc": "The resource(s) you were looking for couldn't be found.",
     "desc_detailed": "The {{resource}} you were looking for couldn't be found."
   },
   "missingScopes": {
-    "title": "❓ Missing Scopes",
+    "title": "<:pomwarning:1397677600012501042> Missing Scopes",
     "desc": "You need to grant all the required scopes to use this feature.",
     "desc_detailed": "You need to grant all the required scopes to use this feature."
   },
   "notAFK": {
-    "title": "❌ Not AFK",
+    "title": "<:clockerror:1397690377065988308> Not AFK",
     "desc": "That user is not AFK.",
     "desc_detailed": "That user is not AFK."
   }

@@ -17,6 +17,8 @@ import ms from "../lib/helpers/ms.js";
 import { extractVariables } from "../lib/i18n/utils.js";
 import { Message, MessageFlags, PermissionsBitField } from "discord.js";
 import { Colors } from "../lib/colors.js";
+import { trimTextSection } from "../lib/helpers/stringUtils.js";
+import { EmbedLimits } from "@sapphire/discord-utilities";
 
 type ErroredPayloads =
   | ChatInputCommandDeniedPayload
@@ -52,16 +54,21 @@ export default async function handler(
     );
     embed.setTitle(t(LanguageKeys.Errors.GenericError.title));
     embed.setDescription(t(LanguageKeys.Errors.GenericError.desc));
+    const msg = error.identifier || error.message || error.name || "???";
     embed.addField(
       t(LanguageKeys.Errors.GenericError.field1.title),
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      `\`${error.identifier || error.message || error.name || "???"}\``
+      `\`${trimTextSection(
+        msg,
+        0,
+        msg.length,
+        EmbedLimits.MaximumFieldValueLength - 12
+      )}\``
     );
   }
 
   const options = {
-    embeds: [embed]
-  }
+    embeds: [embed],
+  };
 
   if (interaction instanceof Message) {
     void interaction.reply(options);
@@ -70,14 +77,15 @@ export default async function handler(
 
   if (!interaction.deferred && !interaction.replied) {
     await interaction.deferReply({
-      flags: MessageFlags.Ephemeral
+      flags: MessageFlags.Ephemeral,
     });
   }
 
   void interaction.followUp({
-    ...options, ...{
-      flags: MessageFlags.Ephemeral
-    }
+    ...options,
+    ...{
+      flags: MessageFlags.Ephemeral,
+    },
   });
 }
 
@@ -97,24 +105,31 @@ function fillVariables(
     );
     return t(knownError.desc_detailed, { time: remaining });
   }
+  const providedPermission = Reflect.get(
+    error.context as object,
+    "permission"
+  ) as string;
   if (
     knownError === LanguageKeys.Errors.MissingPermission ||
     knownError === LanguageKeys.Errors.BotMissingPermission
   ) {
     if (
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      !payload.command?.options?.requiredUserPermissions ||
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      !payload.command?.options?.requiredClientPermissions
+      (!payload.command?.options?.requiredUserPermissions ||
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        !payload.command?.options?.requiredClientPermissions) &&
+      !providedPermission
     )
       return t(knownError.desc);
-    const missing = container.utilities.commandUtils.getPermissionNames(
-      new PermissionsBitField(
-        knownError === LanguageKeys.Errors.MissingPermission
-          ? payload.command.options.requiredUserPermissions
-          : payload.command.options.requiredClientPermissions
-      )
-    );
+    const missing = providedPermission
+      ? [providedPermission]
+      : container.utilities.commandUtils.getPermissionNames(
+          new PermissionsBitField(
+            knownError === LanguageKeys.Errors.MissingPermission
+              ? payload.command.options.requiredUserPermissions
+              : payload.command.options.requiredClientPermissions
+          )
+        );
     if (!missing.length) return t(knownError.desc);
     return t(knownError.desc_detailed, {
       permission: missing.map((p) => `\`${p}\``).join(", "),

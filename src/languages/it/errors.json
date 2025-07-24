@@ -1,6 +1,6 @@
 {
   "genericError": {
-    "title": "🤔 Qualcosa è andato storto",
+    "title": "<:pomerror:1397677382214615161> Qualcosa è andato storto",
     "desc": "Scusa! Qualcosa è andato storto. Quello é tutto quello che sappiamo.",
     "desc_detailed": "Scusa! Qualcosa è andato storto. Quello é tutto quello che sappiamo.",
     "field1": {
@@ -8,185 +8,184 @@
     }
   },
   "serverError": {
-    "title": "😓 Errore del server",
+    "title": "<:servererror:1397678354039312424> Errore del server",
     "desc": "Scusa! Qualcosa è andato storto sul nostro lato.",
     "desc_detailed": "Scusa! Qualcosa è andato storto sul nostro lato."
   },
   "userError": {
-    "title": "🤔 Non sembra giusto",
+    "title": "<:confused:1397678924011409542> Non sembra giusto",
     "desc": "Sembra che tu abbia fatto qualcosa sbagliato.",
     "desc_detailed": "Sembra che tu abbia fatto qualcosa sbagliato."
   },
   "syntaxError": {
-    "title": "🤔 Non sembra giusto",
+    "title": "<:confused:1397678924011409542> Non sembra giusto",
     "desc": "La sintassi corretta per quel comando è:",
     "desc_detailed": "La sintassi corretta per quel comando è:",
     "syntaxFieldTitle": "Sintassi",
     "exampleFieldTitle": "Esempio(i)"
   },
   "notFound": {
-    "title": "🔍 Non Trovato",
+    "title": "<:searchoff:1397680383641911418> Non Trovato",
     "desc": "Non ho trovato quello che stavi cercando.",
     "desc_detailed": "Non ho trovato il(i) {{resource}} che stavi cercando."
   },
   "blocked": {
-    "title": "🚫 Bloccato",
+    "title": "<:block:1397680563040817152> Bloccato",
     "desc": "Non puoi eseguire quell'azione.",
     "desc_detailed": "Non puoi eseguire quell'azione per: {{reason}}."
   },
   "invalidLocation": {
-    "title": "😶‍🌫️ Non puoi usare quell'azione qui",
+    "title": "<:wronglocation:1397680782876606584> Non puoi usare quell'azione qui",
     "desc": "Quell'azione non può essere usata qui.",
     "desc_detailed": "Quell'azione non può essere usata qui, usala in {{location}}."
   },
   "userCooldown": {
-    "title": "⏳ Rallenta un po'",
+    "title": "<:hourglass:1397681368439193620> Rallenta un po'",
     "desc": "Stai eseguendo quell'azione troppo velocemente.",
     "desc_detailed": "Stai eseguendo quell'azione troppo velocemente. Aspetta {{time}} prima di riprovare."
   },
   "guildCooldown": {
-    "title": "⏳ Rallenta un po'",
+    "title": "<:hourglass:1397681368439193620> Rallenta un po'",
     "desc": "Quell'azione è stata eseguita in questo server recentemente.",
     "desc_detailed": "Quell'azione è stata eseguita in questo server recentemente. Aspetta {{time}} prima di riprovare."
   },
   "userAuthority": {
-    "title": "👮 Quella persona ha più autorità",
+    "title": "<:authority:1397687694108131419> Quella persona ha più autorità",
     "desc": "La persona su cui stai cercando di eseguire un'azione ha più autorità di te.",
     "desc_detailed": "{{user}} ha più autorità di te. Non puoi eseguire quell'azione."
   },
   "missingPermission": {
-    "title": "❌ Permissioni mancanti",
+    "title": "<:permissions:1397681744181985331> Permissioni mancanti",
     "desc": "Non hai i permessi per eseguire quell'azione.",
     "desc_detailed": "Hai bisogno di {{permission}} per eseguire quell'azione."
   },
   "botMissingPermission": {
-    "title": "🫤 Permissioni mancanti",
+    "title": "<:permissions:1397681744181985331> Permissioni mancanti",
     "desc": "Non ho i permessi per eseguire quell'azione.",
     "desc_detailed": "Ho bisogno di {{permission}} per eseguire quell'azione."
   },
   "wrongTarget": {
-    "title": "🎯 Non è per te!",
+    "title": "<:wrongperson:1397687936602079382> Non è per te!",
     "desc": "Quello non è per te.",
     "desc_detailed": "Quello non è per te. È per {{target}}."
   },
   "devOnly": {
-    "title": "👨‍💻 Solo per sviluppatori",
+    "title": "<:pomelo:1397688084858142802> Solo per sviluppatori",
     "desc": "Quel commando è disponibile solo per i sviluppatori del bot.",
     "desc_detailed": "Quel commando è disponibile solo per i sviluppatori del bot."
   },
   "maintenanceMode": {
-    "title": "🛠️ Manutenzione",
+    "title": "<:construction:1397688310335537202> Manutenzione",
     "desc": "Le mie funzionalità sono temporaneamente sospese per manutenzione, riprova più tardi.",
     "desc_detailed": "Le mie funzionalità sono temporaneamente sospese a causa di {{reason}}. Riprova più tardi."
   },
   "invalidBoolean": {
-    "title": "🔛 Booleano non valido",
+    "title": "<:boolean:1397688720496525402> Booleano non valido",
     "desc": "Non è un valore booleano valido. ",
     "desc_detailed": "Non è un valore booleano valido. "
   },
   "invalidNumber": {
-    "title": "🔢 Numero non valido",
+    "title": "<:number:1397688864897892423> Numero non valido",
     "desc": "Non è un numero valido. ",
     "desc_detailed": "Non è un numero valido. "
   },
   "invalidString": {
-    "title": "🔤 Testo non valido",
+    "title": "<:string:1397689028039675914> Testo non valido",
     "desc": "Non è un testo valido. ",
     "desc_detailed": "Non è un testo valido. "
   },
   "invalidOption": {
-    "title": "⭕ Opzione non valida",
+    "title": "<:block:1397680563040817152> Opzione non valida",
     "desc": "Non è un'opzione valida. ",
     "desc_detailed": "Non è un'opzione valida. Prova qualcosa come '{{option}}'."
   },
   "invalidChannel": {
-    "title": "📢 Canale non valido",
+    "title": "<:block:1397680563040817152> Canale non valido",
     "desc": "Non è un canale valido. ",
     "desc_detailed": "Non è un canale valido. "
   },
   "invalidRole": {
-    "title": "📢 Ruolo non valido",
+    "title": "<:block:1397680563040817152> Ruolo non valido",
     "desc": "Non è un ruolo valido. ",
     "desc_detailed": "Non è un ruolo valido. "
   },
   "invalidMention": {
-    "title": "📢 Menzione non valida",
+    "title": "<:block:1397680563040817152> Menzione non valida",
     "desc": "Non è una menzione/ID utente valido. Prova qualcosa come '@persona' o '1234567890123456789'.",
     "desc_detailed": "Non è una menzione/ID utente valido. Prova qualcosa come '@persona' o '1234567890123456789'."
   },
   "invalidDuration": {
-    "title": "⏱️ Durata non valida",
+    "title": "<:hourglassoff:1397692063658545152> Durata non valida",
     "desc": "Non è una durata valida. Prova qualcosa come '10s' o '10m'.",
     "desc_detailed": "Non è una durata valida. Prova qualcosa come '10s' o '10m'."
   },
   "durationTooLong": {
-    "title": "⏱️ Durata troppo lunga",
+    "title": "<:hourglassoff:1397692063658545152> Durata troppo lunga",
     "desc": "E' troppo lungo. Prova qualcosa più corto.",
     "desc_detailed": "E' troppo lungo. Prova qualcosa più corto che {{length}}."
   },
   "durationTooShort": {
-    "title": "⏱️ Durata troppo corta",
+    "title": "<:hourglassoff:1397692063658545152> Durata troppo corta",
     "desc": "E' troppo corto. Prova qualcosa più lungo.",
     "desc_detailed": "E' troppo corto. Prova qualcosa più lungo che {{length}}."
   },
   "stringTooLong": {
-    "title": "➕ Testo troppo lungo",
-
+    "title": "<:string:1397689028039675914> Testo troppo lungo",
     "desc": "E' troppo lungo. Prova qualcosa più corto.",
     "desc_detailed": "E' troppo lungo. Il massimo è {{length}} caratteri."
   },
   "stringTooShort": {
-    "title": "➖ Testo troppo corto",
+    "title": "<:string:1397689028039675914> Testo troppo corto",
     "desc": "E' troppo breve. ",
     "desc_detailed": "E' troppo breve. Il minimo è {{length}} caratteri."
   },
   "numberTooLarge": {
-    "title": "➕ Numero troppo grande",
+    "title": "<:number:1397688864897892423> Numero troppo grande",
     "desc": "E' troppo grande. Prova qualcosa più piccolo.",
     "desc_detailed": "E' troppo grande. Prova qualcosa più piccolo di {{length}}."
   },
   "numberTooSmall": {
-    "title": "➖ Numero troppo piccolo",
+    "title": "<:number:1397688864897892423> Numero troppo piccolo",
     "desc": "E' troppo piccolo. Prova qualcosa più grande.",
     "desc_detailed": "E' troppo piccolo. Prova qualcosa più grande di {{length}}."
   },
   "invalidType": {
-    "title": "🔰 Tipo non valido",
+    "title": "<:block:1397680563040817152> Tipo non valido",
     "desc": "Non è quello che mi aspettavo.",
     "desc_detailed": "Mi aspettavo un(a) {{expected}}, ma ho ricevuto un(a) {{received}}."
   },
   "invalidAttachment": {
-    "title": "📎 Allegato non valido",
+    "title": "<:attachmenterror:1397690751680254042> Allegato non valido",
     "desc": "Non è un allegato valido o non é di un tipo supportato. ",
     "desc_detailed": "Non è un allegato valido o non é di un tipo supportato. Verifica che l'allegato sia uno dei seguenti tipi: `{{types}}`."
   },
   "fileTooLarge": {
-    "title": "📎 File troppo grande",
+    "title": "<:attachmenterror:1397690751680254042> File troppo grande",
     "desc": "E' troppo grande. Prova qualcosa più piccolo.",
     "desc_detailed": "E' troppo grande. Prova qualcosa più piccolo di {{length}}."
   },
   "noEmail": {
-    "title": "✉️ Nessun'email",
+    "title": "<:noemail:1397690990399193128> Nessun'email",
     "desc": "Nessuna email trovata per questo account.",
     "desc_detailed": "Nessuna email trovata per questo account."
   },
   "authError": {
-    "title": "🔐 Autenticazione fallita",
+    "title": "<:authentication:1397691368557645845> Autenticazione fallita",
     "desc": "La autenticazione ha fallito.",
     "desc_detailed": "La autenticazione ha fallito."
   },
   "noneFound": {
-    "title": "❌ Nessun elemento trovato",
+    "title": "<:searchoff:1397680383641911418> Nessun elemento trovato",
     "desc": "Non ho trovato quello che stavi cercando.",
     "desc_detailed": "Non ho trovato il(i) {{resource}} che stavi cercando."
   },
   "missingScopes": {
-    "title": "❓ Permessi mancanti",
+    "title": "<:pomwarning:1397677600012501042> Permessi mancanti",
     "desc": "Hai bisogno di concedere tutti i permessi necessari per utilizzare questa funzionalità.",
     "desc_detailed": "Hai bisogno di concedere tutti i permessi necessari per utilizzare questa funzionalità."
   },
   "notAFK": {
-    "title": "❌ Non AFK",
+    "title": "<:clockerror:1397690377065988308> Non AFK",
     "desc": "Quel utente non è AFK.",
     "desc_detailed": "Quel utente non è AFK."
   }
