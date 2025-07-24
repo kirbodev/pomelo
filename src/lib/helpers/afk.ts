@@ -18,7 +18,10 @@ import { convertToDiscordTimestamp } from "./timestamp.js";
 import { LanguageKeys } from "../i18n/languageKeys.js";
 import EmbedUtils from "../../utilities/embedUtils.js";
 import { fetchT, type TFunction } from "@sapphire/plugin-i18next";
-import type { AnyInteractableInteraction } from "@sapphire/discord.js-utilities";
+import {
+  GuildMemberLimits,
+  type AnyInteractableInteraction,
+} from "@sapphire/discord.js-utilities";
 import { Afk } from "../../db/redis/schema.js";
 import { handleButton } from "../../listeners/afk/lookForMentions.js";
 import { Emojis } from "../emojis.js";
@@ -246,8 +249,13 @@ export async function setAfk(userId: string, afkData: Afk, alreadyAfk = false) {
 
     if (settings.afkEnabled) {
       const memberName = member.nickname ?? member.displayName;
-      if (!memberName.startsWith("[AFK]"))
-        await member.setNickname(`[AFK] ${memberName}`).catch(() => null);
+      if (!memberName.startsWith("[AFK]")) {
+        const trimmedName = `[AFK] ${memberName}`.slice(
+          0,
+          GuildMemberLimits.MaximumDisplayNameLength
+        );
+        await member.setNickname(trimmedName).catch(() => null);
+      }
 
       if (settings.blockAfkMentions) {
         const autoModRules = await guild.autoModerationRules
