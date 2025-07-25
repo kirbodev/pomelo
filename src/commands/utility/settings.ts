@@ -40,6 +40,7 @@ import {
   type APIButtonComponentWithCustomId,
   ButtonBuilder,
   MessageFlags,
+  PermissionsBitField,
 } from "discord.js";
 import { LanguageKeys } from "../../lib/i18n/languageKeys.js";
 import { GuildSettings, UserSettings } from "../../db/redis/schema.js";
@@ -184,6 +185,23 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
   ) {
     const t = await fetchT(interaction);
     if (!interaction.guild) return;
+
+    const hasPermission =
+      interaction instanceof Message
+        ? interaction.member?.permissions.has(PermissionFlagsBits.ManageGuild)
+        : interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild);
+    if (!hasPermission) {
+      void this.error(interaction, this, {
+        error: "MissingPermission",
+        context: {
+          permission: this.container.utilities.commandUtils.getPermissionNames(
+            new PermissionsBitField(PermissionFlagsBits.ManageGuild)
+          ),
+        },
+      });
+      return;
+    }
+
     let settings = await this.container.redis.jsonGet(
       interaction.guild.id,
       "GuildSettings"
