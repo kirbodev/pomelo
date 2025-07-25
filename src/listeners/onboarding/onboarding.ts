@@ -2,9 +2,12 @@ import { Events, Listener } from "@sapphire/framework";
 import { fetchT } from "@sapphire/plugin-i18next";
 import {
   ChannelType,
+  Collection,
   PermissionFlagsBits,
+  Role,
   type Guild,
   type GuildTextBasedChannel,
+  type NonThreadGuildBasedChannel,
 } from "discord.js";
 import EmbedUtils from "../../utilities/embedUtils.js";
 import { LanguageKeys } from "../../lib/i18n/languageKeys.js";
@@ -56,20 +59,60 @@ export class OnboardingListener extends Listener {
     );
     const modRoles = getModRoles(guild);
     if (modRoles.size === 0) return createOnboardingChannel(guild);
-    const modChannels = textChannels.filter((c) => {
+    const modChannels = filterChannels(textChannels, modRoles);
+    if (modChannels.length === 0) {
+      return createOnboardingChannel(guild);
+    }
+    return modChannels[0];
+  }
+}
+
+function filterChannels(
+  channels: Collection<string, NonThreadGuildBasedChannel | null>,
+  modRoles: Collection<string, Role>
+) {
+  const textChannels = channels.filter(
+    (c) => c !== null && c.type === ChannelType.GuildText
+  );
+  const categoryChannels = channels.filter(
+    (c) => c !== null && c.type === ChannelType.GuildCategory
+  );
+  const modChannels = textChannels.filter((c) => {
+    const permissionsMap = c.permissionOverwrites.cache;
+    const permissions = Array.from(permissionsMap.entries());
+    return permissions.some((p) => {
+      return modRoles.some((r) => {
+        return p[0] === r.id && p[1].allow.has(PermissionFlagsBits.ViewChannel);
+      });
+    });
+  });
+  const modCategories = categoryChannels.filter((c) => {
+    const permissionsMap = c.permissionOverwrites.cache;
+    const permissions = Array.from(permissionsMap.entries());
+    return permissions.some((p) => {
+      return modRoles.some((r) => {
+        return p[0] === r.id && p[1].allow.has(PermissionFlagsBits.ViewChannel);
+      });
+    });
+  });
+  const modCategoryChannels = modCategories.flatMap((c) => {
+    const children = c.children.cache.filter(
+      (c) => c.type === ChannelType.GuildText
+    );
+    return children.filter((c) => {
       const permissionsMap = c.permissionOverwrites.cache;
-      const permissions = Array.from(permissionsMap.keys());
+      const permissions = Array.from(permissionsMap.entries());
       return permissions.some((p) => {
         return modRoles.some((r) => {
-          return p === r.id;
+          return (
+            p[0] === r.id && p[1].allow.has(PermissionFlagsBits.ViewChannel)
+          );
         });
       });
     });
-    if (modChannels.size === 0) {
-      return createOnboardingChannel(guild);
-    }
-    return modChannels.first();
-  }
+  });
+
+  return [...modChannels.values(), ...modCategoryChannels.values()];
 }
 
 function getModRoles(guild: Guild) {
