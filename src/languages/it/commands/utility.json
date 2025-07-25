@@ -47,7 +47,26 @@
     "activeTitle": "AFK",
     "activeDescription": "{{user}} è AFK.",
     "activeDescription_multiple": "{{users}} e {{last_user}} sono AFK.",
-    "activeReason": "Ragione"
+    "activeReason": "Ragione",
+    "activeSeeMore": "Clicca il pulsante 👁️ per vedere di più.",
+    "activeUntil": "Fino a",
+    "removeTitle": "AFK Rimosso",
+    "removeDescription": "Hai smesso di essere AFK. Sei stato AFK per {{time}}.",
+    "removeTip": "Puoi rimanere AFK aggiungendo --afk al tuo messaggio.",
+    "blockedAfk": "Non puoi menzionare quel utente perché è AFK.",
+    "recommended": [
+      "Ritorno presto",
+      "Dormendo",
+      "In classe",
+      "Al lavoro",
+      "Guidando",
+      "Al gym",
+      "Studiando",
+      "Riposando",
+      "Acquistando",
+      "Con amici",
+      "Giocando"
+    ]
   },
   "afklink": {
     "commandName": "afklink",

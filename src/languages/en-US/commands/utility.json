@@ -49,6 +49,7 @@
     "activeDescription_multiple": "{{users}} and {{last_user}} are currently AFK.",
     "activeReason": "Reason",
     "activeUntil": "Until",
+    "activeSeeMore": "Click the 👁️ button to see more.",
     "removeTitle": "AFK Removed",
     "removeDescription": "You are no longer AFK. You were AFK for {{time}}.",
     "removeTip": "You can stop this by suffixing your message with --afk",

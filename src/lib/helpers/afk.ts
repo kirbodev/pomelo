@@ -80,13 +80,13 @@ export async function sendAFKEmbed(
 
   const description =
     users.length > 1
-      ? t(LanguageKeys.Commands.Utility.Afk.activeDescription_multiple, {
+      ? `${t(LanguageKeys.Commands.Utility.Afk.activeDescription_multiple, {
           users: users
             .slice(0, -1)
             .map((user) => `<@${user}>`)
             .join(", "),
           last_user: `<@${users[users.length - 1]}>`,
-        })
+        })}\n${t(LanguageKeys.Commands.Utility.Afk.activeSeeMore)}`
       : t(LanguageKeys.Commands.Utility.Afk.activeDescription, {
           user: `<@${users[0]}>`,
         });

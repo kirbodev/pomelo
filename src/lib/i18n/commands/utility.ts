@@ -66,6 +66,7 @@ export default {
     }>("commands/utility:afk.activeDescription_multiple"),
     activeTitle: T("commands/utility:afk.activeTitle"),
     activeReason: T("commands/utility:afk.activeReason"),
+    activeSeeMore: T("commands/utility:afk.activeSeeMore"),
     activeUntil: T("commands/utility:afk.activeUntil"),
     removeTitle: T("commands/utility:afk.removeTitle"),
     removeDescription: T("commands/utility:afk.removeDescription"),
