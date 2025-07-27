@@ -18,7 +18,7 @@
     "commandDescription": "Obtenha ajuda para um comando ou uma lista de comandos."
   },
   "bigEmoji": {
-    "commandName": "bigemoji",
+    "commandName": "grandeemoji",
     "commandDescription": "Obtenha a forma de imagem grande e link de um emoji(s)."
   },
   "settings": {
@@ -84,14 +84,14 @@
     "selectCalendarsDescription": "Selecione as agendas que você deseja vincular ao Pomelo."
   },
   "afkget": {
-    "commandName": "afkget",
+    "commandName": "verafk",
     "commandDescription": "Obtenha o status afk de um usuário",
     "contextName": "Obter AFK",
     "userFieldName": "usuário",
     "userFieldDescription": "O usuário para obter o status AFK"
   },
   "afkremove": {
-    "commandName": "afkremove",
+    "commandName": "removerafk",
     "commandDescription": "Remover o status afk de um usuário",
     "contextName": "Remover AFK",
     "userFieldName": "usuário",
