@@ -42,7 +42,7 @@ export class OnboardingListener extends Listener {
     await this.container.redis.jsonSet(guild.id, "GuildSettings", newSettings);
 
     const t = await fetchT(guild);
-    const updateChannel = await OnboardingListener.findModChannel(guild);
+    const updateChannel = await findModChannel(guild);
     if (!updateChannel) return;
     const embed = new EmbedUtils.EmbedConstructor()
       .setTitle(t(LanguageKeys.Messages.Onboarding.title))
@@ -50,21 +50,21 @@ export class OnboardingListener extends Listener {
       .setColor(Colors.Default);
     await updateChannel.send({ embeds: [embed] });
   }
+}
 
-  static async findModChannel(guild: Guild) {
-    const channels = await guild.channels.fetch().catch(() => null);
-    if (!channels) return;
-    const textChannels = channels.filter(
-      (c) => c !== null && c.type === ChannelType.GuildText
-    );
-    const modRoles = getModRoles(guild);
-    if (modRoles.size === 0) return createOnboardingChannel(guild);
-    const modChannels = filterChannels(textChannels, modRoles);
-    if (modChannels.length === 0) {
-      return createOnboardingChannel(guild);
-    }
-    return modChannels[0];
+export async function findModChannel(guild: Guild) {
+  const channels = await guild.channels.fetch().catch(() => null);
+  if (!channels) return;
+  const textChannels = channels.filter(
+    (c) => c !== null && c.type === ChannelType.GuildText
+  );
+  const modRoles = getModRoles(guild);
+  if (modRoles.size === 0) return createOnboardingChannel(guild);
+  const modChannels = filterChannels(textChannels, modRoles);
+  if (modChannels.length === 0) {
+    return createOnboardingChannel(guild);
   }
+  return modChannels[0];
 }
 
 function filterChannels(
