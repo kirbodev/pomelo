@@ -1,64 +1,64 @@
 {
-  "current": "Current",
-  "change": "Change",
+  "current": "Atual",
+  "change": "Alterar",
   "default": {
-    "name": "Default",
-    "description": "The default for this option is `{{default}}`."
+    "name": "Padrão",
+    "description": "O padrão desta opção é `{{default}}`."
   },
   "override": {
-    "name": "Overridden",
-    "description": "This is overridden by server admins."
+    "name": "Sobreposto",
+    "description": "Isto é sobrescrito pelos administradores do servidor."
   },
   "user": {
     "locale": {
-      "name": "Language",
-      "description": "The language the bot will use. Server admins can override this per-server."
+      "name": "Idioma",
+      "description": "O idioma que o bot usará. Os administradores do servidor podem sobrescrever isso por servidor."
     },
     "preferEphemeral": {
-      "name": "Prefer Ephemeral",
-      "description": "Whether the bot should prefer ephemeral (hidden) messages over regular messages. Server admins can override this per-server."
+      "name": "Preferir efêmero",
+      "description": "Se o bot deve preferir mensagens efêmeras (ocultas) em vez de mensagens normais. Os administradores do servidor podem sobrescrever isso por servidor."
     },
     "allowUrgentPings": {
-      "name": "Allow Urgent Pings",
-      "description": "Urgents pings allow users to ping you while you are AFK by putting !! before the ping."
+      "name": "Permitir pings urgentes",
+      "description": "Pings urgentes permitem que usuários te mencionem enquanto você está AFK colocando !! antes da menção."
     }
   },
   "guild": {
     "locale": {
-      "name": "Language",
-      "description": "The language the bot will use in this server. The user's language is used by default if this isn't forced using 'Force Language'."
+      "name": "Idioma",
+      "description": "A linguagem que o bot usará neste servidor. O idioma do usuário é usado por padrão se isso não for forçado a usar o 'Forçar Idioma'."
     },
     "forceLocale": {
-      "name": "Force Language",
-      "description": "Force the bot to use the language set in this server instead of the user's language."
+      "name": "Forçar Idioma",
+      "description": "Força o bot a usar o idioma definido neste servidor em vez do idioma do usuário."
     },
     "prefix": {
-      "name": "Prefix",
-      "description": "The prefix the bot will use for commands."
+      "name": "Prefixo",
+      "description": "O prefixo que o bot usará para comandos."
     },
     "features": {
-      "name": "Features",
-      "description": "The features enabled/disabled in this server."
+      "name": "Recursos",
+      "description": "Os recursos habilitados/desativados neste servidor."
     },
     "logChannel": {
-      "name": "Log Channel",
-      "description": "The channel the bot will log moderation actions to."
+      "name": "Canal de Registro",
+      "description": "O canal onde o bot registrará as ações de moderação."
     },
     "forceEphemeral": {
-      "name": "Force Ephemeral",
-      "description": "Whether the bot should force ephemeral (hidden) messages."
+      "name": "Força efêmero",
+      "description": "Se o bot deve forçar mensagens efêmeras (ocultas)."
     },
     "ephemeralDeletionTimeout": {
-      "name": "Ephemeral Deletion Time",
-      "description": "The time in seconds before the bot deletes ephemeral messages. This includes messages like AFK notices. *Not to be confused with ephemeral interactions.*"
+      "name": "Tempo de exclusão efêmera",
+      "description": "O tempo em segundos antes do bot deletar mensagens efêmeras. Isso inclui mensagens como avisos AFK. *Não deve ser confundido com interações efêmeras.*"
     },
     "afkEnabled": {
-      "name": "AFK Enabled",
-      "description": "Whether AFK is enabled in this server."
+      "name": "AFK habilitado",
+      "description": "Se o AFK está habilitado neste servidor."
     },
     "blockAfkMentions": {
-      "name": "Block AFK Mentions",
-      "description": "Whether AFK mentions are blocked in this server."
+      "name": "Bloquear menções AFK",
+      "description": "Se as menções AFK estão bloqueadas neste servidor."
     }
   }
 }
