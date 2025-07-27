@@ -87,5 +87,14 @@
     "contextName": "Obtener AFK",
     "userFieldName": "usuario",
     "userFieldDescription": "El usuario del que obtener el estado AFK"
+  },
+  "afkremove": {
+    "commandName": "afkremove",
+    "commandDescription": "Remueve el estado AFK de un usuario",
+    "contextName": "Remover AFK",
+    "userFieldName": "usuario",
+    "userFieldDescription": "El usuario del que remover el estado AFK",
+    "desc": "Has removido el estado AFK de {{user}}.",
+    "autoStatusNote": "Un estado AFK automático está activo también. Tendrás que volver a ejecutar el comando si deseas removerlo."
   }
 }
