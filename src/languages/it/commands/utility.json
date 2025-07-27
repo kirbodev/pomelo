@@ -82,14 +82,14 @@
     "selectCalendarsDescription": "Seleziona i calendari che desideri collegare a Pomelo."
   },
   "afkget": {
-    "commandName": "afkget",
+    "commandName": "ottieniafk",
     "commandDescription": "Ottieni lo stato AFK di un utente",
     "contextName": "Ottenere AFK",
     "userFieldName": "utente",
     "userFieldDescription": "L'utente del quale ottenere lo stato AFK"
   },
   "afkremove": {
-    "commandName": "afkremove",
+    "commandName": "rimuoviafk",
     "commandDescription": "Rimuovi lo stato AFK di un utente",
     "contextName": "Rimuovi AFK",
     "userFieldName": "utente",

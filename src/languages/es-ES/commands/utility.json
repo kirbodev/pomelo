@@ -69,7 +69,7 @@
     ]
   },
   "afklink": {
-    "commandName": "afklink",
+    "commandName": "enlaceafk",
     "commandDescription": "Enlace su calendario de Google para que Pomelo pueda establecer su estado AFK cuando esté ocupado.",
     "title": "Enlace Google Calendar",
     "desc": "Haz clic en el botón a continuación para enlazar tu calendario de Google. Una vez que enlaces tu calendario, haz clic en ID de enlace. Se te pedirá un código de enlace.",
@@ -82,14 +82,14 @@
     "selectCalendarsDescription": "Selecciona los calendarios que deseas enlazar a Pomelo."
   },
   "afkget": {
-    "commandName": "afkget",
+    "commandName": "obtenerafk",
     "commandDescription": "Obtenga el estado AFK de un usuario",
     "contextName": "Obtener AFK",
     "userFieldName": "usuario",
     "userFieldDescription": "El usuario del que obtener el estado AFK"
   },
   "afkremove": {
-    "commandName": "afkremove",
+    "commandName": "removerafk",
     "commandDescription": "Remueve el estado AFK de un usuario",
     "contextName": "Remover AFK",
     "userFieldName": "usuario",
