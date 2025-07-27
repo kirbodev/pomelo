@@ -1,10 +1,10 @@
 {
   "afkAutoModChanged": {
-    "title": "AFK AutoMod Rule Changed!",
-    "desc": "A change/deletion was detected to the AutoMod rule created by Pomelo. The rule has been reset to its default state. The rule is required for the setting \"Block AFK Mentions\" to function."
+    "title": "Regra AutoMod de AFK Alterada!",
+    "desc": "Uma alteração/exclusão foi detectada para a regra AutoMod criada por Pomelo. A regra foi redefinida para seu estado padrão. A regra é necessária para a configuração \"Bloquear menções AFK\" para funcionar."
   },
   "onboarding": {
-    "title": "Thanks for adding Pomelo!",
-    "desc": "As Pomelo is in alpha/beta, you might need to accept new features or change configuration as they are added. This channel will be used to notify you of these changes. You should run `/settings guild` to update your settings to best suit your server."
+    "title": "Obrigado por adicionar Pomelo!",
+    "desc": "Como o Pomelo está em fase alpha/beta, você pode precisar aceitar novos recursos ou alterar configurações conforme forem adicionados. Este canal será usado para notificá-lo sobre essas mudanças. Recomendamos que você execute o comando `/configurações servidor` para atualizar suas configurações e adequá-las melhor ao seu servidor."
   }
 }
