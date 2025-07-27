@@ -1,0 +1,17 @@
+{
+  "na": "N/D",
+  "no": "Não",
+  "yes": "Sim",
+  "cancel": "Cancelar",
+  "confirm": "Confirmar",
+  "close": "Fechar",
+  "enable": "Habilitar",
+  "disable": "Desativar",
+  "booleanTrueOptions": "verdadeiro,v,sim,s,ligado,ativar,ativado",
+  "booleanFalseOptions": "falso,f,não,n,desligado,desativar,desativado",
+  "user": "usuário",
+  "channel": "canal",
+  "role": "cargo",
+  "message": "mensagem",
+  "attachment": "anexo"
+}

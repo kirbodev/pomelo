@@ -1,0 +1,102 @@
+{
+  "ping": {
+    "commandName": "ping",
+    "commandDescription": "Verifique a latência do bot e outras informações úteis.",
+    "title": "Pong!",
+    "desc": "A latência atual é {{latency}}.",
+    "APILatencyFieldTitle": "Latência da API",
+    "uptimeFieldTitle": "Tempo em atividade"
+  },
+  "cloneEmoji": {
+    "commandName": "cloneemoji",
+    "commandDescription": "Clona um emoji para o servidor.",
+    "title": "Emoji Clonado",
+    "desc": "O emoji {{emoji}} foi clonado para o servidor."
+  },
+  "help": {
+    "commandName": "ajuda",
+    "commandDescription": "Obtenha ajuda para um comando ou uma lista de comandos."
+  },
+  "bigEmoji": {
+    "commandName": "grandeemoji",
+    "commandDescription": "Obtenha a forma de imagem grande e link de um emoji(s)."
+  },
+  "settings": {
+    "commandName": "configurações",
+    "commandDescription": "Gerenciar configurações do usuário ou do servidor.",
+    "subcommandUserName": "usuário",
+    "subcommandGuildName": "servidor",
+    "subcommandUserDescription": "Gerenciar configurações do usuário.",
+    "subcommandGuildDescription": "Gerenciar configurações do servidor."
+  },
+  "afk": {
+    "commandName": "afk",
+    "commandDescription": "Defina seu status de AFK.",
+    "messageFieldName": "mensagem",
+    "messageFieldDescription": "A mensagem a ser exibida quando você está AFK.",
+    "durationFieldName": "duração",
+    "durationFieldDescription": "A duração do seu status de AFK.",
+    "attachmentFieldName": "anexo",
+    "attachmentFieldDescription": "O anexo a ser exibido quando você está AFK.",
+    "title": "AFK definido",
+    "desc": "Você agora está AFK.",
+    "desc_with_message": "Agora você está AFK com a mensagem: {{message}}.",
+    "desc_with_duration": "Agora você está AFK até {{time}}.",
+    "desc_with_message_and_duration": "Agora você está AFK com a mensagem: {{message}} até {{time}}.",
+    "overwriteNote": "Seu status anterior de AFK foi sobrescrito.",
+    "activeTitle": "AFK",
+    "activeDescription": "{{user}} está AFK agora.",
+    "activeDescription_multiple": "{{users}} e {{last_user}} estão AFK agora.",
+    "activeReason": "Motivo",
+    "activeUntil": "Até",
+    "activeSeeMore": "Clique no botão 👁️ para ver mais.",
+    "removeTitle": "AFK Removido",
+    "removeDescription": "Você não está mais AFK. Você estava AFK para {{time}}.",
+    "removeTip": "Para não remover seu status AFK ao enviar uma mensagem, adicione --afk no final",
+    "blockedAfk": "Você não pode pingar este usuário porque ele está AFK.",
+    "recommended": [
+      "Volte em breve",
+      "Dormindo",
+      "Na escola",
+      "No trabalho",
+      "Dirigindo",
+      "Na academia",
+      "Estudando",
+      "Fazendo as coisas",
+      "Descansando",
+      "Shopping",
+      "Executando erros",
+      "Fora com amigos",
+      "Jogando"
+    ]
+  },
+  "afklink": {
+    "commandName": "afklink",
+    "commandDescription": "Vincule seu Calendário do Google ao Pomelo para definir automaticamente seu status de AFK quando você estiver ocupado.",
+    "title": "Vincule sua conta do Google Agenda",
+    "desc": "Clique no botão abaixo para vincular seu Google Calendário. Após vincular seu calendário, clique em ID de Vinculação. Você será solicitado a criar um código de vinculação.",
+    "button": "Vincular",
+    "successTitle": "Google Agenda Vinculada",
+    "successDesc": "Seu Calendário do Google foi vinculado a Pomelo.",
+    "calendarsFieldTitle": "Agendas",
+    "linkId": "Código de Vinculação",
+    "selectCalendars": "Selecionar agendas",
+    "selectCalendarsDescription": "Selecione as agendas que você deseja vincular ao Pomelo."
+  },
+  "afkget": {
+    "commandName": "verafk",
+    "commandDescription": "Obtenha o status afk de um usuário",
+    "contextName": "Obter AFK",
+    "userFieldName": "usuário",
+    "userFieldDescription": "O usuário para obter o status AFK"
+  },
+  "afkremove": {
+    "commandName": "removerafk",
+    "commandDescription": "Remover o status afk de um usuário",
+    "contextName": "Remover AFK",
+    "userFieldName": "usuário",
+    "userFieldDescription": "O usuário para remover o status AFK",
+    "desc": "Removido o status AFK de {{user}}.",
+    "autoStatusNote": "Um status automático de AFK também está ativo. Você precisará executar novamente o comando se você deseja removê-lo."
+  }
+}
