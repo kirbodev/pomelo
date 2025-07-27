@@ -56,142 +56,142 @@
   },
   "missingPermission": {
     "title": "<:permissions:1397681744181985331> Permissão ausente",
-    "desc": "You don't have permission to perform that action.",
-    "desc_detailed": "You need {{permission}} to perform that action."
+    "desc": "Você não tem permissão para executar esta ação.",
+    "desc_detailed": "Você precisa de {{permission}} para executar essa ação."
   },
   "botMissingPermission": {
-    "title": "<:permissions:1397681744181985331> Missing Permission",
-    "desc": "I don't have permission to perform that action.",
-    "desc_detailed": "I need {{permission}} to perform that action."
+    "title": "<:permissions:1397681744181985331> Permissão ausente",
+    "desc": "Eu não tenho permissão para executar essa ação.",
+    "desc_detailed": "Eu preciso de {{permission}} para realizar essa ação."
   },
   "wrongTarget": {
-    "title": "<:wrongperson:1397687936602079382> Wrong Target",
-    "desc": "That's not for you.",
-    "desc_detailed": "That's not for you. That's for {{target}}."
+    "title": "<:wrongperson:1397687936602079382> Alvo errado",
+    "desc": "Isso não é para você.",
+    "desc_detailed": "Isso não é para você. É para {{target}}."
   },
   "devOnly": {
-    "title": "<:pomelo:1397688084858142802> Developer Only",
-    "desc": "That feature is only available to developers.",
-    "desc_detailed": "That feature is only available to developers."
+    "title": "<:pomelo:1397688084858142802> Apenas para desenvolvedores",
+    "desc": "Esse recurso só está disponível para desenvolvedores.",
+    "desc_detailed": "Esse recurso só está disponível para desenvolvedores."
   },
   "maintenanceMode": {
-    "title": "<:construction:1397688310335537202> Maintenance",
-    "desc": "I'm currently in maintenance mode, features are temporarily paused. Try again later.",
-    "desc_detailed": "My features are temporarily paused due to {{reason}}. Try again later."
+    "title": "<:construction:1397688310335537202> Manutenção",
+    "desc": "Estou atualmente em modo de manutenção, os recursos estão temporariamente pausados. Tente novamente mais tarde.",
+    "desc_detailed": "Meus recursos estão temporariamente pausados devido a {{reason}}. Tente novamente mais tarde."
   },
   "invalidBoolean": {
-    "title": "<:boolean:1397688720496525402> Invalid Boolean",
-    "desc": "That's not a valid boolean. Try 'true' or 'false'.",
-    "desc_detailed": "That's not a valid boolean. Try 'true' or 'false'."
+    "title": "<:boolean:1397688720496525402> Booleano errado",
+    "desc": "Isso não é um booleano válido. Tente 'verdadeiro' ou 'falso'.",
+    "desc_detailed": "Isso não é um booleano válido. Tente 'verdadeiro' ou 'falso'."
   },
   "invalidNumber": {
-    "title": "<:number:1397688864897892423> Invalid Number",
-    "desc": "That's not a valid number. Try a number.",
-    "desc_detailed": "That's not a valid number. Try a number."
+    "title": "<:number:1397688864897892423> Número inválido",
+    "desc": "Este não é um número válido. Tente um número.",
+    "desc_detailed": "Este não é um número válido. Tente um número."
   },
   "invalidString": {
-    "title": "<:string:1397689028039675914> Invalid Text",
-    "desc": "That's not a valid string. Try some text.",
-    "desc_detailed": "That's not a valid string. Try a(n) {{string_type}}."
+    "title": "<:string:1397689028039675914> Texto Inválido",
+    "desc": "Essa não é uma string válida. Tente algum texto.",
+    "desc_detailed": "Essa não é uma string válida. Tente um(a) {{string_type}}."
   },
   "invalidOption": {
-    "title": "<:block:1397680563040817152> Invalid Option",
-    "desc": "That's not a valid option. Try one of the options.",
-    "desc_detailed": "That's not a valid option. Try something like '{{option}}'."
+    "title": "<:block:1397680563040817152> Opção Inválida",
+    "desc": "Essa não é uma opção válida. Tente uma das opções.",
+    "desc_detailed": "Esta opção não é válida. Tente algo como '{{option}}'."
   },
   "invalidChannel": {
-    "title": "<:block:1397680563040817152> Invalid Channel",
-    "desc": "That's not a valid channel. Try something like '#channel' or '1234567890123456789'.",
-    "desc_detailed": "That's not a valid channel. Try something like '#channel' or '1234567890123456789'."
+    "title": "<:block:1397680563040817152> Canal inválido",
+    "desc": "Este não é um canal válido. Tente algo como '#canal' ou '1234567890123456789'.",
+    "desc_detailed": "Este não é um canal válido. Tente algo como '#canal' ou '1234567890123456789'."
   },
   "invalidRole": {
-    "title": "<:block:1397680563040817152> Invalid Role",
-    "desc": "That's not a valid role. Try something like '@role' or '1234567890123456789'.",
-    "desc_detailed": "That's not a valid role. Try something like '@role' or '1234567890123456789'."
+    "title": "<:block:1397680563040817152> Cargo inválido",
+    "desc": "Este não é um cargo válido. Tente algo como '@cargo' ou '1234567890123456789'.",
+    "desc_detailed": "Este não é um cargo válido. Tente algo como '@cargo' ou '1234567890123456789'."
   },
   "invalidMention": {
-    "title": "<:block:1397680563040817152> Invalid Mention",
-    "desc": "That's not a valid mention/user ID. Try something like '@person' or '1234567890123456789'.",
-    "desc_detailed": "That's not a valid mention. Try something like '@person' or '1234567890123456789'."
+    "title": "<:block:1397680563040817152> Menção inválida",
+    "desc": "Esta não é uma menção/ID de usuário válido. Tente algo como '@pessoa' ou '1234567890123456789'.",
+    "desc_detailed": "Esta não é uma menção válida. Tente algo como '@pessoa' ou '1234567890123456789'."
   },
   "invalidDuration": {
-    "title": "<:hourglassoff:1397692063658545152> Invalid Duration",
-    "desc": "That's not a valid duration. Try something like '10s' or '10m'.",
-    "desc_detailed": "That's not a valid duration. Try something like '10s' or '10m'."
+    "title": "<:hourglassoff:1397692063658545152> Duração inválida",
+    "desc": "Essa não é uma duração válida. Tente algo como '10s' ou '10m'.",
+    "desc_detailed": "Essa não é uma duração válida. Tente algo como '10s' ou '10m'."
   },
   "durationTooLong": {
-    "title": "<:hourglassoff:1397692063658545152> Duration Too Long",
-    "desc": "That's too long. Try something shorter.",
-    "desc_detailed": "That's too long. Try something shorter than {{length}}."
+    "title": "<:hourglassoff:1397692063658545152> Duração Muito longa",
+    "desc": "Isso é muito longo. Tente algo mais curto.",
+    "desc_detailed": "É muito longo. Tente algo mais curto que {{length}}."
   },
   "durationTooShort": {
-    "title": "<:hourglassoff:1397692063658545152> Duration Too Short",
-    "desc": "That's too short. Try something longer.",
-    "desc_detailed": "That's too short. Try something longer than {{length}}."
+    "title": "<:hourglassoff:1397692063658545152> Duração Muito curta",
+    "desc": "Isso é muito curto. Tente algo mais longo.",
+    "desc_detailed": "É muito curto. Tente algo mais longo que {{length}}."
   },
   "stringTooLong": {
-    "title": "<:string:1397689028039675914> String Too Long",
-    "desc": "That's too long. Try something shorter.",
-    "desc_detailed": "That's too long. Try something shorter than {{length}} characters."
+    "title": "<:string:1397689028039675914> Texto Muito Longo",
+    "desc": "Isso é muito longo. Tente algo mais curto.",
+    "desc_detailed": "Isso é muito longo. Tente algo menor que {{length}} caracteres."
   },
   "stringTooShort": {
-    "title": "<:string:1397689028039675914> String Too Short",
-    "desc": "That's too short. Try something longer.",
-    "desc_detailed": "That's too short. Try something longer than {{length}} characters."
+    "title": "<:string:1397689028039675914> Texto Muito Curto",
+    "desc": "Isso é muito curto. Tente algo mais longo.",
+    "desc_detailed": "É muito curto. Tente algo maior que {{length}} caracteres."
   },
   "numberTooLarge": {
-    "title": "<:number:1397688864897892423> Number Too Large",
-    "desc": "That number is too large. Try something smaller.",
-    "desc_detailed": "That number is too large. Try something smaller than {{length}}."
+    "title": "<:number:1397688864897892423> Número Muito Grande",
+    "desc": "Esse número é grande demais. Tente algo menor.",
+    "desc_detailed": "Esse número é muito grande. Tente algo menor que {{length}}."
   },
   "numberTooSmall": {
-    "title": "<:number:1397688864897892423> Number Too Small",
-    "desc": "That number is too small. Try something larger.",
-    "desc_detailed": "That number is too small. Try something larger than {{length}}."
+    "title": "<:number:1397688864897892423> Número Muito Pequeno",
+    "desc": "Esse número é muito pequeno. Tente algo maior.",
+    "desc_detailed": "Esse número é muito pequeno. Tente algo maior que {{length}}."
   },
   "invalidType": {
-    "title": "<:block:1397680563040817152> Invalid Type",
-    "desc": "That's not what I was expecting.",
-    "desc_detailed": "I was expecting a(n) {{expected}}, but I received {{received}}."
+    "title": "<:block:1397680563040817152> Tipo inválido",
+    "desc": "Não era isso que eu estava esperando.",
+    "desc_detailed": "Eu estava esperando um(a) {{expected}}, mas eu recebi {{received}}."
   },
   "invalidAttachment": {
-    "title": "<:attachmenterror:1397690751680254042> Invalid Attachment",
-    "desc": "That's not a valid attachment or not a supported file type.",
-    "desc_detailed": "That's not a valid attachment or not a supported file type. Make sure it's one of the supported file types: `{{types}}`."
+    "title": "<:attachmenterror:1397690751680254042> Anexo inválido",
+    "desc": "Este não é um anexo válido ou não é um tipo de arquivo suportado.",
+    "desc_detailed": "Este não é um anexo válido ou não é um tipo de arquivo suportado. Certifique-se de que seja um dos tipos de arquivo suportados: `{{types}}`."
   },
   "notInGuild": {
-    "title": "<:wronglocation:1397680782876606584> You can't use that here",
-    "desc": "That action is only available in a guild.",
-    "desc_detailed": "That action is only available in a guild."
+    "title": "<:wronglocation:1397680782876606584> Você não pode usar isso aqui",
+    "desc": "Essa ação só está disponível em um servidor.",
+    "desc_detailed": "Essa ação só está disponível em um servidor."
   },
   "fileTooLarge": {
-    "title": "<:attachmenterror:1397690751680254042> File Too Large",
-    "desc": "That file is too large. Try something smaller.",
-    "desc_detailed": "That file is too large. Try something smaller than {{length}}."
+    "title": "<:attachmenterror:1397690751680254042> Arquivo muito grande",
+    "desc": "Esse arquivo é grande demais. Tente algo menor.",
+    "desc_detailed": "Esse arquivo é grande demais. Tente algo menor que {{length}}."
   },
   "noEmail": {
-    "title": "<:noemail:1397690990399193128> No Email",
-    "desc": "No email found for this account.",
-    "desc_detailed": "No email found for this account."
+    "title": "<:noemail:1397690990399193128> Email ausente",
+    "desc": "Nenhum email encontrado para esta conta.",
+    "desc_detailed": "Nenhum email encontrado para esta conta."
   },
   "authError": {
-    "title": "<:authentication:1397691368557645845> Authentication Failed",
-    "desc": "Failed to authenticate.",
-    "desc_detailed": "Failed to authenticate."
+    "title": "<:authentication:1397691368557645845> Autenticação falhou",
+    "desc": "Falha ao autenticar.",
+    "desc_detailed": "Falha ao autenticar."
   },
   "noneFound": {
-    "title": "<:searchoff:1397680383641911418> None Found",
-    "desc": "The resource(s) you were looking for couldn't be found.",
-    "desc_detailed": "The {{resource}} you were looking for couldn't be found."
+    "title": "<:searchoff:1397680383641911418> Não Encontrado",
+    "desc": "O(s) recurso(s) que você estava procurando não puderam ser encontrados.",
+    "desc_detailed": "O {{resource}} que você estava procurando não pôde ser encontrado."
   },
   "missingScopes": {
-    "title": "<:pomwarning:1397677600012501042> Missing Scopes",
-    "desc": "You need to grant all the required scopes to use this feature.",
-    "desc_detailed": "You need to grant all the required scopes to use this feature."
+    "title": "<:pomwarning:1397677600012501042> Permissões Ausentes",
+    "desc": "Você precisa conceder todos os escopos necessários para usar este recurso.",
+    "desc_detailed": "Você precisa conceder todos os escopos necessários para usar este recurso."
   },
   "notAFK": {
-    "title": "<:clockerror:1397690377065988308> Not AFK",
-    "desc": "That user is not AFK.",
-    "desc_detailed": "That user is not AFK."
+    "title": "<:clockerror:1397690377065988308> Não AFK",
+    "desc": "Este usuário não está AFK.",
+    "desc_detailed": "Este usuário não está AFK."
   }
 }
