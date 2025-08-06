@@ -15,7 +15,7 @@ Compared to other bots like Dyno, it uses more modern APIs like ephemeral messag
 
 ### Disclaimer - Google Calendar
 
-I'm still waiting on OAuth verification from Google, so you may get a "Google hasn't verified this app" warning before signing in. (+100 user max limit)
+~~I'm still waiting on OAuth verification from Google, so you may get a "Google hasn't verified this app" warning before signing in. (+100 user max limit)~~ Got verified by Google :D
 
 ## Differences
 
