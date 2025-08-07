@@ -3,6 +3,7 @@ import { config } from "../../config.js";
 import {
   ButtonInteraction,
   ChatInputCommandInteraction,
+  MessageFlags,
   ModalSubmitInteraction,
 } from "discord.js";
 import CommandUtils from "../../utilities/commandUtils.js";
@@ -92,6 +93,7 @@ export class SendGlobalMessageCommand extends CommandUtils.DevCommand {
     texttranslated?: Record<string, string>,
   ) {
     const guilds = await interaction.client.guilds.fetch();
+    let successful = 0;
     for (const oauthGuild of guilds.values()) {
       const guild = await oauthGuild.fetch();
       const channel = await findModChannel(guild);
@@ -107,8 +109,15 @@ export class SendGlobalMessageCommand extends CommandUtils.DevCommand {
       const embed = new EmbedUtils.EmbedConstructor()
         .setTitle(translatedTitle)
         .setDescription(translatedText);
-      await channel.send({ embeds: [embed] });
+      await channel
+        .send({ embeds: [embed] })
+        .then(() => successful++)
+        .catch(() => {});
     }
+    await interaction.reply({
+      content: `Sent message to ${successful.toString()} guilds. Failed to send to ${(guilds.size - successful).toString()} guilds.`,
+      flags: MessageFlags.Ephemeral,
+    });
   }
 }
 
