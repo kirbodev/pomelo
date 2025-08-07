@@ -19,7 +19,7 @@ export const Test = z.object({
       f: z.string(),
       g: z.number(),
       h: z.array(z.string()).optional(),
-    })
+    }),
   ),
   f: z.enum(["a", "b", "c"]),
 });
@@ -64,7 +64,7 @@ export const GuildSettings = z.object({
     .max(60)
     .default(10),
   afkEnabled: z.boolean().default(true),
-  blockAfkMentions: z.boolean().default(true),
+  blockAfkMentions: z.boolean().default(false),
 });
 
 export const Afk = z.object({
