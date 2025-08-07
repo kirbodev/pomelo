@@ -11,7 +11,7 @@ import { inspect } from "bun";
 import { Colors } from "../../lib/colors.js";
 import { EmbedLimits } from "@sapphire/discord-utilities";
 
-export class UserCommand extends CommandUtils.DevCommand {
+export class EvalCommand extends CommandUtils.DevCommand {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
@@ -37,17 +37,17 @@ export class UserCommand extends CommandUtils.DevCommand {
             option //
               .setName("code")
               .setDescription("The code to evaluate.")
-              .setRequired(true)
+              .setRequired(true),
           ),
       {
         guildIds: config.testServers,
-      }
+      },
     );
   }
 
   public override async verifiedChatInputRun(
     interaction: Command.ChatInputCommandInteraction | ModalSubmitInteraction,
-    originalInteraction: ChatInputCommandInteraction
+    originalInteraction: ChatInputCommandInteraction,
   ) {
     const code = originalInteraction.options.getString("code", true);
     await this.execute(interaction, code);
@@ -55,7 +55,7 @@ export class UserCommand extends CommandUtils.DevCommand {
 
   public override async verifiedMessageRun(
     interaction: ButtonInteraction | ModalSubmitInteraction,
-    args: Args
+    args: Args,
   ) {
     const code = await args.restResult("string");
     if (code.isErr()) return this.sendSyntaxError(interaction);
@@ -67,7 +67,7 @@ export class UserCommand extends CommandUtils.DevCommand {
       | Command.ChatInputCommandInteraction
       | ModalSubmitInteraction
       | ButtonInteraction,
-    code: string
+    code: string,
   ) {
     let result;
     let errored = false;
@@ -96,7 +96,7 @@ export class UserCommand extends CommandUtils.DevCommand {
       },
       {
         type: PomeloReplyType.Sensitive,
-      }
+      },
     );
   }
 }

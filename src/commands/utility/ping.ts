@@ -11,7 +11,7 @@ import {
 import { LanguageKeys } from "../../lib/i18n/languageKeys.js";
 import CommandUtils, { PomeloReplyType } from "../../utilities/commandUtils.js";
 
-export class UserCommand extends CommandUtils.PomeloCommand {
+export class PingCommand extends CommandUtils.PomeloCommand {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
@@ -31,19 +31,19 @@ export class UserCommand extends CommandUtils.PomeloCommand {
         applyLocalizedBuilder(
           builder,
           LanguageKeys.Commands.Utility.Ping.commandName,
-          LanguageKeys.Commands.Utility.Ping.commandDescription
+          LanguageKeys.Commands.Utility.Ping.commandDescription,
         )
           .setName(this.name)
           .setDescription(this.description);
       },
       {
         idHints: ["1264272556526145667"],
-      }
+      },
     );
   }
 
   public override async chatInputRun(
-    interaction: Command.ChatInputCommandInteraction
+    interaction: Command.ChatInputCommandInteraction,
   ) {
     await this.execute(interaction);
   }
@@ -53,7 +53,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
   }
 
   private async execute(
-    interaction: Command.ChatInputCommandInteraction | Message
+    interaction: Command.ChatInputCommandInteraction | Message,
   ) {
     const ping = Date.now() - interaction.createdTimestamp;
     const ws = interaction.client.ws.ping;
@@ -71,12 +71,12 @@ export class UserCommand extends CommandUtils.PomeloCommand {
             .setDescription(
               t(LanguageKeys.Commands.Utility.Ping.desc, {
                 latency: `${ping.toString()}ms`,
-              })
+              }),
             )
             .setFields([
               {
                 name: t(
-                  LanguageKeys.Commands.Utility.Ping.APILatencyFieldTitle
+                  LanguageKeys.Commands.Utility.Ping.APILatencyFieldTitle,
                 ),
                 value:
                   ws <= 0 ? t(LanguageKeys.Arguments.Na) : `${ws.toString()}ms`,
@@ -98,7 +98,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       },
       {
         type: PomeloReplyType.Sensitive,
-      }
+      },
     );
   }
 }

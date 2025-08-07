@@ -21,7 +21,7 @@ import { TOTP, Secret } from "otpauth";
 import { nanoid } from "nanoid";
 import CommandUtils, { PomeloReplyType } from "../../utilities/commandUtils.js";
 
-export class UserCommand extends CommandUtils.DevCommand {
+export class OTPCommand extends CommandUtils.DevCommand {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
@@ -42,12 +42,12 @@ export class UserCommand extends CommandUtils.DevCommand {
           .setDescription(this.description),
       {
         guildIds: config.testServers,
-      }
+      },
     );
   }
 
   public override async chatInputRun(
-    interaction: Command.ChatInputCommandInteraction
+    interaction: Command.ChatInputCommandInteraction,
   ) {
     await this.execute(interaction);
   }
@@ -57,12 +57,12 @@ export class UserCommand extends CommandUtils.DevCommand {
   }
 
   private async confirmAction(
-    interaction: Command.ChatInputCommandInteraction | Message
+    interaction: Command.ChatInputCommandInteraction | Message,
   ): Promise<ButtonInteraction | null> {
     const embed = new EmbedUtils.EmbedConstructor()
       .setTitle("OTP | Confirm")
       .setDescription(
-        "Are you sure you want to set your OTP code? This action is irreversible and you will need database access to reset your code."
+        "Are you sure you want to set your OTP code? This action is irreversible and you will need database access to reset your code.",
       )
       .setColor(Colors.Warning)
       .setFooter({
@@ -74,7 +74,7 @@ export class UserCommand extends CommandUtils.DevCommand {
     const confirmed = await confirmation.waitForResponse(interaction, {
       embeds: [embed],
       ...(interaction instanceof ChatInputCommandInteraction && {
-        flags: MessageFlags.Ephemeral
+        flags: MessageFlags.Ephemeral,
       }),
     });
     if (!confirmed.response) {
@@ -93,7 +93,7 @@ export class UserCommand extends CommandUtils.DevCommand {
                 embeds: [embed],
                 flags: MessageFlags.Ephemeral,
               })
-              .catch(() => { });
+              .catch(() => {});
           });
       } else {
         await interaction.delete().catch(() => {
@@ -101,7 +101,7 @@ export class UserCommand extends CommandUtils.DevCommand {
             .reply({
               embeds: [embed],
             })
-            .catch(() => { });
+            .catch(() => {});
         });
       }
       return null;
@@ -110,7 +110,7 @@ export class UserCommand extends CommandUtils.DevCommand {
   }
 
   private async execute(
-    interaction: Command.ChatInputCommandInteraction | Message
+    interaction: Command.ChatInputCommandInteraction | Message,
   ) {
     const user =
       interaction instanceof Message ? interaction.author : interaction.user;
@@ -120,7 +120,7 @@ export class UserCommand extends CommandUtils.DevCommand {
       const embed = new EmbedUtils.EmbedConstructor()
         .setTitle("OTP | Error")
         .setDescription(
-          "You have already set an OTP code. If you need to reset it, contact a developer."
+          "You have already set an OTP code. If you need to reset it, contact a developer.",
         )
         .setColor(Colors.Error)
         .setTimestamp();
@@ -131,7 +131,7 @@ export class UserCommand extends CommandUtils.DevCommand {
         },
         {
           type: PomeloReplyType.Sensitive,
-        }
+        },
       );
       return;
     }
@@ -155,7 +155,7 @@ export class UserCommand extends CommandUtils.DevCommand {
     const embed = new EmbedUtils.EmbedConstructor()
       .setTitle("OTP | Setup")
       .setDescription(
-        'Your secret has been generated. Use an app like [Google Authenticator](https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2) to scan the QR code or enter the secret manually by pressing "+" > "Enter a setup key". On mobile, you can touch and hold on a field to copy its contents. **Do not share this code with anyone.**'
+        'Your secret has been generated. Use an app like [Google Authenticator](https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2) to scan the QR code or enter the secret manually by pressing "+" > "Enter a setup key". On mobile, you can touch and hold on a field to copy its contents. **Do not share this code with anyone.**',
       )
       .setColor(Colors.Info)
       .addField("Secret", secret.base32)
@@ -222,7 +222,7 @@ export class UserCommand extends CommandUtils.DevCommand {
         },
         {
           type: PomeloReplyType.Sensitive,
-        }
+        },
       );
       return;
     }
@@ -233,7 +233,7 @@ export class UserCommand extends CommandUtils.DevCommand {
     const modalEmbed = new EmbedUtils.EmbedConstructor()
       .setTitle("OTP | Success")
       .setDescription(
-        "Your OTP code has been set. You can now run dev commands."
+        "Your OTP code has been set. You can now run dev commands.",
       )
       .setColor(Colors.Success)
       .setTimestamp();
@@ -244,7 +244,7 @@ export class UserCommand extends CommandUtils.DevCommand {
       },
       {
         type: PomeloReplyType.Sensitive,
-      }
+      },
     );
   }
 }

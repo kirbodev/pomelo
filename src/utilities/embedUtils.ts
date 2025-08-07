@@ -14,7 +14,6 @@ import { Utility } from "@sapphire/plugin-utilities-store";
 import { EmbedLimits } from "@sapphire/discord-utilities";
 
 const defaults: EmbedData = {
-  timestamp: new Date(),
   color: Colors.Default,
   provider: {
     name: "Pomelo",
@@ -39,7 +38,7 @@ export default class EmbedUtils extends Utility {
    */
   static EmbedConstructor = class EmbedConstructor extends EmbedBuilder {
     public constructor(options?: EmbedData) {
-      super({ ...defaults, ...options });
+      super({ ...defaults, timestamp: new Date(), ...options });
     }
 
     private verifyTitle(title: string) {
@@ -116,26 +115,6 @@ export default class EmbedUtils extends Utility {
       }
       return data;
     }
-
-    // private verifyEmbedData(embed?: APIEmbed) {
-    //   let data = embed ?? this.data;
-    //   // Auto fix all properties if they are not valid
-    //   if (!data.color) data.color = Colors.Default;
-    //   if (data.title) data.title = this.verifyTitle(data.title);
-    //   if (data.description)
-    //     data.description = this.verifyDescription(data.description);
-    //   if (data.fields) data.fields = this.verifyFields(data.fields);
-    //   if (data.footer) data.footer = this.verifyFooter(data.footer);
-    //   if (data.author) data.author = this.verifyAuthor(data.author);
-
-    //   data = this.verifyEmbedLength(data);
-    //   if (data.color) super.setColor(data.color);
-    //   if (data.title) super.setTitle(data.title);
-    //   if (data.description) super.setDescription(data.description);
-    //   if (data.fields) super.setFields(data.fields);
-    //   if (data.footer) super.setFooter(data.footer);
-    //   if (data.author) super.setAuthor(data.author);
-    // }
 
     public addField(name: string, value: string, inline = false) {
       const verified = this.verifyFields([

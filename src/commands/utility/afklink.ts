@@ -46,7 +46,7 @@ const requiredScopes = [
   "https://www.googleapis.com/auth/calendar.calendars.readonly",
 ];
 
-export class UserCommand extends CommandUtils.PomeloCommand {
+export class AfkLinkCommand extends CommandUtils.PomeloCommand {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
@@ -66,7 +66,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
         applyLocalizedBuilder(
           builder,
           LanguageKeys.Commands.Utility.Afklink.commandName,
-          LanguageKeys.Commands.Utility.Afklink.commandDescription
+          LanguageKeys.Commands.Utility.Afklink.commandDescription,
         )
           .setName(this.name)
           .setDescription(this.description)
@@ -77,12 +77,12 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       },
       {
         idHints: ["1264272556526145667"],
-      }
+      },
     );
   }
 
   public override async chatInputRun(
-    interaction: Command.ChatInputCommandInteraction
+    interaction: Command.ChatInputCommandInteraction,
   ) {
     await interaction.deferReply({
       flags: MessageFlags.Ephemeral,
@@ -96,7 +96,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
   }
 
   private async execute(
-    interaction: Command.ChatInputCommandInteraction | Message
+    interaction: Command.ChatInputCommandInteraction | Message,
   ) {
     const t = await fetchT(interaction);
 
@@ -125,7 +125,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       new ButtonBuilder()
         .setCustomId(`${menuId}-linkid`)
         .setLabel(t(LanguageKeys.Commands.Utility.Afklink.linkId))
-        .setStyle(ButtonStyle.Primary)
+        .setStyle(ButtonStyle.Primary),
     );
 
     const embed = new EmbedUtils.EmbedConstructor()
@@ -141,7 +141,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       },
       {
         type: PomeloReplyType.Sensitive,
-      }
+      },
     );
 
     const buttonInteraction = await i
@@ -153,7 +153,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
 
     if (!buttonInteraction) {
       await this.container.utilities.componentUtils.disableButtons(
-        i instanceof Message ? i : await i.fetch()
+        i instanceof Message ? i : await i.fetch(),
       );
       return;
     }
@@ -167,8 +167,8 @@ export class UserCommand extends CommandUtils.PomeloCommand {
             .setCustomId(`${menuId}-id`)
             .setLabel(t(LanguageKeys.Commands.Utility.Afklink.linkId))
             .setStyle(TextInputStyle.Short)
-            .setRequired(true)
-        )
+            .setRequired(true),
+        ),
       );
 
     await buttonInteraction.showModal(modal);
@@ -180,7 +180,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       })
       .catch(async () => {
         await this.container.utilities.componentUtils.disableButtons(
-          i instanceof Message ? i : await i.fetch()
+          i instanceof Message ? i : await i.fetch(),
         );
         return;
       });
@@ -250,7 +250,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
     interaction:
       | Command.ChatInputCommandInteraction
       | Message
-      | ModalSubmitInteraction
+      | ModalSubmitInteraction,
   ) {
     let fail = false;
     const user =
@@ -307,7 +307,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
     interaction:
       | Command.ChatInputCommandInteraction
       | Message
-      | ModalSubmitInteraction
+      | ModalSubmitInteraction,
   ) {
     const t = await fetchT(interaction);
     const user =
@@ -374,9 +374,9 @@ export class UserCommand extends CommandUtils.PomeloCommand {
               calendar.summary ??
               `Calendar ${
                 calendar.id ?? calendars.indexOf(calendar).toString()
-              }`
+              }`,
           )
-          .filter((name) => name)
+          .filter((name) => name),
       ),
     ];
 
@@ -386,7 +386,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       calendarNames,
       user,
       t,
-      menuId
+      menuId,
     );
 
     const i = await this.reply(
@@ -397,8 +397,9 @@ export class UserCommand extends CommandUtils.PomeloCommand {
             .setTitle(t(LanguageKeys.Commands.Utility.Afklink.selectCalendars))
             .setDescription(
               t(
-                LanguageKeys.Commands.Utility.Afklink.selectCalendarsDescription
-              )
+                LanguageKeys.Commands.Utility.Afklink
+                  .selectCalendarsDescription,
+              ),
             )
             .setColor(Colors.Default),
         ],
@@ -406,7 +407,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       },
       {
         type: PomeloReplyType.Sensitive,
-      }
+      },
     );
 
     const selectInteraction =
@@ -421,14 +422,14 @@ export class UserCommand extends CommandUtils.PomeloCommand {
         calendarAcc.providerAccountId,
         i instanceof Message ? i : i.message,
         calendarNames,
-        menuId
+        menuId,
       );
     });
 
     selectInteraction.on("end", () => {
       void (async () => {
         void this.container.utilities.componentUtils.disableButtons(
-          i instanceof Message ? i : await i.fetch()
+          i instanceof Message ? i : await i.fetch(),
         );
       })();
     });
@@ -438,7 +439,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
     calendars: string[],
     user: User,
     t: TFunction,
-    menuId: string
+    menuId: string,
   ) {
     const currentCalendarsEntry = await db
       .select()
@@ -452,7 +453,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
         new StringSelectMenuBuilder()
           .setCustomId(`${menuId}-select`)
           .setPlaceholder(
-            t(LanguageKeys.Commands.Utility.Afklink.selectCalendars)
+            t(LanguageKeys.Commands.Utility.Afklink.selectCalendars),
           )
           .setMinValues(0)
           .setMaxValues(calendars.length)
@@ -461,8 +462,8 @@ export class UserCommand extends CommandUtils.PomeloCommand {
               label: name,
               value: name,
               default: currentCalendars.includes(name),
-            }))
-          )
+            })),
+          ),
       );
 
     return selectMenu;
@@ -473,7 +474,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
     calendarId: string,
     replyMessage: Message,
     calendars: string[],
-    menuId: string
+    menuId: string,
   ) {
     const user = interaction.user;
     const t = await fetchT(interaction);
@@ -503,7 +504,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
     }
 
     const editedEmbed = new EmbedUtils.EmbedConstructor(
-      replyMessage.embeds[0].data as EmbedData
+      replyMessage.embeds[0].data as EmbedData,
     );
     editedEmbed.setColor(Colors.Success);
 

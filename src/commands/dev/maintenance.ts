@@ -8,7 +8,7 @@ import {
 } from "discord.js";
 import CommandUtils, { PomeloReplyType } from "../../utilities/commandUtils.js";
 
-export class UserCommand extends CommandUtils.DevCommand {
+export class MaintenanceCommand extends CommandUtils.DevCommand {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
@@ -31,22 +31,22 @@ export class UserCommand extends CommandUtils.DevCommand {
             option //
               .setName("on")
               .setDescription("Whether to turn maintainance mode on.")
-              .setRequired(true)
+              .setRequired(true),
           )
           .addStringOption((option) =>
             option //
               .setName("reason")
-              .setDescription("The reason for turning maintainance mode on.")
+              .setDescription("The reason for turning maintainance mode on."),
           ),
       {
         guildIds: config.testServers,
-      }
+      },
     );
   }
 
   public override async verifiedChatInputRun(
     interaction: Command.ChatInputCommandInteraction | ModalSubmitInteraction,
-    originalInteraction: ChatInputCommandInteraction
+    originalInteraction: ChatInputCommandInteraction,
   ) {
     const on = originalInteraction.options.getBoolean("on", true);
     const reason = originalInteraction.options.getString("reason");
@@ -55,7 +55,7 @@ export class UserCommand extends CommandUtils.DevCommand {
 
   public override async verifiedMessageRun(
     interaction: ButtonInteraction | ModalSubmitInteraction,
-    args: Args
+    args: Args,
   ) {
     const on = await args.pickResult("boolean");
     if (on.isErr()) {
@@ -72,7 +72,7 @@ export class UserCommand extends CommandUtils.DevCommand {
       | ModalSubmitInteraction
       | ButtonInteraction,
     on: boolean,
-    reason?: string
+    reason?: string,
   ) {
     maintainanceMode.set(on, reason);
     await this.reply(
@@ -84,13 +84,13 @@ export class UserCommand extends CommandUtils.DevCommand {
             .setDescription(
               `Maintainance mode is now ${on ? "on" : "off"}${
                 reason ? ` with reason: ${reason}` : ""
-              }.`
+              }.`,
             ),
         ],
       },
       {
         type: PomeloReplyType.Sensitive,
-      }
+      },
     );
   }
 }

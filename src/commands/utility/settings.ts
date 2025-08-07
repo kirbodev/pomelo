@@ -109,12 +109,12 @@ type SettingData =
 
 const REVERSE_COLOR_TIME = 2500;
 
-export class UserCommand extends CommandUtils.PomeloSubcommand {
+export class SettingsCommand extends CommandUtils.PomeloSubcommand {
   private menuId = nanoid();
 
   public constructor(
     context: Subcommand.LoaderContext,
-    options: Subcommand.Options
+    options: Subcommand.Options,
   ) {
     super(context, {
       ...options,
@@ -146,7 +146,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
       applyLocalizedBuilder(
         builder,
         LanguageKeys.Commands.Utility.Settings.commandName,
-        LanguageKeys.Commands.Utility.Settings.commandDescription
+        LanguageKeys.Commands.Utility.Settings.commandDescription,
       )
         .setName(this.name)
         .setDescription(this.description)
@@ -154,15 +154,15 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
           applyLocalizedBuilder(
             builder,
             LanguageKeys.Commands.Utility.Settings.subcommandGuildName,
-            LanguageKeys.Commands.Utility.Settings.subcommandGuildDescription
-          )
+            LanguageKeys.Commands.Utility.Settings.subcommandGuildDescription,
+          ),
         )
         .addSubcommand((builder) =>
           applyLocalizedBuilder(
             builder,
             LanguageKeys.Commands.Utility.Settings.subcommandUserName,
-            LanguageKeys.Commands.Utility.Settings.subcommandUserDescription
-          )
+            LanguageKeys.Commands.Utility.Settings.subcommandUserDescription,
+          ),
         );
     });
   }
@@ -172,7 +172,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
   }
 
   public async chatInputRunGuild(
-    interaction: Command.ChatInputCommandInteraction
+    interaction: Command.ChatInputCommandInteraction,
   ) {
     await interaction.deferReply({
       flags: MessageFlags.Ephemeral,
@@ -181,7 +181,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
   }
 
   private async executeGuild(
-    interaction: Command.ChatInputCommandInteraction | Message
+    interaction: Command.ChatInputCommandInteraction | Message,
   ) {
     const t = await fetchT(interaction);
     if (!interaction.guild) return;
@@ -195,7 +195,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
         error: "MissingPermission",
         context: {
           permission: this.container.utilities.commandUtils.getPermissionNames(
-            new PermissionsBitField(PermissionFlagsBits.ManageGuild)
+            new PermissionsBitField(PermissionFlagsBits.ManageGuild),
           ),
         },
       });
@@ -204,7 +204,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
 
     let settings = await this.container.redis.jsonGet(
       interaction.guild.id,
-      "GuildSettings"
+      "GuildSettings",
     );
     if (!settings) {
       settings = GuildSettings.parse({
@@ -213,7 +213,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
       await this.container.redis.jsonSet(
         interaction.guild.id,
         "GuildSettings",
-        settings
+        settings,
       );
     }
 
@@ -247,7 +247,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
       .set("ephemeralDeletionTimeout", {
         name: t(LanguageKeys.Settings.Guild.ephemeralDeletionTimeout.name),
         description: t(
-          LanguageKeys.Settings.Guild.ephemeralDeletionTimeout.description
+          LanguageKeys.Settings.Guild.ephemeralDeletionTimeout.description,
         ),
         type: "text",
         subType: "number",
@@ -262,7 +262,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
       .set("blockAfkMentions", {
         name: t(LanguageKeys.Settings.Guild.blockAfkMentions.name),
         description: t(
-          LanguageKeys.Settings.Guild.blockAfkMentions.description
+          LanguageKeys.Settings.Guild.blockAfkMentions.description,
         ),
         type: "boolean",
         currentValue: settings.blockAfkMentions,
@@ -277,7 +277,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
             const afkRule = autoModRules.find(
               (r) =>
                 r.creatorId === this.container.client.id &&
-                r.name.includes("AFK")
+                r.name.includes("AFK"),
             );
 
             if (value) {
@@ -299,7 +299,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
       "guild",
       interaction.guild.id,
       interaction,
-      validFields
+      validFields,
     );
   }
 
@@ -308,7 +308,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
   }
 
   public async chatInputRunUser(
-    interaction: Command.ChatInputCommandInteraction
+    interaction: Command.ChatInputCommandInteraction,
   ) {
     await interaction.deferReply({
       flags: MessageFlags.Ephemeral,
@@ -317,7 +317,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
   }
 
   private async executeUser(
-    interaction: Command.ChatInputCommandInteraction | Message
+    interaction: Command.ChatInputCommandInteraction | Message,
   ) {
     const t = await fetchT(interaction);
     const user =
@@ -326,7 +326,9 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
     if (!settings) {
       settings = UserSettings.parse({
         locale: fallbackLanguage(
-          interaction instanceof Message ? Locale.EnglishUS : interaction.locale
+          interaction instanceof Message
+            ? Locale.EnglishUS
+            : interaction.locale,
         ),
       } as z.infer<typeof UserSettings>);
       await this.container.redis.jsonSet(user.id, "UserSettings", settings);
@@ -368,7 +370,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
               const afkRule = autoModRules.find(
                 (r) =>
                   r.creatorId === this.container.client.id &&
-                  r.name.includes("AFK")
+                  r.name.includes("AFK"),
               );
 
               const allowList = [...(afkRule?.triggerMetadata.allowList ?? [])];
@@ -376,7 +378,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
                 allowList.push(`${URGENT_PING}<@${member.id}>`);
               } else {
                 const index = allowList.indexOf(
-                  `${URGENT_PING}<@${member.id}>`
+                  `${URGENT_PING}<@${member.id}>`,
                 );
                 if (index !== -1) {
                   allowList.splice(index, 1);
@@ -424,7 +426,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
     t: TFunction, // use T so its not refreshed when language changes
     defaultValue?: string,
     currentValue?: string,
-    overridden?: boolean
+    overridden?: boolean,
   ) {
     const title = t(name);
     const desc = t(description);
@@ -434,7 +436,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
       default: defaultValue,
     });
     const overrideTitle = `${Emojis.EditOff} ${t(
-      LanguageKeys.Settings.Override.name
+      LanguageKeys.Settings.Override.name,
     )}`;
     const overrideDesc = t(LanguageKeys.Settings.Override.description);
 
@@ -464,7 +466,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
         ? keyof typeof UserSettings.shape
         : keyof typeof GuildSettings.shape,
       SettingData
-    >
+    >,
   ) {
     const t = await fetchT(interaction);
     this.menuId = nanoid();
@@ -475,7 +477,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
     const schema = type === "user" ? UserSettings : GuildSettings;
     let settings = (await this.container.redis.jsonGet(
       id,
-      `${type === "user" ? "User" : "Guild"}Settings`
+      `${type === "user" ? "User" : "Guild"}Settings`,
     )) as z.infer<typeof schema>;
 
     // Add the locale
@@ -483,14 +485,14 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
       .addAsyncPageEmbed(async () => {
         settings = (await this.container.redis.jsonGet(
           id,
-          `${type === "user" ? "User" : "Guild"}Settings`
+          `${type === "user" ? "User" : "Guild"}Settings`,
         )) as z.infer<typeof schema>;
         const langEmbed = this.createSettingEmbed(
           LanguageKeys.Settings.Guild.locale.name,
           LanguageKeys.Settings.Guild.locale.description,
           t,
           this.getDefault(type, "locale")?.toString(),
-          settings.locale
+          settings.locale,
         );
         return langEmbed;
       })
@@ -500,9 +502,9 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
           type,
           this.getLanguageSelectMenuOptions(settings.locale),
           menu,
-          validFields.get("locale")
+          validFields.get("locale"),
         ),
-        menu.pages.length - 1
+        menu.pages.length - 1,
       );
 
     for (const [name, setting] of validFields) {
@@ -520,7 +522,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
             type,
             setting.options,
             menu,
-            setting
+            setting,
           );
           // better to compare to fix types
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -542,7 +544,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
                   type: SelectMenuDefaultValueType.Channel,
                 }
               : undefined,
-            setting
+            setting,
           );
         } else continue;
       } else if (setting.type === "text") {
@@ -565,7 +567,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
             placeholder: defaultValue,
           },
           undefined,
-          setting
+          setting,
         );
       } else {
         action = this.createBooleanButton(
@@ -574,14 +576,14 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
           menu,
           currentValue as boolean,
           undefined,
-          setting
+          setting,
         );
       }
 
       menu.addAsyncPageEmbed(async () => {
         const updatedSetting = await this.container.redis.jsonGet(
           id,
-          `${type === "user" ? "User" : "Guild"}Settings`
+          `${type === "user" ? "User" : "Guild"}Settings`,
         );
         let updatedValue = updatedSetting
           ? objectEntries(updatedSetting).find(([key]) => key === name)?.[1]
@@ -599,7 +601,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
           t,
           defaultValue,
           updatedValue?.toString() ?? currentValue?.toString(),
-          setting.overridden
+          setting.overridden,
         );
         return embed;
       });
@@ -622,14 +624,14 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
       | StringSelectMenuInteraction
       | ChannelSelectMenuInteraction
       | ButtonInteraction,
-    field: SettingData | undefined
+    field: SettingData | undefined,
   ) {
     const t = await fetchT(interaction);
     const schema = type === "user" ? UserSettings : GuildSettings;
     // refetching the settings is intentional
     let settings = await this.container.redis.jsonGet(
       id,
-      `${type === "user" ? "User" : "Guild"}Settings`
+      `${type === "user" ? "User" : "Guild"}Settings`,
     );
     if (!settings)
       throw new UserError({
@@ -653,7 +655,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
     const isSet = await this.container.redis.jsonSet(
       id,
       `${type === "user" ? "User" : "Guild"}Settings`,
-      data
+      data,
     );
     if (!isSet) {
       const embed = new EmbedUtils.EmbedConstructor()
@@ -682,11 +684,11 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
     type: T,
     setting: T extends "user"
       ? keyof typeof UserSettings.shape
-      : keyof typeof GuildSettings.shape
+      : keyof typeof GuildSettings.shape,
   ) {
     const schema = type === "user" ? UserSettings : GuildSettings;
     const entry = objectEntries(schema.shape).find(
-      ([key]) => key === setting
+      ([key]) => key === setting,
     )?.[1];
     const defaultValue =
       entry instanceof z.ZodDefault ? entry._def.defaultValue() : null;
@@ -700,7 +702,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
     type: T,
     options: SelectMenuComponentOptionData[],
     menu: InstanceType<typeof ComponentUtils.MenuPaginatedMessage>,
-    field: SettingData | undefined
+    field: SettingData | undefined,
   ) {
     options.splice(25);
 
@@ -727,7 +729,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
           name,
           optionValue,
           interaction,
-          field
+          field,
         );
 
         const newComponents = interaction.message.components as (
@@ -746,10 +748,10 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
                   default: o.value === optionValue,
                 })),
                 menu,
-                field
-              )
-            )
-          )
+                field,
+              ),
+            ),
+          ),
         );
 
         menu.setPageActions(
@@ -764,7 +766,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
               return action;
             })
             .filter((a) => a !== null),
-          menu.index
+          menu.index,
         );
 
         return {
@@ -788,7 +790,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
     menu: InstanceType<typeof ComponentUtils.MenuPaginatedMessage>,
     currentState: boolean,
     data?: InteractionButtonComponentData,
-    field?: SettingData | undefined
+    field?: SettingData | undefined,
   ) {
     const options: InteractionButtonComponentData = {
       customId: `${this.menuId}-${name}`,
@@ -821,7 +823,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
           name,
           optionValue,
           interaction,
-          field
+          field,
         );
 
         const newComponents = interaction.message.components as (
@@ -842,12 +844,12 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
                 menu,
                 optionValue,
                 data,
-                field
-              )
-            )
+                field,
+              ),
+            ),
           ) as JSONEncodable<
             APIActionRowComponent<APIButtonComponentWithCustomId>
-          >
+          >,
         );
 
         menu.setPageActions(
@@ -860,7 +862,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
               return action ?? null;
             })
             .filter((a) => a !== null),
-          menu.index
+          menu.index,
         );
 
         return {
@@ -885,7 +887,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
     menu: InstanceType<typeof ComponentUtils.MenuPaginatedMessage>,
     channelTypes?: ChannelType[],
     defaultValue?: APISelectMenuDefaultValue<SelectMenuDefaultValueType.Channel>,
-    field?: SettingData | undefined
+    field?: SettingData | undefined,
   ) {
     const selectMenu: PaginatedMessageActionChannelMenu = {
       type: ComponentType.ChannelSelect,
@@ -913,7 +915,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
           name,
           optionValue,
           interaction,
-          field
+          field,
         );
 
         const newComponents: (
@@ -944,10 +946,10 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
                   id: optionValue,
                   type: SelectMenuDefaultValueType.Channel,
                 },
-                field
-              )
-            )
-          )
+                field,
+              ),
+            ),
+          ),
         );
 
         menu.setPageActions(
@@ -976,7 +978,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
               return action;
             })
             .filter((a) => a !== null),
-          menu.index
+          menu.index,
         );
 
         return {
@@ -984,7 +986,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
             this.confirmSettingChange(
               interaction,
               this.makeIdReadable(optionValue, "channel"),
-              error
+              error,
             ),
           ],
           components: newComponents,
@@ -1006,7 +1008,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
     t: TFunction,
     options?: Partial<Omit<TextInputComponentData, "customId">>,
     buttonOpts?: Partial<Omit<InteractionButtonComponentData, "customId">>,
-    field?: SettingData | undefined
+    field?: SettingData | undefined,
   ) {
     const textInputOptions: TextInputComponentData = {
       customId: `${this.menuId}-${name}`,
@@ -1029,8 +1031,8 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
       .setTitle(textInputOptions.label)
       .setComponents(
         new ActionRowBuilder<ModalActionRowComponentBuilder>().setComponents(
-          new TextInputBuilder(textInputOptions)
-        )
+          new TextInputBuilder(textInputOptions),
+        ),
       );
 
     const textModal: PaginatedMessageActionButton = {
@@ -1054,7 +1056,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
           .catch(() => null);
         if (!modalResult) {
           await this.container.utilities.componentUtils.disableButtons(
-            interaction.message
+            interaction.message,
           );
           return undefined as unknown as null;
         }
@@ -1069,7 +1071,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
           name,
           value,
           interaction,
-          field
+          field,
         );
 
         await modalResult.deferUpdate();
@@ -1092,7 +1094,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
       | StringSelectMenuInteraction
       | ChannelSelectMenuInteraction,
     value: string,
-    error: EmbedBuilder | null
+    error: EmbedBuilder | null,
   ) {
     const embed = new EmbedBuilder(interaction.message.embeds[0].data);
     embed.setColor(error ? Colors.Error : Colors.Success);
@@ -1106,7 +1108,7 @@ export class UserCommand extends CommandUtils.PomeloSubcommand {
       embed.setFields([
         ...interaction.message.embeds[0].fields.slice(
           0,
-          interaction.message.embeds[0].fields.length - 1
+          interaction.message.embeds[0].fields.length - 1,
         ),
         editedField,
       ]);

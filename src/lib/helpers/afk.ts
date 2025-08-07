@@ -41,6 +41,53 @@ export async function deleteAFKData(userId: string) {
   }
 }
 
+export async function removeAutomod(userId: string) {
+  const guilds = await container.client.guilds.fetch();
+  for (const oauthGuild of guilds.values()) {
+    const guild = await oauthGuild.fetch().catch(() => null);
+    if (!guild) continue;
+    const autoModRules = await guild.autoModerationRules
+      .fetch()
+      .catch(() => null);
+    if (!autoModRules) continue;
+    const afkRule = autoModRules.find(
+      (r) => r.creatorId === container.client.id && r.name.includes("AFK"),
+    );
+    if (!afkRule) continue;
+    const blockedAfks = [...afkRule.triggerMetadata.keywordFilter];
+    const blockedIndex = blockedAfks.indexOf(userId);
+    if (blockedIndex > -1) blockedAfks.splice(blockedIndex, 1);
+
+    const allowList = [...afkRule.triggerMetadata.allowList];
+    const allowListIndex = allowList.indexOf(userId);
+    if (allowListIndex > -1) allowList.splice(allowListIndex, 1);
+
+    recentReversions.set(afkRule.id, Date.now());
+    setTimeout(() => {
+      recentReversions.delete(afkRule.id);
+    }, 5000).unref();
+
+    console.log(blockedAfks, allowList);
+
+    if (blockedAfks.length === 0) {
+      await afkRule.edit({
+        triggerMetadata: {
+          // you cannot have an empty list of keywords - * doesn't do anything
+          keywordFilter: ["*"],
+          allowList: ["*"],
+        },
+      });
+    } else {
+      await afkRule.edit({
+        triggerMetadata: {
+          keywordFilter: blockedAfks,
+          allowList,
+        },
+      });
+    }
+  }
+}
+
 export function createAutoAFKMessage(newStartTime: Date, newEndTime: Date) {
   const startTime = newStartTime.getTime();
   const endTime = newEndTime.getTime();
@@ -52,7 +99,7 @@ export function createAutoAFKMessage(newStartTime: Date, newEndTime: Date) {
 
   return `${Emojis.Automatic} ${convertToDiscordTimestamp(
     startTime,
-    longTime ? "f" : "t"
+    longTime ? "f" : "t",
   )} - ${convertToDiscordTimestamp(endTime, longTime ? "f" : "t")}`;
 }
 
@@ -60,7 +107,7 @@ export async function sendAFKEmbed(
   afks: Map<string, Afk>,
   message: Message | AnyInteractableInteraction,
   withButton = true,
-  deleteMsg = true
+  deleteMsg = true,
 ) {
   if (!(message instanceof Message)) {
     if (!message.inGuild()) return;
@@ -71,7 +118,7 @@ export async function sendAFKEmbed(
 
   const ephemeralBtn = new ComponentUtils.EphemeralButton();
   const ephemeralRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    ephemeralBtn
+    ephemeralBtn,
   );
 
   const t = await fetchT(message);
@@ -95,22 +142,20 @@ export async function sendAFKEmbed(
     .setTitle(t(LanguageKeys.Commands.Utility.Afk.activeTitle))
     .setDescription(description);
 
-  let messageAttachment;
   if (afks.size === 1) {
     const afk = Array.from(afks.values())[0];
     if (afk.text)
       summary.addField(
         t(LanguageKeys.Commands.Utility.Afk.activeReason),
-        afk.text
+        afk.text,
       );
     if (afk.attachment) {
-      messageAttachment = afk.attachment;
-      summary.setThumbnail(afk.attachment);
+      summary.setImage(afk.attachment);
     }
     if (afk.endsAt) {
       summary.addField(
         t(LanguageKeys.Commands.Utility.Afk.activeUntil),
-        convertToDiscordTimestamp(new Date(afk.endsAt).getTime(), "f")
+        convertToDiscordTimestamp(new Date(afk.endsAt).getTime(), "f"),
       );
     }
   }
@@ -118,14 +163,13 @@ export async function sendAFKEmbed(
   const args = {
     embeds: [summary],
     components: withButton ? [ephemeralRow] : [],
-    files: messageAttachment ? [messageAttachment] : undefined,
   };
   const response =
     message instanceof Message
       ? await message.reply(args)
       : message.deferred || message.replied
-      ? await message.editReply(args)
-      : await (await message.reply(args)).fetch();
+        ? await message.editReply(args)
+        : await (await message.reply(args)).fetch();
 
   const timeToDelete =
     (guildSettings?.ephemeralDeletionTimeout ??
@@ -163,12 +207,12 @@ export function getAFKSetEmbed(
   message?: string,
   duration?: number,
   attachment?: string,
-  afkExists = false
+  afkExists = false,
 ) {
   const durationAsTimestamp = duration
     ? convertToDiscordTimestamp(
         Date.now() + duration,
-        TimestampStyles.ShortDateTime
+        TimestampStyles.ShortDateTime,
       )
     : null;
   let description: string;
@@ -178,7 +222,7 @@ export function getAFKSetEmbed(
       {
         message,
         time: durationAsTimestamp,
-      }
+      },
     );
   } else if (message) {
     description = t(LanguageKeys.Commands.Utility.Afk.desc_with_message, {
@@ -217,10 +261,21 @@ export async function setAfk(userId: string, afkData: Afk, alreadyAfk = false) {
   const expire = data.data.endsAt
     ? await container.redis.expireat(
         `Afk:${userId}`,
-        Math.round(new Date(data.data.endsAt).getTime() / 1000)
+        Math.round(new Date(data.data.endsAt).getTime() / 1000) + 5000,
       )
     : true;
   if (!expire) return false;
+
+  if (data.data.endsAt)
+    await container.tasks.create(
+      {
+        name: "guaranteeAFKRemoval",
+        payload: {
+          userId,
+        },
+      },
+      new Date(data.data.endsAt).getTime() - Date.now(),
+    );
 
   if (alreadyAfk) return true;
 
@@ -233,8 +288,8 @@ export async function setAfk(userId: string, afkData: Afk, alreadyAfk = false) {
   const guilds = (
     await Promise.all(
       Array.from(fetchedGuilds.values()).map(
-        async (g) => await g.fetch().catch(() => null)
-      )
+        async (g) => await g.fetch().catch(() => null),
+      ),
     ).catch(() => null)
   )?.filter((g) => g !== null);
 
@@ -252,7 +307,7 @@ export async function setAfk(userId: string, afkData: Afk, alreadyAfk = false) {
       if (!memberName.startsWith("[AFK]")) {
         const trimmedName = `[AFK] ${memberName}`.slice(
           0,
-          GuildMemberLimits.MaximumDisplayNameLength
+          GuildMemberLimits.MaximumDisplayNameLength,
         );
         await member.setNickname(trimmedName).catch(() => null);
       }
@@ -264,7 +319,7 @@ export async function setAfk(userId: string, afkData: Afk, alreadyAfk = false) {
         if (!autoModRules) continue;
 
         const afkRule = autoModRules.find(
-          (r) => r.creatorId === container.client.id && r.name.includes("AFK")
+          (r) => r.creatorId === container.client.id && r.name.includes("AFK"),
         );
 
         const blockedAfks = [...(afkRule?.triggerMetadata.keywordFilter ?? [])];
@@ -279,7 +334,7 @@ export async function setAfk(userId: string, afkData: Afk, alreadyAfk = false) {
           const action = afkRule.actions[0];
           const guildT = await fetchT(guild);
           const customMessage = guildT(
-            LanguageKeys.Commands.Utility.Afk.blockedAfk
+            LanguageKeys.Commands.Utility.Afk.blockedAfk,
           );
           action.metadata.customMessage = customMessage;
 
@@ -300,7 +355,7 @@ export async function setAfk(userId: string, afkData: Afk, alreadyAfk = false) {
         } else {
           const guildT = await fetchT(guild);
           const customMessage = guildT(
-            LanguageKeys.Commands.Utility.Afk.blockedAfk
+            LanguageKeys.Commands.Utility.Afk.blockedAfk,
           );
 
           await guild.autoModerationRules

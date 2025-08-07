@@ -20,7 +20,7 @@ import CommandUtils from "../../utilities/commandUtils.js";
 import ComponentUtils from "../../utilities/componentUtils.js";
 import { Colors } from "../../lib/colors.js";
 
-export class UserCommand extends CommandUtils.PomeloCommand {
+export class HelpCommand extends CommandUtils.PomeloCommand {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
@@ -38,7 +38,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       applyLocalizedBuilder(
         builder,
         LanguageKeys.Commands.Utility.Help.commandName,
-        LanguageKeys.Commands.Utility.Help.commandDescription
+        LanguageKeys.Commands.Utility.Help.commandDescription,
       )
         .setName(this.name)
         .setDescription(this.description)
@@ -57,14 +57,14 @@ export class UserCommand extends CommandUtils.PomeloCommand {
                   name: command.name,
                   value: command.name,
                 };
-              })
-            )
+              }),
+            ),
         );
     });
   }
 
   public override async chatInputRun(
-    interaction: Command.ChatInputCommandInteraction
+    interaction: Command.ChatInputCommandInteraction,
   ) {
     await interaction.deferReply({
       flags: MessageFlags.Ephemeral,
@@ -81,7 +81,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
 
   private async execute(
     interaction: Command.ChatInputCommandInteraction | Message,
-    commandName: string | null
+    commandName: string | null,
   ) {
     const t = await fetchT(interaction);
     let commands = this.getCommands();
@@ -96,7 +96,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
         interaction.member &&
         !this.container.utilities.commandUtils.isUserEligible(
           interaction.member,
-          command.name
+          command.name,
         )
       )
         continue;
@@ -111,27 +111,27 @@ export class UserCommand extends CommandUtils.PomeloCommand {
         new EmbedUtils.EmbedConstructor()
           .setTitle(
             i18next.exists(
-              `commands/${command.category ?? ""}:${command.name}.commandName`
+              `commands/${command.category ?? ""}:${command.name}.commandName`,
             )
               ? t(
                   `commands/${command.category ?? ""}:${
                     command.name
-                  }.commandName`
+                  }.commandName`,
                 )
-              : command.name
+              : command.name,
           )
           .setDescription(
             i18next.exists(
               `commands/${command.category ?? ""}:${
                 command.name
-              }.commandDescription`
+              }.commandDescription`,
             )
               ? t(
                   `commands/${command.category ?? ""}:${
                     command.name
-                  }.commandDescription`
+                  }.commandDescription`,
                 )
-              : command.description
+              : command.description,
           )
           .setColor(Colors.Default)
           .setFields([
@@ -143,7 +143,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
               name: t(LanguageKeys.Errors.SyntaxError.exampleFieldTitle),
               value: examples,
             },
-          ])
+          ]),
       );
     }
     await menu.run(interaction);

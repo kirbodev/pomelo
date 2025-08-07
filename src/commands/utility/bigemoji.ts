@@ -24,7 +24,7 @@ type Emoji = {
   unicode?: string;
 };
 
-export class UserCommand extends CommandUtils.PomeloCommand {
+export class BigEmojiCommand extends CommandUtils.PomeloCommand {
   #EmojiRegex = /(?:<(?<animated>a)?:(?<name>\w{2,32}):)?(?<id>\d{17,21})>?/g;
 
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -62,13 +62,13 @@ export class UserCommand extends CommandUtils.PomeloCommand {
           option
             .setName("emojis")
             .setDescription("The emoji(s) to enlarge.")
-            .setRequired(true)
+            .setRequired(true),
         );
     });
   }
 
   public override async chatInputRun(
-    interaction: Command.ChatInputCommandInteraction
+    interaction: Command.ChatInputCommandInteraction,
   ) {
     await interaction.deferReply({
       flags: MessageFlags.Ephemeral,
@@ -90,7 +90,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
 
   private async execute(
     interaction: Command.ChatInputCommandInteraction | Message,
-    rawEmojis: string
+    rawEmojis: string,
   ) {
     const emojis = await this.getEmojis(rawEmojis);
 
@@ -122,7 +122,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
             return null;
           },
         },
-        i
+        i,
       );
     }
     await paginatedMessage.run(interaction);
@@ -130,7 +130,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
 
   private async cloneEmoji(
     context: PaginatedMessageActionContext,
-    emoji: Emoji
+    emoji: Emoji,
   ) {
     const { interaction } = context;
     await interaction.deferUpdate();
@@ -139,10 +139,10 @@ export class UserCommand extends CommandUtils.PomeloCommand {
     // Check permissions
     if (
       !interaction.memberPermissions?.has(
-        PermissionFlagsBits.ManageGuildExpressions
+        PermissionFlagsBits.ManageGuildExpressions,
       ) &&
       !interaction.memberPermissions?.has(
-        PermissionFlagsBits.CreateGuildExpressions
+        PermissionFlagsBits.CreateGuildExpressions,
       )
     ) {
       await interaction.followUp({
@@ -154,10 +154,10 @@ export class UserCommand extends CommandUtils.PomeloCommand {
                 permission:
                   this.container.utilities.commandUtils.getPermissionNames(
                     new PermissionsBitField(
-                      PermissionFlagsBits.ManageGuildExpressions
-                    )
+                      PermissionFlagsBits.ManageGuildExpressions,
+                    ),
                   ),
-              })
+              }),
             )
             .setColor(Colors.Error),
         ],
@@ -168,17 +168,17 @@ export class UserCommand extends CommandUtils.PomeloCommand {
 
     if (
       !interaction.guild?.members.me?.permissions.has(
-        PermissionFlagsBits.CreateGuildExpressions
+        PermissionFlagsBits.CreateGuildExpressions,
       ) &&
       !interaction.guild?.members.me?.permissions.has(
-        PermissionFlagsBits.ManageGuildExpressions
+        PermissionFlagsBits.ManageGuildExpressions,
       )
     ) {
       void this.error(interaction, this, {
         error: "MissingPermission",
         context: {
           permission: this.container.utilities.commandUtils.getPermissionNames(
-            new PermissionsBitField(PermissionFlagsBits.CreateGuildExpressions)
+            new PermissionsBitField(PermissionFlagsBits.CreateGuildExpressions),
           ),
         },
       });
@@ -220,7 +220,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
           .setDescription(
             t(LanguageKeys.Commands.Utility.CloneEmoji.desc, {
               emoji: clone.name,
-            })
+            }),
           )
           .setColor(Colors.Success)
           .setThumbnail(clone.imageURL()),
@@ -266,12 +266,12 @@ export class UserCommand extends CommandUtils.PomeloCommand {
     const emojis = Array.from(matches).map((emoji) => emoji[0]);
     const uniqueEmojis = [...new Set(emojis)];
     const unicodeEmojis = uniqueEmojis.map((emoji) =>
-      this.emojiToUnicode(emoji)
+      this.emojiToUnicode(emoji),
     );
     const twemojis: Emoji[] = [];
     for (const emoji of unicodeEmojis) {
       const res = await fetch(
-        `https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/${emoji}.png`
+        `https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/${emoji}.png`,
       );
       if (res.ok)
         twemojis.push({
@@ -292,7 +292,7 @@ export class UserCommand extends CommandUtils.PomeloCommand {
       emojiMap.set(emoji.url, index.toString());
     }
     const sortedEmojis = Array.from(emojiMap.entries()).sort(
-      (a, b) => parseInt(a[1]) - parseInt(b[1])
+      (a, b) => parseInt(a[1]) - parseInt(b[1]),
     );
     for (const [emoji] of sortedEmojis) {
       orderedEmojis.push(emojis.find((e) => e.url === emoji) as Emoji);

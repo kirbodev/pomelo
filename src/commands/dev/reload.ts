@@ -11,7 +11,7 @@ import {
 } from "discord.js";
 import CommandUtils, { PomeloReplyType } from "../../utilities/commandUtils.js";
 
-export class UserCommand extends CommandUtils.DevCommand {
+export class ReloadCommand extends CommandUtils.DevCommand {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
@@ -31,18 +31,18 @@ export class UserCommand extends CommandUtils.DevCommand {
           .setDescription(this.description),
       {
         guildIds: config.testServers,
-      }
+      },
     );
   }
 
   public override async verifiedChatInputRun(
-    interaction: Command.ChatInputCommandInteraction
+    interaction: Command.ChatInputCommandInteraction,
   ) {
     await this.execute(interaction);
   }
 
   public override async verifiedMessageRun(
-    interaction: ButtonInteraction | ModalSubmitInteraction
+    interaction: ButtonInteraction | ModalSubmitInteraction,
   ) {
     await this.execute(interaction);
   }
@@ -51,7 +51,7 @@ export class UserCommand extends CommandUtils.DevCommand {
     interaction:
       | Command.ChatInputCommandInteraction
       | ButtonInteraction
-      | ModalSubmitInteraction
+      | ModalSubmitInteraction,
   ) {
     const now = performance.now();
     for (const store of container.stores.values()) {
@@ -77,7 +77,7 @@ export class UserCommand extends CommandUtils.DevCommand {
       },
       {
         type: PomeloReplyType.Sensitive,
-      }
+      },
     );
   }
 }

@@ -16,7 +16,6 @@ import { Colors } from "../../lib/colors.js";
 import { PomeloReplyType } from "../../utilities/commandUtils.js";
 import { DEFAULT_EPHEMERAL_DELETION_TIMEOUT } from "../../lib/helpers/constants.js";
 import ms from "ms";
-import { recentReversions } from "./preventAutomodRuleEdit.js";
 import {
   deleteAFKData,
   getAFKData,
@@ -38,7 +37,7 @@ const NO_REMOVE_AFK_PREFIXES = [
 export class RemoveAFKListener extends Listener {
   public constructor(
     context: Listener.LoaderContext,
-    options: Listener.Options
+    options: Listener.Options,
   ) {
     super(context, {
       ...options,
@@ -52,7 +51,7 @@ export class RemoveAFKListener extends Listener {
 
     const guildSettings = await this.container.redis.jsonGet(
       message.guild.id,
-      "GuildSettings"
+      "GuildSettings",
     );
     if (message.content.startsWith(guildSettings?.prefix ?? ",")) return;
 
@@ -65,7 +64,7 @@ export class RemoveAFKListener extends Listener {
     if (afkData.eventId) return;
     if (
       NO_REMOVE_AFK_PREFIXES.some((prefix) =>
-        message.content.toLowerCase().trim().endsWith(prefix)
+        message.content.toLowerCase().trim().endsWith(prefix),
       )
     )
       return;
@@ -82,7 +81,7 @@ export class RemoveAFKListener extends Listener {
       new ButtonBuilder()
         .setCustomId(buttonId)
         .setEmoji(Emojis.Undo)
-        .setStyle(ButtonStyle.Secondary)
+        .setStyle(ButtonStyle.Secondary),
     );
 
     const embed = new EmbedUtils.EmbedConstructor()
@@ -92,42 +91,19 @@ export class RemoveAFKListener extends Listener {
           time: ms(Date.now() - new Date(afkData.startedAt).getTime(), {
             long: true,
           }),
-        })
+        }),
       )
       .setFooter({
         text: t(LanguageKeys.Commands.Utility.Afk.removeTip),
       })
       .setColor(Colors.Success);
 
-    const autoModRules = await message.guild.autoModerationRules
-      .fetch()
-      .catch(() => null);
-    if (autoModRules) {
-      const afkRule = autoModRules.find(
-        (r) => r.creatorId === message.client.id && r.name.includes("AFK")
-      );
-      if (afkRule) {
-        const blockedAfks = [...afkRule.triggerMetadata.keywordFilter];
-        const blockedIndex = blockedAfks.indexOf(message.author.id);
-        if (blockedIndex > -1) blockedAfks.splice(blockedIndex, 1);
-
-        const allowList = [...afkRule.triggerMetadata.allowList];
-        const allowListIndex = allowList.indexOf(message.author.id);
-        if (allowListIndex > -1) allowList.splice(allowListIndex, 1);
-
-        recentReversions.set(afkRule.id, Date.now());
-        setTimeout(() => {
-          recentReversions.delete(afkRule.id);
-        }, 5000).unref();
-
-        await afkRule.edit({
-          triggerMetadata: {
-            keywordFilter: blockedAfks,
-            allowList,
-          },
-        });
-      }
-    }
+    await this.container.tasks.create({
+      name: "guaranteeAFKRemoval",
+      payload: {
+        userId: message.author.id,
+      },
+    });
 
     const response = await this.container.utilities.commandUtils.reply(
       message,
@@ -137,11 +113,15 @@ export class RemoveAFKListener extends Listener {
       },
       {
         type: PomeloReplyType.Success,
-      }
+      },
     );
-    setTimeout(() => {
-      void response.delete().catch(() => null);
-    }, (guildSettings?.ephemeralDeletionTimeout ?? DEFAULT_EPHEMERAL_DELETION_TIMEOUT) * 1000);
+    setTimeout(
+      () => {
+        void response.delete().catch(() => null);
+      },
+      (guildSettings?.ephemeralDeletionTimeout ??
+        DEFAULT_EPHEMERAL_DELETION_TIMEOUT) * 1000,
+    );
 
     void response
       .awaitMessageComponent({
@@ -163,7 +143,7 @@ export class RemoveAFKListener extends Listener {
   public async handleButton(
     interaction: ButtonInteraction,
     afkData: Afk,
-    t: TFunction
+    t: TFunction,
   ) {
     await interaction.deferReply({
       flags: MessageFlags.Ephemeral,
@@ -183,7 +163,7 @@ export class RemoveAFKListener extends Listener {
       },
       {
         type: PomeloReplyType.Sensitive,
-      }
+      },
     );
   }
 }

@@ -5,24 +5,20 @@ import { createAutoAFKMessage, setAfk } from "../lib/helpers/afk.js";
 export class AfkCalendarTask extends ScheduledTask {
   public constructor(
     context: ScheduledTask.LoaderContext,
-    options: ScheduledTask.Options
+    options: ScheduledTask.Options,
   ) {
     super(context, {
       ...options,
     });
   }
 
-  public async run(payload: unknown) {
-    if (
-      !payload ||
-      typeof payload !== "object" ||
-      !("account" in payload) ||
-      !("endTime" in payload) ||
-      !("userId" in payload) ||
-      !("startTime" in payload) ||
-      !("eventId" in payload)
-    )
-      return;
+  public async run(payload: {
+    account: Account;
+    endTime: Date;
+    userId: string;
+    startTime: Date;
+    eventId: string;
+  }) {
     const data = payload as {
       account: Account;
       endTime: Date;
