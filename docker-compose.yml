@@ -1,12 +1,16 @@
 services:
-  redis:
-    image: "redis/redis-stack-server:latest"
-    restart: unless-stopped
+  keydb:
+    image: eqalpha/keydb:latest
+    container_name: keydb
     ports:
       - "6379:6379"
     volumes:
       - ./data:/data
-      - ./redis.conf:/redis-stack.conf
+      - ./keydb.conf:/etc/keydb/keydb.conf
+    command: keydb-server /etc/keydb/keydb.conf
+    restart: unless-stopped
+    networks:
+      - appnet
   bun:
     image: "oven/bun:latest"
     working_dir: "/home/bun/pom"
@@ -14,3 +18,9 @@ services:
     volumes:
       - ./:/home/bun/pom
     command: sh -c "bun install -D typescript && bun run build && bun run start"
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
