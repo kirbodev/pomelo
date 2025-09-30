@@ -1,4 +1,9 @@
-import { ArrayT, FT, T, type CapitalizedObjectKeys } from "../../types/utils.js";
+import {
+  ArrayT,
+  FT,
+  T,
+  type CapitalizedObjectKeys,
+} from "../../types/utils.js";
 import utility from "../../../languages/en-US/commands/utility.json" with { type: "json" };
 
 export default {
@@ -28,11 +33,11 @@ export default {
     commandName: T("commands/utility:settings.commandName"),
     commandDescription: T("commands/utility:settings.commandDescription"),
     subcommandGuildDescription: T(
-      "commands/utility:settings.subcommandGuildDescription"
+      "commands/utility:settings.subcommandGuildDescription",
     ),
     subcommandGuildName: T("commands/utility:settings.subcommandGuildName"),
     subcommandUserDescription: T(
-      "commands/utility:settings.subcommandUserDescription"
+      "commands/utility:settings.subcommandUserDescription",
     ),
     subcommandUserName: T("commands/utility:settings.subcommandUserName"),
   },
@@ -43,18 +48,18 @@ export default {
     messageFieldDescription: T("commands/utility:afk.messageFieldDescription"),
     durationFieldName: T("commands/utility:afk.durationFieldName"),
     durationFieldDescription: T(
-      "commands/utility:afk.durationFieldDescription"
+      "commands/utility:afk.durationFieldDescription",
     ),
     attachmentFieldName: T("commands/utility:afk.attachmentFieldName"),
     attachmentFieldDescription: T(
-      "commands/utility:afk.attachmentFieldDescription"
+      "commands/utility:afk.attachmentFieldDescription",
     ),
     title: T("commands/utility:afk.title"),
     desc: T("commands/utility:afk.desc"),
     desc_with_message: T("commands/utility:afk.desc_with_message"),
     desc_with_duration: T("commands/utility:afk.desc_with_duration"),
     desc_with_message_and_duration: T(
-      "commands/utility:afk.desc_with_message_and_duration"
+      "commands/utility:afk.desc_with_message_and_duration",
     ),
     overwriteNote: T("commands/utility:afk.overwriteNote"),
     activeDescription: FT<{
@@ -85,7 +90,9 @@ export default {
     calendarsFieldTitle: T("commands/utility:afklink.calendarsFieldTitle"),
     linkId: T("commands/utility:afklink.linkId"),
     selectCalendars: T("commands/utility:afklink.selectCalendars"),
-    selectCalendarsDescription: T("commands/utility:afklink.selectCalendarsDescription"),
+    selectCalendarsDescription: T(
+      "commands/utility:afklink.selectCalendarsDescription",
+    ),
   },
   Afkget: {
     commandName: T("commands/utility:afkget.commandName"),
@@ -102,5 +109,13 @@ export default {
     userFieldDescription: T("commands/utility:afkremove.userFieldDescription"),
     desc: T("commands/utility:afkremove.desc"),
     autoStatusNote: T("commands/utility:afkremove.autoStatusNote"),
+  },
+  Changelog: {
+    commandName: T("commands/utility:changelog.commandName"),
+    commandDescription: T("commands/utility:changelog.commandDescription"),
+    title: T("commands/utility:changelog.title"),
+    desc: T("commands/utility:changelog.desc"),
+    lastUpdate: T("commands/utility:changelog.lastUpdate"),
+    updateDisclaimer: T("commands/utility:changelog.updateDisclaimer"),
   },
 } as CapitalizedObjectKeys<typeof utility>;

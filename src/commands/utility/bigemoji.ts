@@ -80,7 +80,7 @@ export class BigEmojiCommand extends CommandUtils.PomeloCommand {
 
   public override async messageRun(message: Message, args: Args) {
     const emojis = await args.rest("string").catch(() => {
-      void this.sendSyntaxError(message);
+      void this.sendSyntaxError(message, this);
       return null;
     });
     console.log(emojis);
@@ -94,7 +94,7 @@ export class BigEmojiCommand extends CommandUtils.PomeloCommand {
   ) {
     const emojis = await this.getEmojis(rawEmojis);
 
-    if (!emojis.length) return this.sendSyntaxError(interaction);
+    if (!emojis.length) return this.sendSyntaxError(interaction, this);
 
     const paginatedMessage = new ComponentUtils.PomeloPaginatedMessage({
       template: new EmbedBuilder().setColor(Colors.Default),

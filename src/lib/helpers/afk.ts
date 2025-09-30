@@ -295,6 +295,7 @@ export async function setAfk(userId: string, afkData: Afk, alreadyAfk = false) {
 
   if (!guilds) return false;
 
+  const pastUsernames: { guildId: string; username: string }[] = [];
   for (const guild of guilds) {
     const member = await guild.members.fetch(userId).catch(() => null);
     if (!member) continue;
@@ -305,11 +306,18 @@ export async function setAfk(userId: string, afkData: Afk, alreadyAfk = false) {
     if (settings.afkEnabled) {
       const memberName = member.nickname ?? member.displayName;
       if (!memberName.startsWith("[AFK]")) {
-        const trimmedName = `[AFK] ${memberName}`.slice(
-          0,
-          GuildMemberLimits.MaximumDisplayNameLength,
-        );
-        await member.setNickname(trimmedName).catch(() => null);
+        const shouldTrim =
+          `[AFK] ${memberName}`.length >
+          GuildMemberLimits.MaximumDisplayNameLength;
+        const trimmedName = shouldTrim
+          ? `[AFK] ${memberName}`.slice(
+              0,
+              GuildMemberLimits.MaximumDisplayNameLength,
+            )
+          : `[AFK] ${memberName}`;
+        const nick = await member.setNickname(trimmedName).catch(() => null);
+        if (nick && shouldTrim)
+          pastUsernames.push({ guildId: guild.id, username: memberName });
       }
 
       if (settings.blockAfkMentions) {
@@ -381,6 +389,13 @@ export async function setAfk(userId: string, afkData: Afk, alreadyAfk = false) {
         }
       }
     }
+  }
+
+  if (pastUsernames.length > 0) {
+    await container.redis.jsonSet(userId, "Afk", {
+      ...afkData,
+      pastUsername: pastUsernames,
+    });
   }
 
   return true;

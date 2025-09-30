@@ -58,7 +58,7 @@ export class EvalCommand extends CommandUtils.DevCommand {
     args: Args,
   ) {
     const code = await args.restResult("string");
-    if (code.isErr()) return this.sendSyntaxError(interaction);
+    if (code.isErr()) return this.sendSyntaxError(interaction, this);
     await this.execute(interaction, code.unwrap());
   }
 

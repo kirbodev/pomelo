@@ -144,7 +144,7 @@ export default class CommandUtils extends Utility {
   }
 
   public async getUserSettings(
-    user: User | string
+    user: User | string,
   ): Promise<z.infer<typeof UserSettings> | null> {
     const userId = typeof user === "string" ? user : user.id;
     const settings = await this.container.redis.jsonGet(userId, "UserSettings");
@@ -155,14 +155,14 @@ export default class CommandUtils extends Utility {
     const guildId = typeof guild === "string" ? guild : guild.id;
     const settings = await this.container.redis.jsonGet(
       guildId,
-      "GuildSettings"
+      "GuildSettings",
     );
     return settings;
   }
 
   public isUserEligible(
     member: GuildMember | APIInteractionGuildMember,
-    commandName: string
+    commandName: string,
   ): boolean {
     // for now, only check the permissions
     const command = container.stores.get("commands").get(commandName);
@@ -178,7 +178,7 @@ export default class CommandUtils extends Utility {
   public async implementErrorMessage(
     interaction: AnyInteractableInteraction | Message,
     command: Command,
-    rawError: PomeloErrorOptions
+    rawError: PomeloErrorOptions,
   ) {
     const error: UserError = {
       name: "UserError",
@@ -198,7 +198,7 @@ export default class CommandUtils extends Utility {
 
   public async sendSyntaxError(
     interaction: AnyInteractableInteraction | Message,
-    command: Command
+    command: Command,
   ) {
     const t = await fetchT(interaction);
     const desc =
@@ -237,7 +237,7 @@ export default class CommandUtils extends Utility {
         },
         {
           type: PomeloReplyType.Error,
-        }
+        },
       );
     } else if (interaction instanceof Message) {
       await this.reply(
@@ -247,7 +247,7 @@ export default class CommandUtils extends Utility {
         },
         {
           type: PomeloReplyType.Error,
-        }
+        },
       );
     } else {
       await this.reply(
@@ -258,7 +258,7 @@ export default class CommandUtils extends Utility {
         },
         {
           type: PomeloReplyType.Error,
-        }
+        },
       );
     }
   }
@@ -273,11 +273,11 @@ export default class CommandUtils extends Utility {
     generalOptions: T extends Message
       ? MessageReplyOptions
       : InteractionReplyOptions,
-    pomeloOptions: PomeloReplyOptions
+    pomeloOptions: PomeloReplyOptions,
   ): Promise<T extends Message ? Message : InteractionResponse> {
     if (interaction instanceof Message) {
       const message = await interaction.reply(
-        generalOptions as MessageReplyOptions
+        generalOptions as MessageReplyOptions,
       );
       return message as T extends Message ? Message : never;
     }
@@ -317,7 +317,7 @@ export default class CommandUtils extends Utility {
   static PomeloCommand = class PomeloCommand extends Command {
     public constructor(
       context: Command.LoaderContext,
-      options: Command.Options
+      options: Command.Options,
     ) {
       super(context, {
         ...options,
@@ -325,38 +325,39 @@ export default class CommandUtils extends Utility {
     }
 
     public async getUserSettings(
-      user: User | string
+      user: User | string,
     ): Promise<z.infer<typeof UserSettings> | null> {
       return this.container.utilities.commandUtils.getUserSettings(user);
     }
 
     public isUserEligible(
-      member: GuildMember | APIInteractionGuildMember
+      member: GuildMember | APIInteractionGuildMember,
     ): boolean {
       return this.container.utilities.commandUtils.isUserEligible(
         member,
-        this.name
+        this.name,
       );
     }
 
     public async error(
       interaction: AnyInteractableInteraction | Message,
       command: Command,
-      error: PomeloErrorOptions
+      error: PomeloErrorOptions,
     ) {
       return this.container.utilities.commandUtils.implementErrorMessage(
         interaction,
         command,
-        error
+        error,
       );
     }
 
     public async sendSyntaxError(
-      interaction: AnyInteractableInteraction | Message
+      interaction: AnyInteractableInteraction | Message,
+      command: Command,
     ) {
       return this.container.utilities.commandUtils.sendSyntaxError(
         interaction,
-        this
+        command,
       );
     }
 
@@ -369,12 +370,12 @@ export default class CommandUtils extends Utility {
       options: T extends Message
         ? MessageReplyOptions
         : InteractionReplyOptions,
-      pomeloOptions: PomeloReplyOptions
+      pomeloOptions: PomeloReplyOptions,
     ) {
       return this.container.utilities.commandUtils.reply(
         interaction,
         options,
-        pomeloOptions
+        pomeloOptions,
       );
     }
   };
@@ -383,7 +384,7 @@ export default class CommandUtils extends Utility {
   static PomeloSubcommand = class PomeloSubcommand extends Subcommand {
     public constructor(
       context: Subcommand.LoaderContext,
-      options: Subcommand.Options
+      options: Subcommand.Options,
     ) {
       super(context, {
         ...options,
@@ -391,38 +392,39 @@ export default class CommandUtils extends Utility {
     }
 
     public async getUserSettings(
-      user: User | string
+      user: User | string,
     ): Promise<z.infer<typeof UserSettings> | null> {
       return this.container.utilities.commandUtils.getUserSettings(user);
     }
 
     public isUserEligible(
-      member: GuildMember | APIInteractionGuildMember
+      member: GuildMember | APIInteractionGuildMember,
     ): boolean {
       return this.container.utilities.commandUtils.isUserEligible(
         member,
-        this.name
+        this.name,
       );
     }
 
     public async error(
       interaction: AnyInteractableInteraction | Message,
       command: Command,
-      error: PomeloErrorOptions
+      error: PomeloErrorOptions,
     ) {
       return this.container.utilities.commandUtils.implementErrorMessage(
         interaction,
         command,
-        error
+        error,
       );
     }
 
     public async sendSyntaxError(
-      interaction: AnyInteractableInteraction | Message
+      interaction: AnyInteractableInteraction | Message,
+      command: Command,
     ) {
       return this.container.utilities.commandUtils.sendSyntaxError(
         interaction,
-        this
+        command,
       );
     }
 
@@ -435,12 +437,12 @@ export default class CommandUtils extends Utility {
       options: T extends Message
         ? MessageReplyOptions
         : InteractionReplyOptions,
-      pomeloOptions: PomeloReplyOptions
+      pomeloOptions: PomeloReplyOptions,
     ) {
       return this.container.utilities.commandUtils.reply(
         interaction,
         options,
-        pomeloOptions
+        pomeloOptions,
       );
     }
   };
@@ -452,7 +454,7 @@ export default class CommandUtils extends Utility {
   static DevCommand = class DevCommand extends CommandUtils.PomeloCommand {
     public constructor(
       context: Command.LoaderContext,
-      options: Command.Options
+      options: Command.Options,
     ) {
       super(context, {
         ...options,
@@ -465,7 +467,7 @@ export default class CommandUtils extends Utility {
         | ButtonInteraction
         | Command.ChatInputCommandInteraction
         | Command.ContextMenuCommandInteraction,
-      dev: Dev
+      dev: Dev,
     ): Promise<{
       verified: boolean;
       interaction: ModalSubmitInteraction;
@@ -515,7 +517,7 @@ export default class CommandUtils extends Utility {
       interaction:
         | Command.ChatInputCommandInteraction
         | Command.ContextMenuCommandInteraction
-        | ButtonInteraction
+        | ButtonInteraction,
     ): Promise<ModalSubmitInteraction | true | null> {
       const user = interaction.user;
       const otpStatus =
@@ -559,12 +561,12 @@ export default class CommandUtils extends Utility {
     }
 
     private async messageToInteraction(
-      interaction: Message
+      interaction: Message,
     ): Promise<ButtonInteraction | null> {
       const msgEmbed = new EmbedUtils.EmbedConstructor()
         .setTitle("Verify your identity")
         .setDescription(
-          "You need to verify your identity to run this command. Click the button below to enter an OTP code."
+          "You need to verify your identity to run this command. Click the button below to enter an OTP code.",
         )
         .setTimestamp();
       const confirmation = new ComponentUtils.ButtonConfirmationConstructor({
@@ -588,13 +590,13 @@ export default class CommandUtils extends Utility {
       }
       if (confirmed.interaction)
         void this.container.utilities.componentUtils.disableButtons(
-          confirmed.interaction.message
+          confirmed.interaction.message,
         );
       return confirmed.interaction;
     }
 
     public override async chatInputRun(
-      interaction: Command.ChatInputCommandInteraction
+      interaction: Command.ChatInputCommandInteraction,
     ) {
       const verified = await this.verifyDev(interaction);
       if (!verified) return;
@@ -604,7 +606,7 @@ export default class CommandUtils extends Utility {
     } // This will run code without an OTP check first
 
     public override async contextMenuRun(
-      interaction: Command.ContextMenuCommandInteraction
+      interaction: Command.ContextMenuCommandInteraction,
     ) {
       const verified = await this.verifyDev(interaction);
       if (!verified) return;
@@ -624,7 +626,7 @@ export default class CommandUtils extends Utility {
 
     public verifiedChatInputRun(
       interaction: ModalSubmitInteraction | Command.ChatInputCommandInteraction,
-      originalInteraction: Command.ChatInputCommandInteraction
+      originalInteraction: Command.ChatInputCommandInteraction,
     ): Awaitable<unknown>;
 
     public verifiedChatInputRun() {}
@@ -633,14 +635,14 @@ export default class CommandUtils extends Utility {
       interaction:
         | ModalSubmitInteraction
         | Command.ContextMenuCommandInteraction,
-      originalInteraction: Command.ContextMenuCommandInteraction
+      originalInteraction: Command.ContextMenuCommandInteraction,
     ): Awaitable<unknown>;
 
     public verifiedContextMenuRun() {}
 
     public verifiedMessageRun(
       interaction: ModalSubmitInteraction | ButtonInteraction,
-      args: Args
+      args: Args,
     ): Awaitable<unknown>;
 
     public verifiedMessageRun() {}

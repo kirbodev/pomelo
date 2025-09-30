@@ -59,7 +59,7 @@ export class MaintenanceCommand extends CommandUtils.DevCommand {
   ) {
     const on = await args.pickResult("boolean");
     if (on.isErr()) {
-      await this.sendSyntaxError(interaction);
+      await this.sendSyntaxError(interaction, this);
       return;
     }
     const reason = await args.restResult("string");

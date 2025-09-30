@@ -1,4 +1,4 @@
-import { Events, Listener } from "@sapphire/framework";
+import { container, Events, Listener } from "@sapphire/framework";
 import { fetchT } from "@sapphire/plugin-i18next";
 import {
   ChannelType,
@@ -19,7 +19,7 @@ import type z from "zod";
 export class OnboardingListener extends Listener {
   public constructor(
     context: Listener.LoaderContext,
-    options: Listener.Options
+    options: Listener.Options,
   ) {
     super(context, {
       ...options,
@@ -32,7 +32,7 @@ export class OnboardingListener extends Listener {
 
     const settings = await this.container.redis.jsonGet(
       guild.id,
-      "GuildSettings"
+      "GuildSettings",
     );
     if (settings) return;
 
@@ -53,11 +53,16 @@ export class OnboardingListener extends Listener {
 }
 
 export async function findModChannel(guild: Guild) {
+  const settings = await container.redis.jsonGet(guild.id, "GuildSettings");
   const channels = await guild.channels.fetch().catch(() => null);
   if (!channels) return;
   const textChannels = channels.filter(
-    (c) => c !== null && c.type === ChannelType.GuildText
+    (c) => c !== null && c.type === ChannelType.GuildText,
   );
+  if (settings?.announcementChannel) {
+    const channel = textChannels.get(settings.announcementChannel);
+    if (channel) return channel;
+  }
   const modRoles = getModRoles(guild);
   if (modRoles.size === 0) return createOnboardingChannel(guild);
   const modChannels = filterChannels(textChannels, modRoles);
@@ -69,13 +74,13 @@ export async function findModChannel(guild: Guild) {
 
 function filterChannels(
   channels: Collection<string, NonThreadGuildBasedChannel | null>,
-  modRoles: Collection<string, Role>
+  modRoles: Collection<string, Role>,
 ) {
   const textChannels = channels.filter(
-    (c) => c !== null && c.type === ChannelType.GuildText
+    (c) => c !== null && c.type === ChannelType.GuildText,
   );
   const categoryChannels = channels.filter(
-    (c) => c !== null && c.type === ChannelType.GuildCategory
+    (c) => c !== null && c.type === ChannelType.GuildCategory,
   );
   const modChannels = textChannels.filter((c) => {
     const permissionsMap = c.permissionOverwrites.cache;
@@ -97,7 +102,7 @@ function filterChannels(
   });
   const modCategoryChannels = modCategories.flatMap((c) => {
     const children = c.children.cache.filter(
-      (c) => c.type === ChannelType.GuildText
+      (c) => c.type === ChannelType.GuildText,
     );
     return children.filter((c) => {
       const permissionsMap = c.permissionOverwrites.cache;
@@ -124,10 +129,10 @@ function getModRoles(guild: Guild) {
 }
 
 async function createOnboardingChannel(
-  guild: Guild
+  guild: Guild,
 ): Promise<GuildTextBasedChannel> {
   const existingChannel = guild.channels.cache.find(
-    (c) => c.name === "pomelo-onboarding"
+    (c) => c.name === "pomelo-onboarding",
   );
   if (existingChannel) return existingChannel as GuildTextBasedChannel;
   return await guild.channels.create({

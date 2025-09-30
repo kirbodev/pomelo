@@ -17,7 +17,9 @@ import { fallbackLanguage } from "./lib/i18n/utils.js";
 
 // Init sentry
 
-const integrations = Sentry.getDefaultIntegrations({}).filter((integration) => integration.name !== 'Http')
+const integrations = Sentry.getDefaultIntegrations({}).filter(
+  (integration) => integration.name !== "Http",
+);
 
 const sentryClient = new Sentry.BunClient({
   dsn: process.env.SENTRY_DSN,
@@ -27,7 +29,7 @@ const sentryClient = new Sentry.BunClient({
   transport: Sentry.makeFetchTransport,
   stackParser: Sentry.defaultStackParser,
   environment: process.env.DEV ? "development" : "production",
-  integrations
+  integrations,
 });
 sentryClient.init();
 
@@ -116,7 +118,9 @@ const client = new SapphireClient({
       const locale = interactionLocale ?? interactionGuildLocale;
       // Recalculate instead of using supportedLocales because the import will make it undefined
       const supportedLocales = Array.isArray(i18next.options.supportedLngs)
-        ? i18next.options.supportedLngs.filter((lang: string) => lang !== "cimode")
+        ? i18next.options.supportedLngs.filter(
+            (lang: string) => lang !== "cimode",
+          )
         : [];
       if (locale && locale in supportedLocales) return locale;
 
@@ -151,13 +155,17 @@ const client = new SapphireClient({
         port: parseInt(process.env.REDIS_PORT),
         password: process.env.REDIS_PASSWORD,
       },
+      defaultJobOptions: {
+        removeOnComplete: true,
+        removeOnFail: 20,
+      },
     },
   },
   fetchPrefix: async (msg: Message) => {
     if (!msg.guildId) return defaultPrefix;
     const guildSettings = await container.redis.jsonGet(
       msg.guildId,
-      "GuildSettings"
+      "GuildSettings",
     );
     return guildSettings?.prefix ?? defaultPrefix;
   },

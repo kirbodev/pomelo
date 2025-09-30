@@ -96,5 +96,12 @@
     "userFieldDescription": "El usuario del que remover el estado AFK",
     "desc": "Has removido el estado AFK de {{user}}.",
     "autoStatusNote": "Un estado AFK automático está activo también. Tendrás que volver a ejecutar el comando si deseas removerlo."
+  },
+  "changelog": {
+    "commandName": "cambios",
+    "commandDescription": "Ver los últimos cambios en el bot.",
+    "title": "Cambios",
+    "lastUpdate": "El último cambio que has visto fue {{lastUpdate}}.",
+    "updateDisclaimer": "Puedes necesitar aceptar nuevas funciones o cambiar la configuración cuando se agreguen."
   }
 }

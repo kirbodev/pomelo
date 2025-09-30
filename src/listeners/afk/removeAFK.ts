@@ -71,10 +71,24 @@ export class RemoveAFKListener extends Listener {
 
     await deleteAFKData(message.author.id);
 
-    if (message.member?.nickname && message.member.nickname.startsWith("[AFK]"))
-      await message.member
-        .setNickname(message.member.nickname.replace("[AFK] ", ""))
-        .catch(() => null);
+    if (
+      message.member?.nickname &&
+      message.member.nickname.startsWith("[AFK]")
+    ) {
+      const pastUsernames = afkData.pastUsername;
+      if (!pastUsernames) return;
+      for (const pastName of pastUsernames) {
+        const guild = await this.container.client.guilds
+          .fetch(pastName.guildId)
+          .catch(() => null);
+        if (!guild) continue;
+        const member = await guild.members
+          .fetch(message.author.id)
+          .catch(() => null);
+        if (!member) continue;
+        await member.setNickname(pastName.username).catch(() => null);
+      }
+    }
 
     const buttonId = nanoid();
     const revertButton = new ActionRowBuilder<ButtonBuilder>().setComponents(

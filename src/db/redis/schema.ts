@@ -65,6 +65,7 @@ export const GuildSettings = z.object({
     .default(10),
   afkEnabled: z.boolean().default(true),
   blockAfkMentions: z.boolean().default(false),
+  announcementChannel: z.string().regex(ChannelRegex).optional(),
 });
 
 export const Afk = z.object({
@@ -82,6 +83,14 @@ export const Afk = z.object({
   text: z.string().min(1).max(512).optional(),
   attachment: z.string().optional(),
   eventId: z.string().optional(),
+  pastUsername: z
+    .array(
+      z.object({
+        guildId: z.string(),
+        username: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 export type Afk = z.infer<typeof Afk>;

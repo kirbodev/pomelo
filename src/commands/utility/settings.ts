@@ -259,6 +259,16 @@ export class SettingsCommand extends CommandUtils.PomeloSubcommand {
         type: "boolean",
         currentValue: settings.afkEnabled,
       })
+      .set("announcementChannel", {
+        name: t(LanguageKeys.Settings.Guild.announcementChannel.name),
+        description: t(
+          LanguageKeys.Settings.Guild.announcementChannel.description,
+        ),
+        type: "select",
+        selectType: ComponentType.ChannelSelect,
+        channelTypes: [ChannelType.GuildText],
+        currentValue: settings.announcementChannel,
+      })
       .set("blockAfkMentions", {
         name: t(LanguageKeys.Settings.Guild.blockAfkMentions.name),
         description: t(

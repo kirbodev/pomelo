@@ -59,6 +59,10 @@
     "blockAfkMentions": {
       "name": "Blocca menzioni AFK",
       "description": "Se le menzioni AFK sono bloccate in questo server."
+    },
+    "announcementChannel": {
+      "name": "Canale annunci",
+      "description": "Il canale in cui il bot manderá gli annunci del bot."
     }
   }
 }

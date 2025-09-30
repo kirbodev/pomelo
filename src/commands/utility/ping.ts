@@ -60,8 +60,6 @@ export class PingCommand extends CommandUtils.PomeloCommand {
 
     const t = await fetchT(interaction);
 
-    void this.container.tasks.create("syncCalendar", 1000);
-
     await this.reply(
       interaction,
       {
