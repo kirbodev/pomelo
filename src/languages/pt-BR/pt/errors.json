@@ -1,0 +1,197 @@
+{
+  "genericError": {
+    "title": "<:pomerror:1397677382214615161> Ocorreu um erro",
+    "desc": "Desculpe, algo deu errado. Isso é tudo que sabemos.",
+    "desc_detailed": "Desculpe, algo deu errado. Isso é tudo que sabemos.",
+    "field1": {
+      "title": "Erro"
+    }
+  },
+  "serverError": {
+    "title": "<:servererror:1397678354039312424> Erro de servidor",
+    "desc": "Desculpe, algo deu errado do nosso lado.",
+    "desc_detailed": "Desculpe, algo deu errado do nosso lado."
+  },
+  "userError": {
+    "title": "<:confused:1397678924011409542> Isso não parece certo",
+    "desc": "Parece que você fez algo errado.",
+    "desc_detailed": "Parece que você fez algo errado."
+  },
+  "syntaxError": {
+    "title": "<:confused:1397678924011409542> Isso não parece certo",
+    "desc": "A sintaxe correta para esse comando é:",
+    "desc_detailed": "A sintaxe correta para esse comando é:",
+    "syntaxFieldTitle": "Sintaxe",
+    "exampleFieldTitle": "Exemplo(s)"
+  },
+  "notFound": {
+    "title": "<:searchoff:1397680383641911418> Não Encontrado",
+    "desc": "Não encontramos o que você está procurando.",
+    "desc_detailed": "Não consegui encontrar o {{resource}} que você estava procurando."
+  },
+  "blocked": {
+    "title": "<:block:1397680563040817152> Bloqueado",
+    "desc": "Você está bloqueado de realizar essa ação.",
+    "desc_detailed": "Você está bloqueado de realizar essa ação para: {{reason}}."
+  },
+  "invalidLocation": {
+    "title": "<:wronglocation:1397680782876606584> Você não pode usar isso aqui",
+    "desc": "Essa ação não pode ser usada aqui.",
+    "desc_detailed": "Essa ação não pode ser usada aqui, usá-la em {{location}}."
+  },
+  "userCooldown": {
+    "title": "<:hourglass:1397681368439193620> Vai com calma!",
+    "desc": "Você está fazendo isso rápido demais.",
+    "desc_detailed": "Você está fazendo isso rápido demais. Por favor, espere {{time}} antes de tentar novamente."
+  },
+  "guildCooldown": {
+    "title": "<:hourglass:1397681368439193620> Vai com calma!",
+    "desc": "Essa ação foi feita recentemente neste servidor.",
+    "desc_detailed": "Essa ação foi feita recentemente neste servidor. Por favor espere {{time}} antes de tentar novamente."
+  },
+  "userAuthority": {
+    "title": "<:authority:1397687694108131419> Autoridade do Usuário",
+    "desc": "A pessoa em que você está tentando executar uma ação tem mais autoridade do que você.",
+    "desc_detailed": "{{user}} tem mais autoridade do que você. Você não pode executar essa ação."
+  },
+  "missingPermission": {
+    "title": "<:permissions:1397681744181985331> Permissão ausente",
+    "desc": "Você não tem permissão para executar esta ação.",
+    "desc_detailed": "Você precisa de {{permission}} para executar essa ação."
+  },
+  "botMissingPermission": {
+    "title": "<:permissions:1397681744181985331> Permissão ausente",
+    "desc": "Eu não tenho permissão para executar essa ação.",
+    "desc_detailed": "Eu preciso de {{permission}} para realizar essa ação."
+  },
+  "wrongTarget": {
+    "title": "<:wrongperson:1397687936602079382> Alvo errado",
+    "desc": "Isso não é para você.",
+    "desc_detailed": "Isso não é para você. É para {{target}}."
+  },
+  "devOnly": {
+    "title": "<:pomelo:1397688084858142802> Apenas para desenvolvedores",
+    "desc": "Esse recurso só está disponível para desenvolvedores.",
+    "desc_detailed": "Esse recurso só está disponível para desenvolvedores."
+  },
+  "maintenanceMode": {
+    "title": "<:construction:1397688310335537202> Manutenção",
+    "desc": "Estou atualmente em modo de manutenção, os recursos estão temporariamente pausados. Tente novamente mais tarde.",
+    "desc_detailed": "Meus recursos estão temporariamente pausados devido a {{reason}}. Tente novamente mais tarde."
+  },
+  "invalidBoolean": {
+    "title": "<:boolean:1397688720496525402> Booleano errado",
+    "desc": "Isso não é um booleano válido. Tente 'verdadeiro' ou 'falso'.",
+    "desc_detailed": "Isso não é um booleano válido. Tente 'verdadeiro' ou 'falso'."
+  },
+  "invalidNumber": {
+    "title": "<:number:1397688864897892423> Número inválido",
+    "desc": "Este não é um número válido. Tente um número.",
+    "desc_detailed": "Este não é um número válido. Tente um número."
+  },
+  "invalidString": {
+    "title": "<:string:1397689028039675914> Texto Inválido",
+    "desc": "Essa não é uma string válida. Tente algum texto.",
+    "desc_detailed": "Essa não é uma string válida. Tente um(a) {{string_type}}."
+  },
+  "invalidOption": {
+    "title": "<:block:1397680563040817152> Opção Inválida",
+    "desc": "Essa não é uma opção válida. Tente uma das opções.",
+    "desc_detailed": "Esta opção não é válida. Tente algo como '{{option}}'."
+  },
+  "invalidChannel": {
+    "title": "<:block:1397680563040817152> Canal inválido",
+    "desc": "Este não é um canal válido. Tente algo como '#canal' ou '1234567890123456789'.",
+    "desc_detailed": "Este não é um canal válido. Tente algo como '#canal' ou '1234567890123456789'."
+  },
+  "invalidRole": {
+    "title": "<:block:1397680563040817152> Cargo inválido",
+    "desc": "Este não é um cargo válido. Tente algo como '@cargo' ou '1234567890123456789'.",
+    "desc_detailed": "Este não é um cargo válido. Tente algo como '@cargo' ou '1234567890123456789'."
+  },
+  "invalidMention": {
+    "title": "<:block:1397680563040817152> Menção inválida",
+    "desc": "Esta não é uma menção/ID de usuário válido. Tente algo como '@pessoa' ou '1234567890123456789'.",
+    "desc_detailed": "Esta não é uma menção válida. Tente algo como '@pessoa' ou '1234567890123456789'."
+  },
+  "invalidDuration": {
+    "title": "<:hourglassoff:1397692063658545152> Duração inválida",
+    "desc": "Essa não é uma duração válida. Tente algo como '10s' ou '10m'.",
+    "desc_detailed": "Essa não é uma duração válida. Tente algo como '10s' ou '10m'."
+  },
+  "durationTooLong": {
+    "title": "<:hourglassoff:1397692063658545152> Duração Muito longa",
+    "desc": "Isso é muito longo. Tente algo mais curto.",
+    "desc_detailed": "É muito longo. Tente algo mais curto que {{length}}."
+  },
+  "durationTooShort": {
+    "title": "<:hourglassoff:1397692063658545152> Duração Muito curta",
+    "desc": "Isso é muito curto. Tente algo mais longo.",
+    "desc_detailed": "É muito curto. Tente algo mais longo que {{length}}."
+  },
+  "stringTooLong": {
+    "title": "<:string:1397689028039675914> Texto Muito Longo",
+    "desc": "Isso é muito longo. Tente algo mais curto.",
+    "desc_detailed": "Isso é muito longo. Tente algo menor que {{length}} caracteres."
+  },
+  "stringTooShort": {
+    "title": "<:string:1397689028039675914> Texto Muito Curto",
+    "desc": "Isso é muito curto. Tente algo mais longo.",
+    "desc_detailed": "É muito curto. Tente algo maior que {{length}} caracteres."
+  },
+  "numberTooLarge": {
+    "title": "<:number:1397688864897892423> Número Muito Grande",
+    "desc": "Esse número é grande demais. Tente algo menor.",
+    "desc_detailed": "Esse número é muito grande. Tente algo menor que {{length}}."
+  },
+  "numberTooSmall": {
+    "title": "<:number:1397688864897892423> Número Muito Pequeno",
+    "desc": "Esse número é muito pequeno. Tente algo maior.",
+    "desc_detailed": "Esse número é muito pequeno. Tente algo maior que {{length}}."
+  },
+  "invalidType": {
+    "title": "<:block:1397680563040817152> Tipo inválido",
+    "desc": "Não era isso que eu estava esperando.",
+    "desc_detailed": "Eu estava esperando um(a) {{expected}}, mas eu recebi {{received}}."
+  },
+  "invalidAttachment": {
+    "title": "<:attachmenterror:1397690751680254042> Anexo inválido",
+    "desc": "Este não é um anexo válido ou não é um tipo de arquivo suportado.",
+    "desc_detailed": "Este não é um anexo válido ou não é um tipo de arquivo suportado. Certifique-se de que seja um dos tipos de arquivo suportados: `{{types}}`."
+  },
+  "notInGuild": {
+    "title": "<:wronglocation:1397680782876606584> Você não pode usar isso aqui",
+    "desc": "Essa ação só está disponível em um servidor.",
+    "desc_detailed": "Essa ação só está disponível em um servidor."
+  },
+  "fileTooLarge": {
+    "title": "<:attachmenterror:1397690751680254042> Arquivo muito grande",
+    "desc": "Esse arquivo é grande demais. Tente algo menor.",
+    "desc_detailed": "Esse arquivo é grande demais. Tente algo menor que {{length}}."
+  },
+  "noEmail": {
+    "title": "<:noemail:1397690990399193128> Email ausente",
+    "desc": "Nenhum email encontrado para esta conta.",
+    "desc_detailed": "Nenhum email encontrado para esta conta."
+  },
+  "authError": {
+    "title": "<:authentication:1397691368557645845> Autenticação falhou",
+    "desc": "Falha ao autenticar.",
+    "desc_detailed": "Falha ao autenticar."
+  },
+  "noneFound": {
+    "title": "<:searchoff:1397680383641911418> Não Encontrado",
+    "desc": "O(s) recurso(s) que você estava procurando não puderam ser encontrados.",
+    "desc_detailed": "O {{resource}} que você estava procurando não pôde ser encontrado."
+  },
+  "missingScopes": {
+    "title": "<:pomwarning:1397677600012501042> Permissões Ausentes",
+    "desc": "Você precisa conceder todos os escopos necessários para usar este recurso.",
+    "desc_detailed": "Você precisa conceder todos os escopos necessários para usar este recurso."
+  },
+  "notAFK": {
+    "title": "<:clockerror:1397690377065988308> Não AFK",
+    "desc": "Este usuário não está AFK.",
+    "desc_detailed": "Este usuário não está AFK."
+  }
+}

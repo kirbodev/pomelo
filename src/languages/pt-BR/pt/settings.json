@@ -1,0 +1,68 @@
+{
+  "current": "Atual",
+  "change": "Alterar",
+  "default": {
+    "name": "Padrão",
+    "description": "O padrão desta opção é `{{default}}`."
+  },
+  "override": {
+    "name": "Sobreposto",
+    "description": "Isto é sobrescrito pelos administradores do servidor."
+  },
+  "user": {
+    "locale": {
+      "name": "Idioma",
+      "description": "O idioma que o bot usará. Os administradores do servidor podem sobrescrever isso por servidor."
+    },
+    "preferEphemeral": {
+      "name": "Preferir efêmero",
+      "description": "Se o bot deve preferir mensagens efêmeras (ocultas) em vez de mensagens normais. Os administradores do servidor podem sobrescrever isso por servidor."
+    },
+    "allowUrgentPings": {
+      "name": "Permitir pings urgentes",
+      "description": "Pings urgentes permitem que usuários te mencionem enquanto você está AFK colocando !! antes da menção."
+    }
+  },
+  "guild": {
+    "locale": {
+      "name": "Idioma",
+      "description": "A linguagem que o bot usará neste servidor. O idioma do usuário é usado por padrão se isso não for forçado a usar o 'Forçar Idioma'."
+    },
+    "forceLocale": {
+      "name": "Forçar Idioma",
+      "description": "Força o bot a usar o idioma definido neste servidor em vez do idioma do usuário."
+    },
+    "prefix": {
+      "name": "Prefixo",
+      "description": "O prefixo que o bot usará para comandos."
+    },
+    "features": {
+      "name": "Recursos",
+      "description": "Os recursos habilitados/desativados neste servidor."
+    },
+    "logChannel": {
+      "name": "Canal de Registro",
+      "description": "O canal onde o bot registrará as ações de moderação."
+    },
+    "forceEphemeral": {
+      "name": "Força efêmero",
+      "description": "Se o bot deve forçar mensagens efêmeras (ocultas)."
+    },
+    "ephemeralDeletionTimeout": {
+      "name": "Tempo de exclusão efêmera",
+      "description": "O tempo em segundos antes do bot deletar mensagens efêmeras. Isso inclui mensagens como avisos AFK. *Não deve ser confundido com interações efêmeras.*"
+    },
+    "afkEnabled": {
+      "name": "AFK habilitado",
+      "description": "Se o AFK está habilitado neste servidor."
+    },
+    "blockAfkMentions": {
+      "name": "Bloquear menções AFK",
+      "description": "Se as menções AFK estão bloqueadas neste servidor."
+    },
+    "announcementChannel": {
+      "name": "Announcement Channel",
+      "description": "The channel the bot will send bot announcements to."
+    }
+  }
+}
