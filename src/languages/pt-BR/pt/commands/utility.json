@@ -98,5 +98,12 @@
     "userFieldDescription": "O usuário para remover o status AFK",
     "desc": "Removido o status AFK de {{user}}.",
     "autoStatusNote": "Um status automático de AFK também está ativo. Você precisará executar novamente o comando se você deseja removê-lo."
+  },
+  "changelog": {
+    "commandName": "changelog",
+    "commandDescription": "Check for the latest changes in the bot.",
+    "title": "Changelog",
+    "lastUpdate": "The last update you have seen was {{lastUpdate}}.",
+    "updateDisclaimer": "You may need to accept new features or change configuration when new updates are released because of [Pomelo's Update Plan](https://kdvpom.notion.site/Pomelo-s-Project-Plan-2714a55251b9809f8875c42a49e1441c)."
   }
 }
