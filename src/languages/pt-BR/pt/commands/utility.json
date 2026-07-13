@@ -17,6 +17,31 @@
     "commandName": "ajuda",
     "commandDescription": "Obtenha ajuda para um comando ou uma lista de comandos."
   },
+  "feedback": {
+    "commandName": "feedback",
+    "commandDescription": "Report a bug or suggest a feature to me.",
+    "typeFieldName": "type",
+    "typeFieldDescription": "The type of feedback to send.",
+    "typeBug": "Bug Report",
+    "typeFeature": "Feature Request",
+    "chooseTitle": "Feedback",
+    "chooseDescription": "What kind of feedback do you want to send?",
+    "bugButton": "Bug Report",
+    "featureButton": "Feature Request",
+    "modalTitle": "Send Feedback",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Give it a short title.",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Describe it in as much detail as you can.",
+    "successTitle": "Feedback Sent",
+    "successDesc": "Your {{type}} is on its way to the devs. Thanks!",
+    "failTitle": "Couldn't Send Feedback",
+    "failDesc": "I couldn't send that. Try again in a bit.",
+    "reportTitle": "New {{type}}",
+    "submittedBy": "Submitted by",
+    "fromServer": "From server",
+    "directMessage": "DM"
+  },
   "bigEmoji": {
     "commandName": "grandeemoji",
     "commandDescription": "Obtenha a forma de imagem grande e link de um emoji(s)."
