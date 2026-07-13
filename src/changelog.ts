@@ -1,5 +1,10 @@
 export default [
   {
+    version: "1.1.0",
+    changes: ["Added /feedback to report bugs or suggest features"],
+    date: "2026-06-26",
+  },
+  {
     version: "1.0.1",
     changes: [
       "Added changelog",

@@ -15,5 +15,11 @@ namespace NodeJS {
     GOOGLE_CLIENT_ID: string;
     GOOGLE_CLIENT_SECRET: string;
     HOST: string;
+    /**
+     * Optional Discord webhook URL that bug reports and feature suggestions
+     * (the /feedback command) are forwarded to. If unset, feedback is instead
+     * DMed to the bot owners listed in `config.owners`.
+     */
+    FEEDBACK_WEBHOOK_URL?: string;
   }
 }
