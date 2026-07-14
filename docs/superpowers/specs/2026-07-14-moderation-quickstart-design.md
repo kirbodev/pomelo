@@ -65,7 +65,7 @@ type Preset = {
 - Title: "General Settings"
 - Description: "Configure the core warn system behavior."
 - Settings (inline, using select menus and toggles):
-  - **Default expiry** — String select: 1d, 3d, 7d, 14d, 30d
+  - **Default expiry** — String select: 3d, 7d, 14d, 30d, 60d, 90d, 180d, 365d
   - **DM on warn** — Toggle button (✅ Yes / ❌ No)
   - **Log channel** — Channel select menu (optional)
 - Button: **"Configure warn levels"** (ButtonStyle.Primary) → goes to Step 4
