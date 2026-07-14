@@ -193,63 +193,45 @@ export class WarnSettingsCommand extends CommandUtils.PomeloSubcommand {
   }
 
   private async runQuickstart(interaction: Command.ChatInputCommandInteraction) {
-    const t = await fetchT(interaction);
-    const guildId = interaction.guildId;
-    if (!guildId) return;
-    const id = nanoid();
+    const { QuickstartWizard } = await import("../../lib/moderation/quickstartWizard.js");
+    const wizard = new QuickstartWizard(interaction);
+    wizard.initialize();
 
-    const select = new StringSelectMenuBuilder()
-      .setCustomId(id)
-      .setPlaceholder("Choose a severity preset")
-      .addOptions([
-        { label: t(LanguageKeys.Commands.Moderation.WarnSettings.presetLemomeme), value: "lemomeme", description: "Role at 1-2 warns, ban at 3" },
-        { label: t(LanguageKeys.Commands.Moderation.WarnSettings.presetRecommended), value: "recommended", description: "Escalating timeouts, temp-ban at 6, ban at 7" },
-        { label: t(LanguageKeys.Commands.Moderation.WarnSettings.presetProgressive), value: "progressive", description: "Timeouts, kick at 4, ban at 5" },
-        { label: t(LanguageKeys.Commands.Moderation.WarnSettings.presetStrictStrike), value: "strictStrike", description: "Long timeouts, temp-ban at 4, ban at 5" },
-      ]);
-
-    const embed = new EmbedUtils.EmbedConstructor()
-      .setColor(Colors.Info)
-      .setDescription("Welcome to the warn system setup! First, choose a severity preset:");
-
-    await this.reply(interaction, { embeds: [embed], components: [new ActionRowBuilder<StringSelectMenuBuilder>().setComponents([select])] }, { type: PomeloReplyType.Success });
-
-    const selectInteraction = await interaction.channel?.awaitMessageComponent({ filter: (i) => i.customId === id && i.user.id === interaction.user.id, time: 120000, componentType: ComponentType.StringSelect }).catch(() => null);
-    if (!selectInteraction) return;
-
-    const preset = selectInteraction.values[0] as keyof typeof PRESETS;
-
-    const modal = new ModalBuilder()
-      .setCustomId(nanoid())
-      .setTitle("Warn System Configuration")
-      .setComponents([
-        new ActionRowBuilder<TextInputBuilder>().setComponents([
-          new TextInputBuilder().setCustomId("expiryDays").setLabel("Warn expiry days (1-365)").setStyle(TextInputStyle.Short).setValue("3").setRequired(true),
-        ]),
-        new ActionRowBuilder<TextInputBuilder>().setComponents([
-          new TextInputBuilder().setCustomId("dmOnWarn").setLabel("DM on warn? (yes/no)").setStyle(TextInputStyle.Short).setValue("yes").setRequired(true),
-        ]),
-      ]);
-
-    await selectInteraction.showModal(modal);
-    const modalInteraction = await selectInteraction.awaitModalSubmit({ time: 600000, filter: (i) => i.customId === modal.data.custom_id }).catch(() => null);
-    if (!modalInteraction) return;
-
-    const expiryDays = parseInt(modalInteraction.fields.getTextInputValue("expiryDays"), 10) || 3;
-    const dmOnWarn = modalInteraction.fields.getTextInputValue("dmOnWarn").toLowerCase() === "yes";
-
-    await db.insert(warnSettings).values({
-      guildId,
-      defaultExpiryDays: expiryDays,
-      dmOnWarn,
-      actions: JSON.stringify(PRESETS[preset].levels),
-    }).onConflictDoUpdate({
-      target: warnSettings.guildId,
-      set: { defaultExpiryDays: expiryDays, dmOnWarn, actions: JSON.stringify(PRESETS[preset].levels) },
+    const { components, flags } = await wizard.renderStep(1);
+    const reply = await interaction.reply({
+      components,
+      flags,
     });
 
-    await modalInteraction.deferReply({ flags: MessageFlags.Ephemeral });
-    const embed2 = new EmbedUtils.EmbedConstructor().setColor(Colors.Success).setDescription(t(LanguageKeys.Commands.Moderation.WarnSettings.updated));
-    await this.reply(modalInteraction, { embeds: [embed2] }, { type: PomeloReplyType.Success });
+    const message = await reply.fetch();
+
+    // Component collector
+    const collector = message.createMessageComponentCollector({
+      time: 600000, // 10 minutes
+      filter: (i) => i.user.id === interaction.user.id,
+    });
+
+    collector.on("collect", async (i) => {
+      await wizard.handleComponentInteraction(i);
+    });
+
+    collector.on("end", async () => {
+      const currentState = wizard.getState();
+      if (currentState) {
+        wizard.clearState();
+        const t = await fetchT(interaction);
+        const container = new (await import("discord.js")).ContainerBuilder()
+          .setAccentColor(Colors.Warning)
+          .addTextDisplayComponents(
+            new (await import("discord.js")).TextDisplayBuilder().setContent(`# ${t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.timeoutTitle)}`),
+            new (await import("discord.js")).TextDisplayBuilder().setContent(t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.timeoutDescription)),
+          );
+
+        await message.edit({
+          components: [container],
+          flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+        });
+      }
+    });
   }
 }
