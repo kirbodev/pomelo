@@ -2,7 +2,7 @@
   "version": "6",
   "dialect": "sqlite",
   "id": "635b32a8-3d57-430f-af24-dc7ee826203a",
-  "prevId": "79406ba8-3ed6-4460-a976-4478f3751b3d",
+  "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "calendarAccount": {
       "name": "calendarAccount",
