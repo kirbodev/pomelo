@@ -1,5 +1,16 @@
 import { container } from "@sapphire/framework";
-import { eq, and, sql, desc, count } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  inArray,
+  ne,
+  or,
+  sql,
+  count,
+} from "drizzle-orm";
 import { Guild, GuildMember, User, PermissionFlagsBits } from "discord.js";
 import { db } from "../../db/index.js";
 import {
@@ -7,7 +18,11 @@ import {
   warns,
   warnSettings,
   caseNotes,
+  caseCounters,
+  warnPunishmentBatches,
+  warnPunishmentItems,
   type ModCase,
+  type WarnPunishmentBatch,
 } from "../../db/schema.js";
 import {
   type ModActionResult,
@@ -20,8 +35,506 @@ import {
   type ModActionOptions,
 } from "./types.js";
 import { normalizeActions, sanitizeLevelMessage } from "./migration.js";
+import { ModerationError } from "./errors.js";
+
+type ModerationDatabase = typeof db;
+type ModerationTransaction = Parameters<
+  Parameters<ModerationDatabase["transaction"]>[0]
+>[0];
+
+export type CreateWarnInput = {
+  guildId: string;
+  actorId: string;
+  targetId: string;
+  operationKey: string;
+  amount: number;
+  reason?: string;
+};
+
+export type SetWarnLevelInput = Omit<CreateWarnInput, "amount"> & {
+  level: number;
+};
+
+export type RevokeWarnInput = Omit<CreateWarnInput, "amount"> & {
+  sourceCaseId: number;
+};
+
+export type WarnLedgerResult = {
+  case: ModCase | null;
+  finalWarnCount: number;
+  batches: WarnPunishmentBatch[];
+};
 
 export class ModActionService {
+  public constructor(
+    private readonly database: ModerationDatabase = db,
+    private readonly getNow: () => number = Date.now,
+  ) {}
+
+  public async createWarn(input: CreateWarnInput): Promise<WarnLedgerResult> {
+    if (!Number.isInteger(input.amount) || input.amount < 1)
+      throw new ModerationError("invalidWarnAmount");
+
+    return this.database.transaction(async (transaction) => {
+      const now = this.getNow();
+      const settings = await this.getRequiredWarnSettings(
+        transaction,
+        input.guildId,
+      );
+      const existing = await this.getExistingLedgerResult(
+        transaction,
+        input,
+        now,
+      );
+      if (existing) return existing;
+
+      const activeWarns = await this.getActiveWarns(
+        transaction,
+        input.guildId,
+        input.targetId,
+        now,
+      );
+      const finalWarnCount = activeWarns.length + input.amount;
+      if (finalWarnCount > settings.maxWarns)
+        throw new ModerationError("warnLimitExceeded", {
+          maxWarns: settings.maxWarns,
+        });
+
+      const caseEntry = await this.createLedgerCase(transaction, {
+        ...input,
+        actionType: "warn",
+        now,
+      });
+      await this.insertWarningUnits(
+        transaction,
+        input,
+        caseEntry.id,
+        activeWarns.length,
+        input.amount,
+        settings.defaultExpiryDays,
+        now,
+      );
+      const batches = await this.createCrossedBatches(
+        transaction,
+        input,
+        caseEntry,
+        activeWarns.length,
+        finalWarnCount,
+        settings.actions,
+        now,
+      );
+
+      return { case: caseEntry, finalWarnCount, batches };
+    });
+  }
+
+  private async setWarnLevelLedger(
+    input: SetWarnLevelInput,
+  ): Promise<WarnLedgerResult> {
+    if (!Number.isInteger(input.level) || input.level < 0)
+      throw new ModerationError("invalidWarnLevel");
+
+    return this.database.transaction(async (transaction) => {
+      const now = this.getNow();
+      const settings = await this.getRequiredWarnSettings(
+        transaction,
+        input.guildId,
+      );
+      const existing = await this.getExistingLedgerResult(
+        transaction,
+        input,
+        now,
+      );
+      if (existing) return existing;
+
+      const activeWarns = await this.getActiveWarns(
+        transaction,
+        input.guildId,
+        input.targetId,
+        now,
+      );
+      if (input.level === activeWarns.length)
+        return { case: null, finalWarnCount: input.level, batches: [] };
+      if (input.level > settings.maxWarns)
+        throw new ModerationError("warnLimitExceeded", {
+          maxWarns: settings.maxWarns,
+        });
+
+      if (input.level > activeWarns.length) {
+        const amount = input.level - activeWarns.length;
+        const caseEntry = await this.createLedgerCase(transaction, {
+          ...input,
+          actionType: "warn",
+          now,
+        });
+        await this.insertWarningUnits(
+          transaction,
+          input,
+          caseEntry.id,
+          activeWarns.length,
+          amount,
+          settings.defaultExpiryDays,
+          now,
+        );
+        const batches = await this.createCrossedBatches(
+          transaction,
+          input,
+          caseEntry,
+          activeWarns.length,
+          input.level,
+          settings.actions,
+          now,
+        );
+
+        return { case: caseEntry, finalWarnCount: input.level, batches };
+      }
+
+      const caseEntry = await this.createLedgerCase(transaction, {
+        ...input,
+        actionType: "unwarn",
+        now,
+      });
+      await this.revokeWarningUnits(
+        transaction,
+        input,
+        caseEntry.id,
+        activeWarns.slice(input.level),
+        now,
+      );
+      await this.cancelInapplicableBatches(
+        transaction,
+        input.guildId,
+        input.targetId,
+        input.level,
+        now,
+      );
+
+      return { case: caseEntry, finalWarnCount: input.level, batches: [] };
+    });
+  }
+
+  public async revokeWarn(input: RevokeWarnInput): Promise<WarnLedgerResult> {
+    return this.database.transaction(async (transaction) => {
+      const now = this.getNow();
+      await this.getRequiredWarnSettings(transaction, input.guildId);
+      const existing = await this.getExistingLedgerResult(
+        transaction,
+        input,
+        now,
+      );
+      if (existing) return existing;
+
+      const activeWarns = await this.getActiveWarns(
+        transaction,
+        input.guildId,
+        input.targetId,
+        now,
+      );
+      const toRevoke = activeWarns.filter(
+        (warning) => warning.caseId === input.sourceCaseId,
+      );
+      if (toRevoke.length === 0)
+        return {
+          case: null,
+          finalWarnCount: activeWarns.length,
+          batches: [],
+        };
+
+      const caseEntry = await this.createLedgerCase(transaction, {
+        ...input,
+        actionType: "unwarn",
+        sourceCaseId: input.sourceCaseId,
+        now,
+      });
+      await this.revokeWarningUnits(
+        transaction,
+        input,
+        caseEntry.id,
+        toRevoke,
+        now,
+      );
+      const finalWarnCount = activeWarns.length - toRevoke.length;
+      await this.cancelInapplicableBatches(
+        transaction,
+        input.guildId,
+        input.targetId,
+        finalWarnCount,
+        now,
+      );
+
+      return { case: caseEntry, finalWarnCount, batches: [] };
+    });
+  }
+
+  private async getRequiredWarnSettings(
+    transaction: ModerationTransaction,
+    guildId: string,
+  ) {
+    const settings = await transaction
+      .select()
+      .from(warnSettings)
+      .where(eq(warnSettings.guildId, guildId))
+      .limit(1);
+    if (!settings[0]) throw new ModerationError("warnSettingsNotConfigured");
+    return settings[0];
+  }
+
+  private async getExistingLedgerResult(
+    transaction: ModerationTransaction,
+    input: Pick<CreateWarnInput, "guildId" | "targetId" | "operationKey">,
+    now: number,
+  ): Promise<WarnLedgerResult | null> {
+    const cases = await transaction
+      .select()
+      .from(modCases)
+      .where(
+        and(
+          eq(modCases.guildId, input.guildId),
+          eq(modCases.operationKey, input.operationKey),
+        ),
+      )
+      .limit(1);
+    const caseEntry = cases.at(0);
+    if (!caseEntry) return null;
+
+    const batches = await transaction
+      .select()
+      .from(warnPunishmentBatches)
+      .where(
+        and(
+          eq(warnPunishmentBatches.guildId, input.guildId),
+          eq(warnPunishmentBatches.warnCaseId, caseEntry.id),
+        ),
+      )
+      .orderBy(asc(warnPunishmentBatches.id));
+    const activeWarns = await this.getActiveWarns(
+      transaction,
+      input.guildId,
+      input.targetId,
+      now,
+    );
+
+    return { case: caseEntry, finalWarnCount: activeWarns.length, batches };
+  }
+
+  private async getActiveWarns(
+    transaction: ModerationTransaction,
+    guildId: string,
+    targetId: string,
+    now: number,
+  ) {
+    return transaction
+      .select()
+      .from(warns)
+      .where(
+        and(
+          eq(warns.guildId, guildId),
+          eq(warns.userId, targetId),
+          eq(warns.revoked, false),
+          or(sql`${warns.expiresAt} IS NULL`, gt(warns.expiresAt, now)),
+        ),
+      )
+      .orderBy(asc(warns.createdAt), asc(warns.id));
+  }
+
+  private async createLedgerCase(
+    transaction: ModerationTransaction,
+    input: Pick<
+      CreateWarnInput,
+      "guildId" | "actorId" | "targetId" | "operationKey" | "reason"
+    > & {
+      actionType: "warn" | "unwarn";
+      sourceCaseId?: number;
+      now: number;
+    },
+  ): Promise<ModCase> {
+    const [counter] = await transaction
+      .insert(caseCounters)
+      .values({
+        guildId: input.guildId,
+        nextCaseNumber: 2,
+        updatedAt: input.now,
+      })
+      .onConflictDoUpdate({
+        target: caseCounters.guildId,
+        set: {
+          nextCaseNumber: sql`${caseCounters.nextCaseNumber} + 1`,
+          updatedAt: input.now,
+        },
+      })
+      .returning({
+        caseNumber: sql<number>`${caseCounters.nextCaseNumber} - 1`,
+      });
+
+    const [caseEntry] = await transaction
+      .insert(modCases)
+      .values({
+        guildId: input.guildId,
+        caseNumber: counter.caseNumber,
+        operationKey: input.operationKey,
+        sourceCaseId: input.sourceCaseId,
+        userId: input.targetId,
+        moderatorId: input.actorId,
+        actionType: input.actionType,
+        reason: input.reason ?? "",
+        createdAt: input.now,
+        updatedAt: input.now,
+      })
+      .returning();
+    return caseEntry;
+  }
+
+  private async insertWarningUnits(
+    transaction: ModerationTransaction,
+    input: Pick<CreateWarnInput, "guildId" | "actorId" | "targetId">,
+    caseId: number,
+    activeWarnCount: number,
+    amount: number,
+    expiryDays: number,
+    now: number,
+  ): Promise<void> {
+    const expiresAt = expiryDays === 0 ? null : now + expiryDays * 86_400_000;
+    await transaction.insert(warns).values(
+      Array.from({ length: amount }, (_, index) => ({
+        caseId,
+        guildId: input.guildId,
+        userId: input.targetId,
+        moderatorId: input.actorId,
+        warnCount: activeWarnCount + index + 1,
+        expiresAt,
+        createdAt: now,
+      })),
+    );
+  }
+
+  private async createCrossedBatches(
+    transaction: ModerationTransaction,
+    input: Pick<CreateWarnInput, "guildId" | "targetId" | "operationKey">,
+    caseEntry: ModCase,
+    previousWarnCount: number,
+    finalWarnCount: number,
+    actions: string,
+    now: number,
+  ): Promise<WarnPunishmentBatch[]> {
+    const crossedLevels = normalizeActions(actions).filter(
+      (level) =>
+        level.warnCount > previousWarnCount &&
+        level.warnCount <= finalWarnCount &&
+        level.punishments.length > 0,
+    );
+    const batches: WarnPunishmentBatch[] = [];
+
+    for (const level of crossedLevels) {
+      const [batch] = await transaction
+        .insert(warnPunishmentBatches)
+        .values({
+          publicId: crypto.randomUUID(),
+          guildId: input.guildId,
+          warnCaseId: caseEntry.id,
+          targetUserId: input.targetId,
+          threshold: level.warnCount,
+          operationKey: `${input.operationKey}:threshold:${String(level.warnCount)}`,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning();
+
+      await transaction.insert(warnPunishmentItems).values(
+        level.punishments.map((punishment, index) => ({
+          guildId: input.guildId,
+          batchId: batch.id,
+          ordinal: index + 1,
+          punishmentType: punishment.type,
+          duration: punishment.duration,
+          roleId: punishment.roleId,
+          createdAt: now,
+          updatedAt: now,
+        })),
+      );
+      batches.push(batch);
+    }
+
+    return batches;
+  }
+
+  private async revokeWarningUnits(
+    transaction: ModerationTransaction,
+    input: Pick<CreateWarnInput, "guildId" | "actorId" | "targetId">,
+    revokeCaseId: number,
+    warningUnits: Awaited<ReturnType<ModActionService["getActiveWarns"]>>,
+    now: number,
+  ): Promise<void> {
+    if (warningUnits.length === 0) return;
+    await transaction
+      .update(warns)
+      .set({
+        revoked: true,
+        revokedBy: input.actorId,
+        revokedAt: now,
+        revokedByCaseId: revokeCaseId,
+      })
+      .where(
+        and(
+          eq(warns.guildId, input.guildId),
+          eq(warns.userId, input.targetId),
+          eq(warns.revoked, false),
+          inArray(
+            warns.id,
+            warningUnits.map((warning) => warning.id),
+          ),
+        ),
+      );
+  }
+
+  private async cancelInapplicableBatches(
+    transaction: ModerationTransaction,
+    guildId: string,
+    targetId: string,
+    finalWarnCount: number,
+    now: number,
+  ): Promise<void> {
+    const batches = await transaction
+      .select()
+      .from(warnPunishmentBatches)
+      .where(
+        and(
+          eq(warnPunishmentBatches.guildId, guildId),
+          eq(warnPunishmentBatches.targetUserId, targetId),
+          gt(warnPunishmentBatches.threshold, finalWarnCount),
+          ne(warnPunishmentBatches.state, "completed"),
+          ne(warnPunishmentBatches.state, "cancelled"),
+        ),
+      );
+    if (batches.length === 0) return;
+
+    await transaction
+      .update(warnPunishmentBatches)
+      .set({
+        state: "cancelled",
+        revision: sql`${warnPunishmentBatches.revision} + 1`,
+        updatedAt: now,
+      })
+      .where(
+        inArray(
+          warnPunishmentBatches.id,
+          batches.map((batch) => batch.id),
+        ),
+      );
+    await transaction
+      .update(warnPunishmentItems)
+      .set({ state: "inapplicable", updatedAt: now })
+      .where(
+        and(
+          eq(warnPunishmentItems.guildId, guildId),
+          inArray(
+            warnPunishmentItems.batchId,
+            batches.map((batch) => batch.id),
+          ),
+          ne(warnPunishmentItems.state, "applied"),
+        ),
+      );
+  }
+
   private async validateHierarchy(
     guild: Guild,
     moderator: GuildMember,
@@ -470,7 +983,36 @@ export class ModActionService {
     };
   }
 
-  async setWarnLevel(
+  public async setWarnLevel(
+    input: SetWarnLevelInput,
+  ): Promise<WarnLedgerResult>;
+  public async setWarnLevel(
+    guild: Guild,
+    moderator: GuildMember,
+    target: GuildMember,
+    level: number,
+    reason?: string,
+  ): Promise<WarnActionResult>;
+  public async setWarnLevel(
+    inputOrGuild: SetWarnLevelInput | Guild,
+    moderator?: GuildMember,
+    target?: GuildMember,
+    level?: number,
+    reason?: string,
+  ): Promise<WarnLedgerResult | WarnActionResult> {
+    if ("guildId" in inputOrGuild) return this.setWarnLevelLedger(inputOrGuild);
+    if (!moderator || !target || level === undefined)
+      throw new Error("invalidLegacyWarnLevelInput");
+    return this.setWarnLevelLegacy(
+      inputOrGuild,
+      moderator,
+      target,
+      level,
+      reason,
+    );
+  }
+
+  private async setWarnLevelLegacy(
     guild: Guild,
     moderator: GuildMember,
     target: GuildMember,
