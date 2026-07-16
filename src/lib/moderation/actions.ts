@@ -8,7 +8,6 @@ import {
   warnSettings,
   caseNotes,
   type ModCase,
-  type WarnSettings,
 } from "../../db/schema.js";
 import {
   type ModActionResult,
@@ -73,7 +72,7 @@ export class ModActionService {
     try {
       const lines: string[] = [`You've been **warned** in **${guildName}**.`];
       if (reason)
-        lines.push(`**Reason:** ${reason} (warn level: ${amount.toString()})`);
+        lines.push(`**Reason:** ${reason} (warn level: ${String(amount)})`);
       if (levelMessages.length > 0) lines.push("", ...levelMessages);
       const base = lines.join("\n");
       if (base.length <= 2000) {
@@ -94,8 +93,8 @@ export class ModActionService {
   private formatDuration(ms: number): string {
     const days = Math.floor(ms / 86400000);
     const hours = Math.floor((ms % 86400000) / 3600000);
-    if (days > 0) return `${days.toString()}d ${hours.toString()}h`;
-    return `${hours.toString()}h`;
+    if (days > 0) return `${String(days)}d ${String(hours)}h`;
+    return `${String(hours)}h`;
   }
 
   /**
@@ -384,7 +383,7 @@ export class ModActionService {
     const preCount = await this.getActiveWarnCount(guild.id, target.id);
 
     const settings = await this.getWarnSettings(guild.id);
-    const expiryDays = customExpiryDays ?? settings?.defaultExpiryDays ?? 3;
+    const expiryDays = customExpiryDays ?? settings.defaultExpiryDays;
     const expiryMs = expiryDays * 86400000;
 
     const caseEntry = await this.logCase(
@@ -410,7 +409,7 @@ export class ModActionService {
       });
     }
 
-    const levels = normalizeActions(settings?.actions);
+    const levels = normalizeActions(settings.actions);
     const postCount = preCount + amount;
     const crossed = levels.filter(
       (l) => l.warnCount > preCount && l.warnCount <= postCount,
@@ -418,37 +417,44 @@ export class ModActionService {
     const levelMessages = crossed
       .map((l) => {
         const msg = l.message ? sanitizeLevelMessage(l.message) : "";
-        return msg ? `⚠️ Level ${l.warnCount.toString()}: ${msg}` : "";
+        return msg ? `⚠️ Level ${String(l.warnCount)}: ${msg}` : "";
       })
       .filter(Boolean);
 
-    const dmSent =
-      settings?.dmOnWarn !== false
-        ? await this.tryWarnDm(
-            target.user,
-            guild.name,
-            reason,
-            amount,
-            levelMessages,
-          )
-        : false;
+    const dmSent = settings.dmOnWarn
+      ? await this.tryWarnDm(
+          target.user,
+          guild.name,
+          reason,
+          amount,
+          levelMessages,
+        )
+      : false;
 
     const thresholdActions: WarnActionResult["thresholdActions"] = [];
     for (const level of crossed) {
       if (level.punishments.length === 0) continue;
       if (level.autoConfirm) {
-        const result = await this.executeLevel(
-          guild,
-          moderator,
-          target,
-          level,
-          reason,
-        );
-        thresholdActions.push({
-          level,
-          autoExecuted: true,
-          results: result.results,
-        });
+        try {
+          const result = await this.executeLevel(
+            guild,
+            moderator,
+            target,
+            level,
+            reason,
+          );
+          thresholdActions.push({
+            level,
+            autoExecuted: true,
+            results: result.results,
+          });
+        } catch (err) {
+          thresholdActions.push({
+            level,
+            autoExecuted: false,
+            error: String(err),
+          });
+        }
       } else {
         thresholdActions.push({ level, autoExecuted: false });
       }
@@ -492,12 +498,12 @@ export class ModActionService {
       target.id,
       moderator.id,
       "warn",
-      reason || `Warn level set to ${level.toString()}`,
+      reason || `Warn level set to ${String(level)}`,
       false,
     );
 
     const settings = await this.getWarnSettings(guild.id);
-    const expiryDays = settings?.defaultExpiryDays ?? 3;
+    const expiryDays = settings.defaultExpiryDays;
     const expiresAt = new Date(Date.now() + expiryDays * 86400000);
 
     for (let i = 0; i < level; i++) {
@@ -511,8 +517,9 @@ export class ModActionService {
       });
     }
 
+    // Check threshold actions — only fire for newly crossed thresholds
     const thresholdActions: WarnActionResult["thresholdActions"] = [];
-    if (settings?.actions) {
+    if (settings.actions) {
       const levels = normalizeActions(settings.actions);
       const postCount = preCount + level;
       const crossed = levels.filter(
@@ -550,17 +557,20 @@ export class ModActionService {
   }
 
   async unwarn(caseId: number, moderatorId: string): Promise<ModActionResult> {
-    const existingCase = (
-      await db.select().from(modCases).where(eq(modCases.id, caseId)).limit(1)
-    ).at(0);
+    const rows = await db
+      .select()
+      .from(modCases)
+      .where(eq(modCases.id, caseId))
+      .limit(1);
 
-    if (!existingCase)
+    if (rows.length === 0)
       return {
         success: false,
         case: null,
         dmSent: false,
         error: "caseNotFound",
       };
+    const existingCase = rows[0];
 
     const activeWarns = await db
       .update(warns)
@@ -632,10 +642,13 @@ export class ModActionService {
   }
 
   async editDuration(caseId: number, newDurationMs: number): Promise<boolean> {
-    const existing = (
-      await db.select().from(modCases).where(eq(modCases.id, caseId)).limit(1)
-    ).at(0);
-    if (!existing) return false;
+    const rows = await db
+      .select()
+      .from(modCases)
+      .where(eq(modCases.id, caseId))
+      .limit(1);
+    if (rows.length === 0) return false;
+    const existing = rows[0];
 
     await db
       .update(modCases)
@@ -666,22 +679,24 @@ export class ModActionService {
     moderatorId: string,
     note: string,
   ): Promise<boolean> {
-    const existing = (
-      await db.select().from(modCases).where(eq(modCases.id, caseId)).limit(1)
-    ).at(0);
-    if (!existing) return false;
+    const rows = await db
+      .select()
+      .from(modCases)
+      .where(eq(modCases.id, caseId))
+      .limit(1);
+    if (rows.length === 0) return false;
 
     await db.insert(caseNotes).values({ caseId, moderatorId, note });
     return true;
   }
 
-  async getWarnSettings(guildId: string): Promise<WarnSettings | null> {
+  async getWarnSettings(guildId: string) {
     const rows = await db
       .select()
       .from(warnSettings)
       .where(eq(warnSettings.guildId, guildId))
       .limit(1);
-    return rows.at(0) ?? null;
+    return rows[0] ?? null;
   }
 
   async getCasesForUser(
