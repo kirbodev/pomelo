@@ -1,5 +1,7 @@
 # Modernized Moderation Quickstart Implementation Plan
 
+> **OBSOLETE — DO NOT EXECUTE THIS PLAN.** It is retained only as implementation history. Its in-memory state, collector, timeout, and custom-ID tasks conflict with the approved persistent architecture. A replacement implementation plan will be written from [Moderation Safety and Persistent Approvals](../specs/2026-07-16-moderation-safety-and-persistent-approvals-design.md) after that design is reviewed. The replacement must use Redis sessions with TTL and revision plus Sapphire `InteractionHandler` files for every button, select, and modal submission.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a 6-step interactive quickstart wizard for the warn system with preset/from-scratch options, dynamic warn levels, and Components v2 UI.

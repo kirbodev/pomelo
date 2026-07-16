@@ -1,5 +1,7 @@
 # Multi-Punishment Warn Levels — Design Spec
 
+> **Safety amendment (2026-07-16):** The command-local confirmation and collector behavior in this document is superseded by [Moderation Safety and Persistent Approvals](./2026-07-16-moderation-safety-and-persistent-approvals-design.md). Crossed punishments are durable per-item approvals handled by Sapphire `InteractionHandler` files. The approval UI supports partial application, `Apply all`, and permission-gated dismissal. `autoApplyWarnPunishments` and `dangerouslyBypassWarnPermissions` are separate, default-off guild settings. Automatic execution always requires issuer hierarchy; the dangerous setting bypasses only missing action-specific permissions.
+
 > **Date:** 2026-07-16
 > **Project:** Pomelo Discord Bot
 > **Scope:** Rework the warn-level editor in the `/warn quickstart` wizard so each warn level can apply multiple punishments, carry a per-level message, and offer customisable punishment durations (editable mute time; ban permanent vs temporary).
@@ -345,8 +347,5 @@ No DB migration. No new tables. No new scheduled tasks (temp bans reuse the exis
 - [ ] View (`/warn settings`) and actions list render multi-punishment levels.
 - [ ] All new strings localized in `en-US`, `it`, `es-ES` and humanized.
 - [ ] Buttons use emoji-only or text-only per §5.2; no button mixes label and emoji.
-
-
-
 
 

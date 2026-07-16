@@ -1,5 +1,7 @@
 # Modernized Moderation Quickstart — Design Spec
 
+> **Safety amendment (2026-07-16):** The state and collector architecture in this document is superseded by [Moderation Safety and Persistent Approvals](./2026-07-16-moderation-safety-and-persistent-approvals-design.md). Quickstart state must live in Redis with a TTL and revision, and every button, select, and modal submission must route through Sapphire `InteractionHandler` files. Do not use an in-memory `Map`, `createMessageComponentCollector`, `awaitMessageComponent`, or command-owned callback state. The newer design also adds `autoApplyWarnPunishments` and `dangerouslyBypassWarnPermissions`, both defaulting to `false`.
+
 > **Date:** 2026-07-14
 > **Project:** Pomelo Discord Bot
 > **Feature:** Modernized `/warn quickstart` wizard

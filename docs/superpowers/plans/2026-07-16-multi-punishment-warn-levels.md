@@ -1,5 +1,7 @@
 # Multi-Punishment Warn Levels Implementation Plan
 
+> **OBSOLETE — DO NOT EXECUTE THIS PLAN.** It is retained only as implementation history. Its no-migration constraint, command-local confirmations, `ButtonConfirmationConstructor`, and `awaitMessageComponent` tasks conflict with the approved durable approval architecture. A replacement implementation plan will be written from [Moderation Safety and Persistent Approvals](../specs/2026-07-16-moderation-safety-and-persistent-approvals-design.md) after that design is reviewed.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Let each warn level apply multiple punishments, carry a per-level message appended to the warned user's DM, and offer customisable durations (editable mute ≤28d; ban permanent or temp).
@@ -1679,9 +1681,6 @@ If manual verification surfaced fixes, commit them. Otherwise skip.
 - **Placeholder scan:** no TBD/TODO; every code step has full code.
 - **Type consistency:** `WarnLevel` / `WarnPunishment` / `PunishResult` / `LevelExecResult` names match across Tasks 1→7. `executeLevel` is public in Task 4 and called in Task 7. `sanitizeLevelMessage` / `normalizeActions` defined in Task 2, consumed in Tasks 4/6/8. `Emojis.Edit` / `Emojis.Trash` defined in Task 5, used in Task 6. `disableButtons` is an instance method accessed via `container.utilities.componentUtils` (verified against `componentUtils.ts:110`), not a static — Task 7 uses the correct path.
 - **Known risk:** Task 7's `channel` union (`Message.channel | ChatInputCommandInteraction.channel`) may need an `as any` cast for `.send`/`awaitMessageComponent`; documented in the task with a fallback. Resolved at typecheck time.
-
-
-
 
 
 
