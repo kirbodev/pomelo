@@ -58,7 +58,17 @@ const workflowConfigSchema = z
     logChannelId: z.string().trim().min(1).nullable().optional(),
     levels: z.array(warnLevelSchema).max(25),
   })
-  .strict();
+  .strict()
+  .superRefine((config, context) => {
+    const thresholds = new Set<number>();
+    for (const level of config.levels) {
+      if (thresholds.has(level.warnCount)) {
+        context.addIssue({ code: z.ZodIssueCode.custom });
+        return;
+      }
+      thresholds.add(level.warnCount);
+    }
+  });
 
 const workflowStateSchema = z
   .object({
@@ -119,44 +129,56 @@ export function normalizeActions(raw: string | null | undefined): WarnLevel[] {
   }
   if (!Array.isArray(parsed)) return [];
 
-  const byCount = new Map<number, WarnLevel>();
+  const byCount = new Map<
+    number,
+    { level: WarnLevel; source: "legacy" | "new" }
+  >();
+  const rejectedThresholds = new Set<number>();
   for (const entry of parsed) {
     const newLevel = validateWarnLevel(entry);
     if (newLevel) {
+      if (rejectedThresholds.has(newLevel.warnCount)) continue;
       const existing = byCount.get(newLevel.warnCount);
       if (existing) {
-        existing.punishments.push(...newLevel.punishments);
-        if (newLevel.message && !existing.message)
-          existing.message = newLevel.message;
+        byCount.delete(newLevel.warnCount);
+        rejectedThresholds.add(newLevel.warnCount);
       } else {
         byCount.set(newLevel.warnCount, {
-          warnCount: newLevel.warnCount,
-          punishments: [...newLevel.punishments],
-          message: newLevel.message,
-          autoConfirm: newLevel.autoConfirm,
+          level: newLevel,
+          source: "new",
         });
       }
       continue;
     }
     const legacy = legacyActionSchema.safeParse(entry);
     if (legacy.success) {
+      if (rejectedThresholds.has(legacy.data.warnCount)) continue;
       const punishment = legacyToPunishment(legacy.data);
       const validPunishment = punishmentSchema.safeParse(punishment);
       const existing = byCount.get(legacy.data.warnCount);
       if (existing) {
-        if (validPunishment.success)
-          existing.punishments.push(validPunishment.data);
+        if (existing.source === "new") {
+          byCount.delete(legacy.data.warnCount);
+          rejectedThresholds.add(legacy.data.warnCount);
+        } else if (validPunishment.success) {
+          existing.level.punishments.push(validPunishment.data);
+        }
       } else {
         byCount.set(legacy.data.warnCount, {
-          warnCount: legacy.data.warnCount,
-          punishments: validPunishment.success ? [validPunishment.data] : [],
-          autoConfirm: legacy.data.autoConfirm,
+          level: {
+            warnCount: legacy.data.warnCount,
+            punishments: validPunishment.success ? [validPunishment.data] : [],
+            autoConfirm: legacy.data.autoConfirm,
+          },
+          source: "legacy",
         });
       }
     }
   }
 
-  return [...byCount.values()].sort((a, b) => a.warnCount - b.warnCount);
+  return [...byCount.values()]
+    .map((entry) => entry.level)
+    .sort((a, b) => a.warnCount - b.warnCount);
 }
 
 export function sanitizeLevelMessage(text: string): string {

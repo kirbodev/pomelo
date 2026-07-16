@@ -76,3 +76,37 @@ test("validateWorkflowState rejects malformed workflow configuration", () => {
     }),
   ).toBeNull();
 });
+
+test("validateWorkflowState rejects duplicate new warning thresholds", () => {
+  expect(
+    validateWorkflowState({
+      ...validWorkflow,
+      config: {
+        ...validWorkflow.config,
+        levels: [
+          { ...validLevel, warnCount: 5, punishments: [{ type: "kick" }] },
+          { ...validLevel, warnCount: 5, punishments: [{ type: "ban" }] },
+        ],
+      },
+    }),
+  ).toBeNull();
+});
+
+test("normalizeActions rejects a legacy and new threshold collision", () => {
+  expect(
+    normalizeActions(
+      JSON.stringify([
+        { warnCount: 5, actionType: "kick", autoConfirm: true },
+        { warnCount: 5, punishments: [{ type: "ban" }], autoConfirm: true },
+      ]),
+    ),
+  ).toEqual([]);
+});
+
+test("validateWorkflowState rejects unknown workflow fields", () => {
+  expect(validateWorkflowState({ ...validWorkflow, unexpected: true })).toBeNull();
+});
+
+test("validateWorkflowState accepts a fully valid workflow", () => {
+  expect(validateWorkflowState(validWorkflow)).toEqual(validWorkflow);
+});
