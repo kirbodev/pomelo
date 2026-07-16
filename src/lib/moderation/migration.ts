@@ -1,6 +1,78 @@
-import type { WarnLevel, WarnPunishment } from "./types.js";
+import { z } from "zod";
+import type { WarnLevel, WarnPunishment, WarnWorkflowState } from "./types.js";
 
 const MAX_LEVEL_MESSAGE = 1000;
+const MAX_TIMEOUT_DURATION = 2_419_200_000;
+const deleteMessageDaysSchema = z.union([
+  z.literal(0),
+  z.literal(86_400),
+  z.literal(259_200),
+  z.literal(604_800),
+]);
+
+const punishmentSchema = z.discriminatedUnion("type", [
+  z
+    .object({
+      type: z.literal("mute"),
+      duration: z.number().int().positive().max(MAX_TIMEOUT_DURATION),
+    })
+    .strict(),
+  z.object({ type: z.literal("kick") }).strict(),
+  z
+    .object({
+      type: z.literal("ban"),
+      duration: z.number().int().positive().optional(),
+      deleteMessageDays: deleteMessageDaysSchema.optional(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("role"),
+      roleId: z.string().trim().min(1),
+    })
+    .strict(),
+]);
+
+const warnLevelSchema = z
+  .object({
+    warnCount: z.number().int().positive(),
+    punishments: z.array(punishmentSchema).max(25),
+    message: z.string().max(MAX_LEVEL_MESSAGE).optional(),
+    autoConfirm: z.boolean(),
+  })
+  .strict()
+  .superRefine((level, context) => {
+    if (
+      level.punishments.filter(
+        (punishment) => punishment.type === "kick" || punishment.type === "ban",
+      ).length > 1
+    ) {
+      context.addIssue({ code: z.ZodIssueCode.custom });
+    }
+  });
+
+const workflowConfigSchema = z
+  .object({
+    defaultExpiryDays: z.number().int().min(0).max(365),
+    dmOnWarn: z.boolean(),
+    logChannelId: z.string().trim().min(1).nullable().optional(),
+    levels: z.array(warnLevelSchema).max(25),
+  })
+  .strict();
+
+const workflowStateSchema = z
+  .object({
+    id: z.string().trim().min(1),
+    revision: z.number().int().positive(),
+    ownerId: z.string().trim().min(1),
+    guildId: z.string().trim().min(1),
+    messageId: z.string().trim().min(1),
+    status: z.enum(["active", "completed", "cancelled", "expired"]),
+    expiresAt: z.number().int().positive(),
+    step: z.number().int().min(1).max(6),
+    config: workflowConfigSchema,
+  })
+  .strict();
 
 type LegacyAction = {
   warnCount: number;
@@ -10,21 +82,15 @@ type LegacyAction = {
   autoConfirm: boolean;
 };
 
-const isLegacy = (entry: unknown): entry is LegacyAction => {
-  if (typeof entry !== "object" || entry === null) return false;
-  const e = entry as Record<string, unknown>;
-  return (
-    typeof e.warnCount === "number" &&
-    typeof e.actionType === "string" &&
-    typeof e.autoConfirm === "boolean"
-  );
-};
-
-const isNewLevel = (entry: unknown): entry is WarnLevel => {
-  if (typeof entry !== "object" || entry === null) return false;
-  const e = entry as Record<string, unknown>;
-  return typeof e.warnCount === "number" && Array.isArray(e.punishments);
-};
+const legacyActionSchema = z
+  .object({
+    warnCount: z.number().int().positive(),
+    actionType: z.enum(["none", "mute", "kick", "ban", "role", "message"]),
+    duration: z.number().int().positive().optional(),
+    roleId: z.string().trim().min(1).optional(),
+    autoConfirm: z.boolean(),
+  })
+  .passthrough();
 
 const legacyToPunishment = (a: LegacyAction): WarnPunishment | null => {
   switch (a.actionType) {
@@ -55,32 +121,36 @@ export function normalizeActions(raw: string | null | undefined): WarnLevel[] {
 
   const byCount = new Map<number, WarnLevel>();
   for (const entry of parsed) {
-    if (isNewLevel(entry)) {
-      const existing = byCount.get(entry.warnCount);
+    const newLevel = validateWarnLevel(entry);
+    if (newLevel) {
+      const existing = byCount.get(newLevel.warnCount);
       if (existing) {
-        existing.punishments.push(...entry.punishments);
-        if (entry.message && !existing.message)
-          existing.message = entry.message;
+        existing.punishments.push(...newLevel.punishments);
+        if (newLevel.message && !existing.message)
+          existing.message = newLevel.message;
       } else {
-        byCount.set(entry.warnCount, {
-          warnCount: entry.warnCount,
-          punishments: [...entry.punishments],
-          message: entry.message,
-          autoConfirm: entry.autoConfirm,
+        byCount.set(newLevel.warnCount, {
+          warnCount: newLevel.warnCount,
+          punishments: [...newLevel.punishments],
+          message: newLevel.message,
+          autoConfirm: newLevel.autoConfirm,
         });
       }
       continue;
     }
-    if (isLegacy(entry)) {
-      const punishment = legacyToPunishment(entry);
-      const existing = byCount.get(entry.warnCount);
+    const legacy = legacyActionSchema.safeParse(entry);
+    if (legacy.success) {
+      const punishment = legacyToPunishment(legacy.data);
+      const validPunishment = punishmentSchema.safeParse(punishment);
+      const existing = byCount.get(legacy.data.warnCount);
       if (existing) {
-        if (punishment) existing.punishments.push(punishment);
+        if (validPunishment.success)
+          existing.punishments.push(validPunishment.data);
       } else {
-        byCount.set(entry.warnCount, {
-          warnCount: entry.warnCount,
-          punishments: punishment ? [punishment] : [],
-          autoConfirm: entry.autoConfirm,
+        byCount.set(legacy.data.warnCount, {
+          warnCount: legacy.data.warnCount,
+          punishments: validPunishment.success ? [validPunishment.data] : [],
+          autoConfirm: legacy.data.autoConfirm,
         });
       }
     }
@@ -97,4 +167,19 @@ export function sanitizeLevelMessage(text: string): string {
     .replace(/  +/g, " ")
     .trim();
   return stripped.slice(0, MAX_LEVEL_MESSAGE);
+}
+
+export function validateWarnLevel(level: unknown): WarnLevel | null {
+  const result = warnLevelSchema.safeParse(level);
+  if (!result.success) return null;
+
+  return result.data.message === undefined
+    ? result.data
+    : { ...result.data, message: sanitizeLevelMessage(result.data.message) };
+}
+
+export function validateWorkflowState(raw: unknown): WarnWorkflowState | null {
+  const result = workflowStateSchema.safeParse(raw);
+  if (!result.success || result.data.expiresAt <= Date.now()) return null;
+  return result.data;
 }

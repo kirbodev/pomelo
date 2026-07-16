@@ -26,6 +26,42 @@ export type WarnLevel = {
   autoConfirm: boolean;
 };
 
+export type PunishmentItemState =
+  | "pending"
+  | "executing"
+  | "applied"
+  | "cancelled"
+  | "superseded"
+  | "inapplicable"
+  | "retryable_failed"
+  | "terminal_failed"
+  | "manual_review";
+
+export type WarnWorkflowStatus =
+  | "active"
+  | "completed"
+  | "cancelled"
+  | "expired";
+
+export type WarnWorkflowConfig = {
+  defaultExpiryDays: number;
+  dmOnWarn: boolean;
+  logChannelId?: string | null;
+  levels: WarnLevel[];
+};
+
+export type WarnWorkflowState = {
+  id: string;
+  revision: number;
+  ownerId: string;
+  guildId: string;
+  messageId: string;
+  status: WarnWorkflowStatus;
+  expiresAt: number;
+  step: number;
+  config: WarnWorkflowConfig;
+};
+
 export type RoleApplyConfig = Record<string, string>;
 
 export type ModActionResult = {
