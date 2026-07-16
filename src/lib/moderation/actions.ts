@@ -87,13 +87,8 @@ export class ModActionService {
 
     const result = operation()
       .catch(async (error: unknown) => {
-        if (!this.isOperationKeyConflict(error)) throw error;
-        const recovered = await this.getExistingLedgerResult(
-          this.database,
-          input,
-        );
-        if (!recovered) throw error;
-        return recovered;
+        if (!this.isRecoverableOperationContention(error)) throw error;
+        return this.recoverLedgerOperation(input, error);
       })
       .finally(() => {
         this.pendingLedgerOperations.delete(key);
@@ -107,6 +102,34 @@ export class ModActionService {
       error instanceof Error &&
       error.message.includes("mod_cases.guild_id, mod_cases.operation_key")
     );
+  }
+
+  private isRecoverableOperationContention(error: unknown): boolean {
+    return (
+      this.isOperationKeyConflict(error) ||
+      (error instanceof Error &&
+        (error.message.includes("SQLITE_BUSY") ||
+          error.message.includes("database is locked")))
+    );
+  }
+
+  private async recoverLedgerOperation(
+    input: Pick<CreateWarnInput, "guildId" | "operationKey">,
+    originalError: unknown,
+  ): Promise<WarnLedgerResult> {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 50));
+      try {
+        const recovered = await this.getExistingLedgerResult(
+          this.database,
+          input,
+        );
+        if (recovered) return recovered;
+      } catch (error) {
+        if (!this.isRecoverableOperationContention(error)) throw error;
+      }
+    }
+    throw originalError;
   }
 
   public async createWarn(input: CreateWarnInput): Promise<WarnLedgerResult> {
@@ -171,131 +194,135 @@ export class ModActionService {
     if (!Number.isInteger(input.level) || input.level < 0)
       throw new ModerationError("invalidWarnLevel");
 
-    return this.database.transaction(async (transaction) => {
-      const now = this.getNow();
-      const settings = await this.getRequiredWarnSettings(
-        transaction,
-        input.guildId,
-      );
-      const existing = await this.getExistingLedgerResult(transaction, input);
-      if (existing) return existing;
+    return this.runLedgerOperation(input, () =>
+      this.database.transaction(async (transaction) => {
+        const now = this.getNow();
+        const settings = await this.getRequiredWarnSettings(
+          transaction,
+          input.guildId,
+        );
+        const existing = await this.getExistingLedgerResult(transaction, input);
+        if (existing) return existing;
 
-      const activeWarns = await this.getActiveWarns(
-        transaction,
-        input.guildId,
-        input.targetId,
-        now,
-      );
-      if (input.level === activeWarns.length)
-        return { case: null, finalWarnCount: input.level, batches: [] };
-      if (input.level > settings.maxWarns)
-        throw new ModerationError("warnLimitExceeded", {
-          maxWarns: settings.maxWarns,
-        });
+        const activeWarns = await this.getActiveWarns(
+          transaction,
+          input.guildId,
+          input.targetId,
+          now,
+        );
+        if (input.level === activeWarns.length)
+          return { case: null, finalWarnCount: input.level, batches: [] };
+        if (input.level > settings.maxWarns)
+          throw new ModerationError("warnLimitExceeded", {
+            maxWarns: settings.maxWarns,
+          });
 
-      if (input.level > activeWarns.length) {
-        const amount = input.level - activeWarns.length;
+        if (input.level > activeWarns.length) {
+          const amount = input.level - activeWarns.length;
+          const caseEntry = await this.createLedgerCase(transaction, {
+            ...input,
+            actionType: "warn",
+            resultingWarnCount: input.level,
+            now,
+          });
+          await this.insertWarningUnits(
+            transaction,
+            input,
+            caseEntry.id,
+            activeWarns.length,
+            amount,
+            settings.defaultExpiryDays,
+            now,
+          );
+          const batches = await this.createCrossedBatches(
+            transaction,
+            input,
+            caseEntry,
+            activeWarns.length,
+            input.level,
+            settings.actions,
+            now,
+          );
+
+          return { case: caseEntry, finalWarnCount: input.level, batches };
+        }
+
         const caseEntry = await this.createLedgerCase(transaction, {
           ...input,
-          actionType: "warn",
+          actionType: "unwarn",
           resultingWarnCount: input.level,
           now,
         });
-        await this.insertWarningUnits(
+        await this.revokeWarningUnits(
           transaction,
           input,
           caseEntry.id,
-          activeWarns.length,
-          amount,
-          settings.defaultExpiryDays,
+          activeWarns.slice(input.level),
           now,
         );
-        const batches = await this.createCrossedBatches(
+        await this.cancelInapplicableBatches(
           transaction,
-          input,
-          caseEntry,
-          activeWarns.length,
+          input.guildId,
+          input.targetId,
           input.level,
-          settings.actions,
           now,
         );
 
-        return { case: caseEntry, finalWarnCount: input.level, batches };
-      }
-
-      const caseEntry = await this.createLedgerCase(transaction, {
-        ...input,
-        actionType: "unwarn",
-        resultingWarnCount: input.level,
-        now,
-      });
-      await this.revokeWarningUnits(
-        transaction,
-        input,
-        caseEntry.id,
-        activeWarns.slice(input.level),
-        now,
-      );
-      await this.cancelInapplicableBatches(
-        transaction,
-        input.guildId,
-        input.targetId,
-        input.level,
-        now,
-      );
-
-      return { case: caseEntry, finalWarnCount: input.level, batches: [] };
-    });
+        return { case: caseEntry, finalWarnCount: input.level, batches: [] };
+      }),
+    );
   }
 
   public async revokeWarn(input: RevokeWarnInput): Promise<WarnLedgerResult> {
-    return this.database.transaction(async (transaction) => {
-      const now = this.getNow();
-      await this.getRequiredWarnSettings(transaction, input.guildId);
-      const existing = await this.getExistingLedgerResult(transaction, input);
-      if (existing) return existing;
+    return this.runLedgerOperation(input, () =>
+      this.database.transaction(async (transaction) => {
+        const now = this.getNow();
+        await this.getRequiredWarnSettings(transaction, input.guildId);
+        const existing = await this.getExistingLedgerResult(transaction, input);
+        if (existing) return existing;
 
-      const activeWarns = await this.getActiveWarns(
-        transaction,
-        input.guildId,
-        input.targetId,
-        now,
-      );
-      const toRevoke = activeWarns.filter(
-        (warning) => warning.caseId === input.sourceCaseId,
-      );
-      if (toRevoke.length === 0)
-        return {
-          case: null,
-          finalWarnCount: activeWarns.length,
-          batches: [],
-        };
+        const activeWarns = await this.getActiveWarns(
+          transaction,
+          input.guildId,
+          input.targetId,
+          now,
+        );
+        const toRevoke = activeWarns.filter(
+          (warning) => warning.caseId === input.sourceCaseId,
+        );
+        if (toRevoke.length === 0)
+          return {
+            case: null,
+            finalWarnCount: activeWarns.length,
+            batches: [],
+          };
 
-      const finalWarnCount = activeWarns.length - toRevoke.length;
-      const caseEntry = await this.createLedgerCase(transaction, {
-        ...input,
-        actionType: "unwarn",
-        sourceCaseId: input.sourceCaseId,
-        resultingWarnCount: finalWarnCount,
-        now,
-      });
-      await this.revokeWarningUnits(
-        transaction,
-        input,
-        caseEntry.id,
-        toRevoke,
-        now,
-      );
-      await this.cancelInapplicableBatches(
-        transaction,
-        input.guildId,
-        input.targetId,
-        finalWarnCount,
-        now,
-      );
+        const finalWarnCount = activeWarns.length - toRevoke.length;
+        const caseEntry = await this.createLedgerCase(transaction, {
+          ...input,
+          actionType: "unwarn",
+          sourceCaseId: input.sourceCaseId,
+          resultingWarnCount: finalWarnCount,
+          now,
+        });
+        await this.revokeWarningUnits(
+          transaction,
+          input,
+          caseEntry.id,
+          toRevoke,
+          now,
+        );
+        await this.cancelInapplicableBatches(
+          transaction,
+          input.guildId,
+          input.targetId,
+          finalWarnCount,
+          now,
+        );
 
-      return { case: caseEntry, finalWarnCount, batches: [] };
-    });
+        return { case: caseEntry, finalWarnCount, batches: [] };
+      }),
+    );
   }
 
   private async getRequiredWarnSettings(
@@ -312,7 +339,7 @@ export class ModActionService {
   }
 
   private async getExistingLedgerResult(
-    transaction: ModerationTransaction,
+    transaction: ModerationReader,
     input: Pick<CreateWarnInput, "guildId" | "operationKey">,
   ): Promise<WarnLedgerResult | null> {
     const cases = await transaction

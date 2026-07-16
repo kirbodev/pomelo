@@ -38,6 +38,7 @@ async function createLedger() {
 
   return {
     client,
+    databaseUrl: pathToFileURL(join(directory, "ledger.db")).toString(),
     service: new ModActionService(drizzle(client, { schema }), () => now),
   };
 }
@@ -256,6 +257,83 @@ test("simultaneous requests with one operation key create one ledger entry and s
   ]);
   const counts = await client.execute(
     "SELECT (SELECT COUNT(*) FROM mod_cases WHERE operation_key = 'warn:parallel') AS cases, (SELECT COUNT(*) FROM warns WHERE guild_id = 'guild') AS warns",
+  );
+
+  expect(first.case?.id).toBe(second.case?.id);
+  expect(first.finalWarnCount).toBe(1);
+  expect(second.finalWarnCount).toBe(1);
+  expect(counts.rows).toEqual([{ cases: 1, warns: 1 }]);
+});
+
+test("simultaneous same-key level changes create one immutable ledger result", async () => {
+  const { client, service } = await createLedger();
+  await insertSettings(client);
+  await service.createWarn({ ...baseInput, amount: 1, operationKey: "warn:seed" });
+
+  const [first, second] = await Promise.all([
+    service.setWarnLevel({ ...baseInput, level: 3, operationKey: "level:parallel" }),
+    service.setWarnLevel({ ...baseInput, level: 3, operationKey: "level:parallel" }),
+  ]);
+  const counts = await client.execute(
+    "SELECT (SELECT COUNT(*) FROM mod_cases WHERE operation_key = 'level:parallel') AS cases, (SELECT COUNT(*) FROM warns WHERE guild_id = 'guild' AND revoked = false) AS warns",
+  );
+
+  expect(first.case?.id).toBe(second.case?.id);
+  expect(first.finalWarnCount).toBe(3);
+  expect(second.finalWarnCount).toBe(3);
+  expect(counts.rows).toEqual([{ cases: 1, warns: 3 }]);
+});
+
+test("simultaneous same-key revocations create one immutable ledger result", async () => {
+  const { client, service } = await createLedger();
+  await insertSettings(client);
+  const source = await service.createWarn({
+    ...baseInput,
+    amount: 2,
+    operationKey: "warn:source",
+  });
+  const sourceCaseId = source.case?.id;
+  if (sourceCaseId === undefined) throw new Error("Expected a source warn case");
+
+  const [first, second] = await Promise.all([
+    service.revokeWarn({
+      ...baseInput,
+      operationKey: "revoke:parallel",
+      sourceCaseId,
+    }),
+    service.revokeWarn({
+      ...baseInput,
+      operationKey: "revoke:parallel",
+      sourceCaseId,
+    }),
+  ]);
+  const counts = await client.execute(
+    "SELECT (SELECT COUNT(*) FROM mod_cases WHERE operation_key = 'revoke:parallel') AS cases, (SELECT COUNT(*) FROM warns WHERE guild_id = 'guild' AND revoked = true) AS revoked",
+  );
+
+  expect(first.case?.id).toBe(second.case?.id);
+  expect(first.finalWarnCount).toBe(0);
+  expect(second.finalWarnCount).toBe(0);
+  expect(counts.rows).toEqual([{ cases: 1, revoked: 2 }]);
+});
+
+test("separate services recover one same-key create operation from durable storage", async () => {
+  const { client, databaseUrl, service } = await createLedger();
+  await insertSettings(client);
+  const otherClient = createClient({ url: databaseUrl });
+  temporaryClients.push(otherClient);
+  await otherClient.execute("PRAGMA foreign_keys = ON");
+  const otherService = new ModActionService(
+    drizzle(otherClient, { schema }),
+    () => now,
+  );
+
+  const [first, second] = await Promise.all([
+    service.createWarn({ ...baseInput, amount: 1, operationKey: "warn:separate" }),
+    otherService.createWarn({ ...baseInput, amount: 1, operationKey: "warn:separate" }),
+  ]);
+  const counts = await client.execute(
+    "SELECT (SELECT COUNT(*) FROM mod_cases WHERE operation_key = 'warn:separate') AS cases, (SELECT COUNT(*) FROM warns WHERE guild_id = 'guild') AS warns",
   );
 
   expect(first.case?.id).toBe(second.case?.id);
