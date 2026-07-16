@@ -1,8 +1,10 @@
 export enum Emojis {
+  Edit = "✏️",
   EditOff = "<:editoff:1289935806764679179>",
   Loading = "<:a:pomload:1240984406764818493>",
   Automatic = "<:auto:1393334546837143697>",
   Undo = "<:undo:1397135413939798086>",
+  Trash = "🗑️",
   Error = "<:error:1397676984795926628>",
   PomError = "<:pomerror:1397677382214615161>",
   Warning = "<:warning:1397677632585207848>",
