@@ -21,8 +21,11 @@ import {
   caseCounters,
   warnPunishmentBatches,
   warnPunishmentItems,
+  warnPunishmentAttempts,
+  temporaryBanTokens,
   type ModCase,
   type WarnPunishmentBatch,
+  type WarnPunishmentItem,
 } from "../../db/schema.js";
 import {
   type ModActionResult,
@@ -33,6 +36,7 @@ import {
   type PunishResult,
   type LevelExecResult,
   type ModActionOptions,
+  type PunishmentItemState,
 } from "./types.js";
 import { normalizeActions, sanitizeLevelMessage } from "./migration.js";
 import { ModerationError } from "./errors.js";
@@ -42,6 +46,83 @@ type ModerationTransaction = Parameters<
   Parameters<ModerationDatabase["transaction"]>[0]
 >[0];
 type ModerationReader = Pick<ModerationDatabase, "select">;
+
+type PunishmentPermission = "ban" | "kick" | "mute" | "role";
+
+export type PunishmentCapabilityContext = {
+  actorId: string;
+  targetId: string;
+  actorPosition: number;
+  targetPosition: number;
+  botPosition: number;
+  actorPermissions: ReadonlySet<PunishmentPermission>;
+  botPermissions: ReadonlySet<PunishmentPermission>;
+  actorIsOwner?: boolean;
+  targetIsAdministrator?: boolean;
+  rolePosition?: number;
+};
+
+export type PunishmentCapabilityAdapter = {
+  resolve(input: {
+    guildId: string;
+    actorId: string;
+    targetId: string;
+    roleId?: string | null;
+  }): Promise<PunishmentCapabilityContext>;
+  apply(input: {
+    guildId: string;
+    actorId: string;
+    targetId: string;
+    punishmentType: PunishmentPermission;
+    duration: number | null;
+    roleId: string | null;
+    reason: string;
+  }): Promise<{
+    success: boolean;
+    failureCode?: string;
+    retryable?: boolean;
+  }>;
+  scheduleAutoUnban(input: {
+    id: string;
+    delay: number;
+    payload: {
+      guildId: string;
+      userId: string;
+      internalCaseId: number;
+      token: string;
+    };
+  }): Promise<void>;
+  unban(input: { guildId: string; userId: string; reason: string }): Promise<{
+    success: boolean;
+    failureCode?: string;
+    retryable?: boolean;
+  }>;
+};
+
+export type PunishmentExecutionResult = {
+  itemId: number;
+  state: PunishmentItemState;
+  caseNumber?: number;
+};
+
+export type ClaimPunishmentItemInput = {
+  guildId: string;
+  itemId: number;
+  actorId: string;
+  expectedVersion?: number;
+};
+
+export type ApplyPunishmentItemInput = ClaimPunishmentItemInput & {
+  reason?: string;
+};
+
+export type ApplyEligibleItemsInput = {
+  guildId: string;
+  batchId: number;
+  actorId: string;
+  automatic: boolean;
+  reason?: string;
+};
 
 export type CreateWarnInput = {
   guildId: string;
@@ -71,10 +152,15 @@ export class ModActionService {
     string,
     Promise<WarnLedgerResult>
   >();
+  private readonly pendingPunishmentExecutions = new Map<
+    string,
+    Promise<PunishmentExecutionResult>
+  >();
 
   public constructor(
     private readonly database: ModerationDatabase = db,
     private readonly getNow: () => number = Date.now,
+    private readonly punishmentAdapter?: PunishmentCapabilityAdapter,
   ) {}
 
   private runLedgerOperation(
@@ -594,6 +680,962 @@ export class ModActionService {
           ne(warnPunishmentItems.state, "applied"),
         ),
       );
+  }
+
+  public async claimPunishmentItem(input: ClaimPunishmentItemInput) {
+    return this.database.transaction(async (transaction) => {
+      const record = await this.getPunishmentRecord(
+        transaction,
+        input.guildId,
+        input.itemId,
+      );
+      if (!record) return null;
+      const expectedVersion = input.expectedVersion ?? record.item.version;
+      if (
+        record.item.version !== expectedVersion ||
+        !["pending", "retryable_failed"].includes(record.item.state)
+      )
+        return null;
+
+      const leaseToken = crypto.randomUUID();
+      const now = this.getNow();
+      const [item] = await transaction
+        .update(warnPunishmentItems)
+        .set({
+          state: "executing",
+          version: sql`${warnPunishmentItems.version} + 1`,
+          leaseToken,
+          leaseExpiresAt: now + 300_000,
+          attemptCount: sql`${warnPunishmentItems.attemptCount} + 1`,
+          lastAttemptAt: now,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(warnPunishmentItems.guildId, input.guildId),
+            eq(warnPunishmentItems.id, input.itemId),
+            eq(warnPunishmentItems.version, expectedVersion),
+            inArray(warnPunishmentItems.state, ["pending", "retryable_failed"]),
+          ),
+        )
+        .returning();
+      await transaction.insert(warnPunishmentAttempts).values({
+        guildId: input.guildId,
+        itemId: item.id,
+        attemptNumber: item.attemptCount,
+        actorId: input.actorId,
+        state: "claimed",
+        detail: "Punishment item claimed for execution.",
+        createdAt: now,
+      });
+      return { item, batch: record.batch, leaseToken };
+    });
+  }
+
+  public applyPunishmentItem(
+    input: ApplyPunishmentItemInput,
+  ): Promise<PunishmentExecutionResult> {
+    const key = `${input.guildId}:${String(input.itemId)}`;
+    const existing = this.pendingPunishmentExecutions.get(key);
+    if (existing) return existing;
+    const execution = this.applyPunishmentItemInternal(input).finally(() => {
+      this.pendingPunishmentExecutions.delete(key);
+    });
+    this.pendingPunishmentExecutions.set(key, execution);
+    return execution;
+  }
+
+  private async applyPunishmentItemInternal(
+    input: ApplyPunishmentItemInput,
+  ): Promise<PunishmentExecutionResult> {
+    const adapter = this.requirePunishmentAdapter();
+    const record = await this.getPunishmentRecord(
+      this.database,
+      input.guildId,
+      input.itemId,
+    );
+    if (!record) throw new Error("punishmentItemNotFound");
+
+    if (
+      record.item.punishmentType === "kick" &&
+      (await this.hasAppliedBan(input.guildId, record.item.batchId))
+    )
+      return this.recordUnclaimedOutcome(
+        record,
+        input.actorId,
+        "superseded",
+        "banPrecedesKick",
+      );
+
+    const context = await adapter.resolve({
+      guildId: input.guildId,
+      actorId: input.actorId,
+      targetId: record.batch.targetUserId,
+      roleId: record.item.roleId,
+    });
+    const validation = this.validatePunishmentContext(
+      record.item,
+      context,
+      false,
+    );
+    if (validation)
+      return this.recordUnclaimedOutcome(
+        record,
+        input.actorId,
+        "pending",
+        validation,
+      );
+
+    let claim: Awaited<ReturnType<ModActionService["claimPunishmentItem"]>>;
+    try {
+      claim = await this.claimPunishmentItem(input);
+    } catch (error) {
+      if (!this.isDatabaseContention(error)) throw error;
+      return this.recoverPunishmentContention(input.guildId, input.itemId);
+    }
+    if (!claim)
+      return this.getActualPunishmentResult(input.guildId, input.itemId);
+
+    try {
+      const outcome = await adapter.apply({
+        guildId: input.guildId,
+        actorId: input.actorId,
+        targetId: claim.batch.targetUserId,
+        punishmentType: this.asPunishmentPermission(claim.item.punishmentType),
+        duration: claim.item.duration,
+        roleId: claim.item.roleId,
+        reason:
+          input.reason ??
+          `Warn level ${String(claim.batch.threshold)} punishment`,
+      });
+      if (!outcome.success) {
+        return this.completeClaim({
+          claim,
+          actorId: input.actorId,
+          reason: input.reason,
+          state: outcome.retryable ? "retryable_failed" : "manual_review",
+          failureCode: outcome.failureCode ?? "discordActionUnconfirmed",
+        });
+      }
+      return this.completeClaim({
+        claim,
+        actorId: input.actorId,
+        reason: input.reason,
+        state: "applied",
+      });
+    } catch (error) {
+      return this.completeClaim({
+        claim,
+        actorId: input.actorId,
+        reason: input.reason,
+        state: "manual_review",
+        failureCode:
+          error instanceof Error ? error.message : "discordActionUnknown",
+      });
+    }
+  }
+
+  public async applyEligibleItems(
+    input: ApplyEligibleItemsInput,
+  ): Promise<PunishmentExecutionResult[]> {
+    const batch = await this.database
+      .select()
+      .from(warnPunishmentBatches)
+      .where(
+        and(
+          eq(warnPunishmentBatches.guildId, input.guildId),
+          eq(warnPunishmentBatches.id, input.batchId),
+        ),
+      )
+      .limit(1);
+    const selectedBatch = batch.at(0);
+    if (
+      !selectedBatch ||
+      ["cancelled", "completed"].includes(selectedBatch.state)
+    )
+      return [];
+
+    const items = await this.database
+      .select()
+      .from(warnPunishmentItems)
+      .where(
+        and(
+          eq(warnPunishmentItems.guildId, input.guildId),
+          eq(warnPunishmentItems.batchId, input.batchId),
+          inArray(warnPunishmentItems.state, ["pending", "retryable_failed"]),
+        ),
+      )
+      .orderBy(asc(warnPunishmentItems.ordinal));
+    if (items.length === 0) return [];
+
+    if (input.automatic) {
+      const settings = await this.getRequiredWarnSettings(
+        this.database,
+        input.guildId,
+      );
+      const level = this.readBatchLevel(selectedBatch.configJson);
+      if (!settings.autoApplyWarnPunishments || !level?.autoConfirm) return [];
+
+      const adapter = this.requirePunishmentAdapter();
+      const checks = await Promise.all(
+        items.map(async (item) => {
+          const context = await adapter.resolve({
+            guildId: input.guildId,
+            actorId: input.actorId,
+            targetId: selectedBatch.targetUserId,
+            roleId: item.roleId,
+          });
+          return this.validatePunishmentContext(
+            item,
+            context,
+            settings.dangerouslyBypassWarnPermissions,
+          );
+        }),
+      );
+      if (checks.some((check) => check !== null)) return [];
+    }
+
+    const ordered = [...items].sort((left, right) => {
+      if (left.punishmentType === "ban") return -1;
+      if (right.punishmentType === "ban") return 1;
+      return left.ordinal - right.ordinal;
+    });
+    const results: PunishmentExecutionResult[] = [];
+    for (const item of ordered) {
+      results.push(
+        await this.applyPunishmentItem({
+          guildId: input.guildId,
+          itemId: item.id,
+          actorId: input.actorId,
+          reason: input.reason,
+        }),
+      );
+    }
+    return results;
+  }
+
+  public async dismissBatch(input: {
+    guildId: string;
+    batchId: number;
+    actorId: string;
+    expectedRevision: number;
+  }): Promise<boolean> {
+    return this.database.transaction(async (transaction) => {
+      const now = this.getNow();
+      const [batch] = await transaction
+        .update(warnPunishmentBatches)
+        .set({
+          dismissedBy: input.actorId,
+          dismissedAt: now,
+          revision: sql`${warnPunishmentBatches.revision} + 1`,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(warnPunishmentBatches.guildId, input.guildId),
+            eq(warnPunishmentBatches.id, input.batchId),
+            eq(warnPunishmentBatches.revision, input.expectedRevision),
+          ),
+        )
+        .returning();
+      await transaction.insert(caseNotes).values({
+        guildId: input.guildId,
+        caseId: batch.warnCaseId,
+        operationKey: `warn-batch-dismiss:${String(batch.id)}:${String(batch.revision)}`,
+        moderatorId: input.actorId,
+        note: "Warning punishment approval display dismissed.",
+        createdAt: now,
+      });
+      return true;
+    });
+  }
+
+  public async recoverExpiredClaims(): Promise<number> {
+    const expired = await this.database
+      .select({
+        id: warnPunishmentItems.id,
+        guildId: warnPunishmentItems.guildId,
+      })
+      .from(warnPunishmentItems)
+      .where(
+        and(
+          eq(warnPunishmentItems.state, "executing"),
+          sql`${warnPunishmentItems.leaseExpiresAt} < ${this.getNow()}`,
+        ),
+      );
+    for (const item of expired) {
+      await this.database.transaction(async (transaction) => {
+        const record = await this.getPunishmentRecord(
+          transaction,
+          item.guildId,
+          item.id,
+        );
+        if (
+          !record ||
+          record.item.state !== "executing" ||
+          record.item.leaseExpiresAt === null ||
+          record.item.leaseExpiresAt >= this.getNow()
+        )
+          return;
+        await this.completeUncertainExecution(
+          transaction,
+          record,
+          record.item.leaseToken,
+          "executionLeaseExpired",
+        );
+      });
+    }
+    return expired.length;
+  }
+
+  public async runAutoUnban(input: {
+    guildId: string;
+    userId: string;
+    internalCaseId: number;
+    token: string;
+  }): Promise<boolean> {
+    const adapter = this.requirePunishmentAdapter();
+    const tokenRows = await this.database
+      .select()
+      .from(temporaryBanTokens)
+      .where(
+        and(
+          eq(temporaryBanTokens.guildId, input.guildId),
+          eq(temporaryBanTokens.caseId, input.internalCaseId),
+          eq(temporaryBanTokens.token, input.token),
+          sql`${temporaryBanTokens.consumedAt} IS NULL`,
+        ),
+      )
+      .limit(1);
+    const token = tokenRows.at(0);
+    if (!token || token.expiresAt > this.getNow()) return false;
+
+    const outcome = await adapter.unban({
+      guildId: input.guildId,
+      userId: input.userId,
+      reason: "Temporary ban expired.",
+    });
+    if (!outcome.success) {
+      if (outcome.retryable)
+        throw new Error(outcome.failureCode ?? "autoUnbanRetryableFailure");
+      await this.database
+        .update(modCases)
+        .set({
+          status: "manual_review",
+          failureCode: outcome.failureCode ?? "autoUnbanUnconfirmed",
+          updatedAt: this.getNow(),
+        })
+        .where(
+          and(
+            eq(modCases.guildId, input.guildId),
+            eq(modCases.id, input.internalCaseId),
+          ),
+        );
+      return false;
+    }
+
+    const consumed = await this.database
+      .update(temporaryBanTokens)
+      .set({ consumedAt: this.getNow() })
+      .where(
+        and(
+          eq(temporaryBanTokens.guildId, input.guildId),
+          eq(temporaryBanTokens.id, token.id),
+          sql`${temporaryBanTokens.consumedAt} IS NULL`,
+        ),
+      )
+      .returning();
+    return consumed.length === 1;
+  }
+
+  private requirePunishmentAdapter(): PunishmentCapabilityAdapter {
+    if (!this.punishmentAdapter)
+      throw new Error("punishmentCapabilityAdapterRequired");
+    return this.punishmentAdapter;
+  }
+
+  private isDatabaseContention(error: unknown): boolean {
+    return (
+      error instanceof Error &&
+      (error.message.includes("SQLITE_BUSY") ||
+        error.message.includes("database is locked"))
+    );
+  }
+
+  private async recoverPunishmentContention(
+    guildId: string,
+    itemId: number,
+  ): Promise<PunishmentExecutionResult> {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 50));
+      try {
+        const result = await this.getActualPunishmentResult(guildId, itemId);
+        if (result.state !== "pending" && result.state !== "executing")
+          return result;
+      } catch (error) {
+        if (!this.isDatabaseContention(error)) throw error;
+      }
+    }
+    return this.getActualPunishmentResult(guildId, itemId);
+  }
+
+  private async getPunishmentRecord(
+    reader: ModerationReader,
+    guildId: string,
+    itemId: number,
+  ) {
+    const records = await reader
+      .select({ item: warnPunishmentItems, batch: warnPunishmentBatches })
+      .from(warnPunishmentItems)
+      .innerJoin(
+        warnPunishmentBatches,
+        and(
+          eq(warnPunishmentBatches.guildId, warnPunishmentItems.guildId),
+          eq(warnPunishmentBatches.id, warnPunishmentItems.batchId),
+        ),
+      )
+      .where(
+        and(
+          eq(warnPunishmentItems.guildId, guildId),
+          eq(warnPunishmentItems.id, itemId),
+        ),
+      )
+      .limit(1);
+    return records.at(0) ?? null;
+  }
+
+  private readBatchLevel(configJson: string): WarnLevel | null {
+    try {
+      const parsed: unknown = JSON.parse(configJson);
+      if (
+        !parsed ||
+        typeof parsed !== "object" ||
+        !("autoConfirm" in parsed) ||
+        typeof parsed.autoConfirm !== "boolean"
+      )
+        return null;
+      return parsed as WarnLevel;
+    } catch {
+      return null;
+    }
+  }
+
+  private asPunishmentPermission(value: string): PunishmentPermission {
+    if (["ban", "kick", "mute", "role"].includes(value))
+      return value as PunishmentPermission;
+    throw new Error("unsupportedPunishmentType");
+  }
+
+  private validatePunishmentContext(
+    item: WarnPunishmentItem,
+    context: PunishmentCapabilityContext,
+    bypassActorPermissions: boolean,
+  ): string | null {
+    let permission: PunishmentPermission;
+    try {
+      permission = this.asPunishmentPermission(item.punishmentType);
+    } catch (error) {
+      return error instanceof Error
+        ? error.message
+        : "unsupportedPunishmentType";
+    }
+    if (context.actorId === context.targetId) return "cannotActionSelf";
+    if (context.targetIsAdministrator) return "cannotActionAdmin";
+    if (
+      !context.actorIsOwner &&
+      context.actorPosition <= context.targetPosition
+    )
+      return "actorHierarchyTooLow";
+    if (context.botPosition <= context.targetPosition)
+      return "botHierarchyTooLow";
+    if (!bypassActorPermissions && !context.actorPermissions.has(permission))
+      return "actorMissingActionPermission";
+    if (!context.botPermissions.has(permission))
+      return "botMissingActionPermission";
+    if (permission === "role") {
+      if (!item.roleId || context.rolePosition === undefined)
+        return "roleNotFound";
+      if (
+        !context.actorIsOwner &&
+        context.actorPosition <= context.rolePosition
+      )
+        return "actorRoleHierarchyTooLow";
+      if (context.botPosition <= context.rolePosition)
+        return "botRoleHierarchyTooLow";
+    }
+    if (
+      permission === "mute" &&
+      (!item.duration || item.duration > 2_419_200_000)
+    )
+      return "invalidMuteDuration";
+    return null;
+  }
+
+  private async hasAppliedBan(
+    guildId: string,
+    batchId: number,
+  ): Promise<boolean> {
+    const rows = await this.database
+      .select({ id: warnPunishmentItems.id })
+      .from(warnPunishmentItems)
+      .where(
+        and(
+          eq(warnPunishmentItems.guildId, guildId),
+          eq(warnPunishmentItems.batchId, batchId),
+          eq(warnPunishmentItems.punishmentType, "ban"),
+          eq(warnPunishmentItems.state, "applied"),
+        ),
+      )
+      .limit(1);
+    return rows.length === 1;
+  }
+
+  private async recordUnclaimedOutcome(
+    record: { item: WarnPunishmentItem; batch: WarnPunishmentBatch },
+    actorId: string,
+    state: "pending" | "superseded",
+    failureCode: string,
+  ): Promise<PunishmentExecutionResult> {
+    return this.database.transaction(async (transaction) => {
+      const current = await this.getPunishmentRecord(
+        transaction,
+        record.item.guildId,
+        record.item.id,
+      );
+      if (!current) throw new Error("punishmentItemNotFound");
+      if (!["pending", "retryable_failed"].includes(current.item.state))
+        return this.resultFromItem(current.item);
+      const now = this.getNow();
+      const [item] = await transaction
+        .update(warnPunishmentItems)
+        .set({
+          state,
+          version: sql`${warnPunishmentItems.version} + 1`,
+          attemptCount: sql`${warnPunishmentItems.attemptCount} + 1`,
+          lastAttemptAt: now,
+          failureCode,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(warnPunishmentItems.guildId, current.item.guildId),
+            eq(warnPunishmentItems.id, current.item.id),
+            eq(warnPunishmentItems.version, current.item.version),
+          ),
+        )
+        .returning();
+      const caseEntry = await this.createExecutionCase(transaction, {
+        guildId: current.item.guildId,
+        actorId,
+        targetId: current.batch.targetUserId,
+        parentCaseId: current.batch.warnCaseId,
+        actionType: this.asPunishmentPermission(current.item.punishmentType),
+        operationKey: `punishment:${String(item.id)}:attempt:${String(item.attemptCount)}:${failureCode}`,
+        reason: `Warning punishment was not applied: ${failureCode}`,
+        status: state === "superseded" ? "cancelled" : "manual_review",
+        failureCode,
+        now,
+      });
+      await transaction.insert(warnPunishmentAttempts).values({
+        guildId: item.guildId,
+        itemId: item.id,
+        attemptNumber: item.attemptCount,
+        actorId,
+        state: "denied",
+        failureCode,
+        detail: "Punishment was not claimed for Discord execution.",
+        createdAt: now,
+      });
+      await this.refreshBatchState(
+        transaction,
+        item.guildId,
+        item.batchId,
+        now,
+      );
+      return { ...this.resultFromItem(item), caseNumber: caseEntry.caseNumber };
+    });
+  }
+
+  private async completeClaim(input: {
+    claim: {
+      item: WarnPunishmentItem;
+      batch: WarnPunishmentBatch;
+      leaseToken: string;
+    };
+    actorId: string;
+    reason?: string;
+    state: "applied" | "retryable_failed" | "manual_review";
+    failureCode?: string;
+  }): Promise<PunishmentExecutionResult> {
+    let scheduledUnban:
+      | {
+          id: string;
+          delay: number;
+          payload: {
+            guildId: string;
+            userId: string;
+            internalCaseId: number;
+            token: string;
+          };
+          itemId: number;
+          caseId: number;
+        }
+      | undefined;
+    const result = await this.database.transaction(async (transaction) => {
+      const now = this.getNow();
+      const [item] = await transaction
+        .update(warnPunishmentItems)
+        .set({
+          state: input.state,
+          version: sql`${warnPunishmentItems.version} + 1`,
+          leaseToken: null,
+          leaseExpiresAt: null,
+          failureCode: input.failureCode ?? null,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(warnPunishmentItems.guildId, input.claim.item.guildId),
+            eq(warnPunishmentItems.id, input.claim.item.id),
+            eq(warnPunishmentItems.state, "executing"),
+            eq(warnPunishmentItems.leaseToken, input.claim.leaseToken),
+          ),
+        )
+        .returning();
+      const caseEntry = await this.createExecutionCase(transaction, {
+        guildId: item.guildId,
+        actorId: input.actorId,
+        targetId: input.claim.batch.targetUserId,
+        parentCaseId: input.claim.batch.warnCaseId,
+        actionType: this.asPunishmentPermission(item.punishmentType),
+        operationKey: `punishment:${String(item.id)}:attempt:${String(item.attemptCount)}:result`,
+        reason:
+          input.reason ??
+          `Warn level ${String(input.claim.batch.threshold)} punishment`,
+        status:
+          input.state === "applied"
+            ? "completed"
+            : input.state === "retryable_failed"
+              ? "failed"
+              : "manual_review",
+        failureCode: input.failureCode,
+        duration: item.duration,
+        now,
+      });
+      await transaction
+        .update(warnPunishmentAttempts)
+        .set({
+          state: input.state === "applied" ? "applied" : "failed",
+          failureCode: input.failureCode,
+          detail:
+            input.state === "applied"
+              ? "Punishment applied."
+              : "Discord outcome was not confirmed.",
+        })
+        .where(
+          and(
+            eq(warnPunishmentAttempts.guildId, item.guildId),
+            eq(warnPunishmentAttempts.itemId, item.id),
+            eq(warnPunishmentAttempts.attemptNumber, item.attemptCount),
+          ),
+        );
+      await transaction
+        .update(warnPunishmentItems)
+        .set({ resultCaseId: caseEntry.id, updatedAt: now })
+        .where(
+          and(
+            eq(warnPunishmentItems.guildId, item.guildId),
+            eq(warnPunishmentItems.id, item.id),
+          ),
+        );
+      if (
+        input.state === "applied" &&
+        item.punishmentType === "ban" &&
+        item.duration
+      ) {
+        const token = crypto.randomUUID();
+        await transaction.insert(temporaryBanTokens).values({
+          guildId: item.guildId,
+          caseId: caseEntry.id,
+          token,
+          expiresAt: now + item.duration,
+          createdAt: now,
+        });
+        scheduledUnban = {
+          id: `auto-unban:${item.guildId}:${String(caseEntry.id)}`,
+          delay: item.duration,
+          payload: {
+            guildId: item.guildId,
+            userId: input.claim.batch.targetUserId,
+            internalCaseId: caseEntry.id,
+            token,
+          },
+          itemId: item.id,
+          caseId: caseEntry.id,
+        };
+      }
+      await this.refreshBatchState(
+        transaction,
+        item.guildId,
+        item.batchId,
+        now,
+      );
+      return { ...this.resultFromItem(item), caseNumber: caseEntry.caseNumber };
+    });
+    if (!scheduledUnban) return result;
+    try {
+      await this.requirePunishmentAdapter().scheduleAutoUnban(scheduledUnban);
+      return result;
+    } catch (error) {
+      return this.markUnscheduledTemporaryBan(
+        input.claim.item.guildId,
+        scheduledUnban.itemId,
+        scheduledUnban.caseId,
+        error instanceof Error ? error.message : "autoUnbanSchedulingFailed",
+      );
+    }
+  }
+
+  private async markUnscheduledTemporaryBan(
+    guildId: string,
+    itemId: number,
+    caseId: number,
+    failureCode: string,
+  ): Promise<PunishmentExecutionResult> {
+    const now = this.getNow();
+    await this.database.transaction(async (transaction) => {
+      await transaction
+        .update(warnPunishmentItems)
+        .set({ state: "manual_review", failureCode, updatedAt: now })
+        .where(
+          and(
+            eq(warnPunishmentItems.guildId, guildId),
+            eq(warnPunishmentItems.id, itemId),
+            eq(warnPunishmentItems.resultCaseId, caseId),
+          ),
+        );
+      await transaction
+        .update(modCases)
+        .set({ status: "manual_review", failureCode, updatedAt: now })
+        .where(and(eq(modCases.guildId, guildId), eq(modCases.id, caseId)));
+      const record = await this.getPunishmentRecord(
+        transaction,
+        guildId,
+        itemId,
+      );
+      if (record)
+        await this.refreshBatchState(
+          transaction,
+          guildId,
+          record.item.batchId,
+          now,
+        );
+    });
+    return this.getActualPunishmentResult(guildId, itemId);
+  }
+
+  private async completeUncertainExecution(
+    transaction: ModerationTransaction,
+    record: { item: WarnPunishmentItem; batch: WarnPunishmentBatch },
+    leaseToken: string | null,
+    failureCode: string,
+  ): Promise<void> {
+    if (!leaseToken) return;
+    const now = this.getNow();
+    const [item] = await transaction
+      .update(warnPunishmentItems)
+      .set({
+        state: "manual_review",
+        leaseToken: null,
+        leaseExpiresAt: null,
+        failureCode,
+        version: sql`${warnPunishmentItems.version} + 1`,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(warnPunishmentItems.guildId, record.item.guildId),
+          eq(warnPunishmentItems.id, record.item.id),
+          eq(warnPunishmentItems.state, "executing"),
+          eq(warnPunishmentItems.leaseToken, leaseToken),
+        ),
+      )
+      .returning();
+    const caseEntry = await this.createExecutionCase(transaction, {
+      guildId: item.guildId,
+      actorId: "system",
+      targetId: record.batch.targetUserId,
+      parentCaseId: record.batch.warnCaseId,
+      actionType: this.asPunishmentPermission(item.punishmentType),
+      operationKey: `punishment:${String(item.id)}:attempt:${String(item.attemptCount)}:lease-expired`,
+      reason:
+        "Punishment execution lease expired before Discord outcome could be verified.",
+      status: "manual_review",
+      failureCode,
+      now,
+    });
+    await transaction
+      .update(warnPunishmentAttempts)
+      .set({
+        state: "recovered",
+        failureCode,
+        detail: "Execution requires manual review.",
+      })
+      .where(
+        and(
+          eq(warnPunishmentAttempts.guildId, item.guildId),
+          eq(warnPunishmentAttempts.itemId, item.id),
+          eq(warnPunishmentAttempts.attemptNumber, item.attemptCount),
+        ),
+      );
+    await transaction
+      .update(warnPunishmentItems)
+      .set({ resultCaseId: caseEntry.id, updatedAt: now })
+      .where(
+        and(
+          eq(warnPunishmentItems.guildId, item.guildId),
+          eq(warnPunishmentItems.id, item.id),
+        ),
+      );
+    await this.refreshBatchState(transaction, item.guildId, item.batchId, now);
+  }
+
+  private async createExecutionCase(
+    transaction: ModerationTransaction,
+    input: {
+      guildId: string;
+      actorId: string;
+      targetId: string;
+      parentCaseId: number;
+      actionType: PunishmentPermission;
+      operationKey: string;
+      reason: string;
+      status: "completed" | "cancelled" | "failed" | "manual_review";
+      failureCode?: string;
+      duration?: number | null;
+      now: number;
+    },
+  ): Promise<ModCase> {
+    const [counter] = await transaction
+      .insert(caseCounters)
+      .values({
+        guildId: input.guildId,
+        nextCaseNumber: 2,
+        updatedAt: input.now,
+      })
+      .onConflictDoUpdate({
+        target: caseCounters.guildId,
+        set: {
+          nextCaseNumber: sql`${caseCounters.nextCaseNumber} + 1`,
+          updatedAt: input.now,
+        },
+      })
+      .returning({
+        caseNumber: sql<number>`${caseCounters.nextCaseNumber} - 1`,
+      });
+    const [caseEntry] = await transaction
+      .insert(modCases)
+      .values({
+        guildId: input.guildId,
+        caseNumber: counter.caseNumber,
+        operationKey: input.operationKey,
+        parentCaseId: input.parentCaseId,
+        userId: input.targetId,
+        moderatorId: input.actorId,
+        actionType: input.actionType,
+        reason: input.reason,
+        status: input.status,
+        failureCode: input.failureCode,
+        duration: input.duration,
+        createdAt: input.now,
+        updatedAt: input.now,
+      })
+      .returning();
+    return caseEntry;
+  }
+
+  private async refreshBatchState(
+    transaction: ModerationTransaction,
+    guildId: string,
+    batchId: number,
+    now: number,
+  ): Promise<void> {
+    const items = await transaction
+      .select({ state: warnPunishmentItems.state })
+      .from(warnPunishmentItems)
+      .where(
+        and(
+          eq(warnPunishmentItems.guildId, guildId),
+          eq(warnPunishmentItems.batchId, batchId),
+        ),
+      );
+    const states = items.map((item) => item.state);
+    const state = states.every((item) =>
+      ["applied", "cancelled", "superseded", "inapplicable"].includes(item),
+    )
+      ? "completed"
+      : states.some((item) => item === "applied")
+        ? "partially_applied"
+        : states.some((item) =>
+              ["manual_review", "terminal_failed"].includes(item),
+            )
+          ? "failed"
+          : "pending";
+    await transaction
+      .update(warnPunishmentBatches)
+      .set({
+        state,
+        revision: sql`${warnPunishmentBatches.revision} + 1`,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(warnPunishmentBatches.guildId, guildId),
+          eq(warnPunishmentBatches.id, batchId),
+        ),
+      );
+  }
+
+  private async getActualPunishmentResult(
+    guildId: string,
+    itemId: number,
+  ): Promise<PunishmentExecutionResult> {
+    const rows = await this.database
+      .select({
+        id: warnPunishmentItems.id,
+        state: warnPunishmentItems.state,
+        resultCaseId: warnPunishmentItems.resultCaseId,
+      })
+      .from(warnPunishmentItems)
+      .where(
+        and(
+          eq(warnPunishmentItems.guildId, guildId),
+          eq(warnPunishmentItems.id, itemId),
+        ),
+      )
+      .limit(1);
+    const item = rows.at(0);
+    if (!item) throw new Error("punishmentItemNotFound");
+    if (item.resultCaseId === null)
+      return { itemId: item.id, state: item.state };
+    const cases = await this.database
+      .select({ caseNumber: modCases.caseNumber })
+      .from(modCases)
+      .where(
+        and(eq(modCases.guildId, guildId), eq(modCases.id, item.resultCaseId)),
+      )
+      .limit(1);
+    return {
+      itemId: item.id,
+      state: item.state,
+      caseNumber: cases.at(0)?.caseNumber,
+    };
+  }
+
+  private resultFromItem(
+    item: Pick<WarnPunishmentItem, "id" | "state">,
+  ): PunishmentExecutionResult {
+    return { itemId: item.id, state: item.state };
   }
 
   private async validateHierarchy(
