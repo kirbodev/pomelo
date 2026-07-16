@@ -193,3 +193,73 @@ test("only upward threshold crossings create punishment batches", async () => {
   expect(result.batches).toEqual([]);
   expect(batches.rows.map((batch) => Number(batch.threshold))).toEqual([4]);
 });
+
+test("retries return the original persisted result even when later warnings and a mismatched target exist", async () => {
+  const { client, service } = await createLedger();
+  await insertSettings(client);
+
+  const original = await service.createWarn({
+    ...baseInput,
+    amount: 2,
+    operationKey: "warn:original",
+  });
+  await service.createWarn({
+    ...baseInput,
+    amount: 3,
+    operationKey: "warn:later",
+  });
+  const retry = await service.createWarn({
+    ...baseInput,
+    amount: 1,
+    operationKey: "warn:original",
+    targetId: "different-member",
+  });
+  const storedCase = await client.execute(
+    "SELECT user_id, resulting_warn_count FROM mod_cases WHERE operation_key = 'warn:original'",
+  );
+
+  expect(retry.case?.id).toBe(original.case?.id);
+  expect(retry.finalWarnCount).toBe(2);
+  expect(storedCase.rows).toEqual([
+    { user_id: "member", resulting_warn_count: 2 },
+  ]);
+});
+
+test("punishment batches snapshot the complete validated warn level configuration", async () => {
+  const { client, service } = await createLedger();
+  const level = {
+    warnCount: 1,
+    punishments: [
+      { type: "ban", duration: 600_000, deleteMessageDays: 86_400 },
+    ],
+    message: "This warning reaches a ban level.",
+    autoConfirm: true,
+  };
+  await insertSettings(client, JSON.stringify([level]));
+
+  await service.createWarn({ ...baseInput, amount: 1, operationKey: "warn:snapshot" });
+  const batch = await client.execute(
+    "SELECT config_json FROM warn_punishment_batches WHERE operation_key = 'warn:snapshot:threshold:1'",
+  );
+
+  expect(batch.rows).toHaveLength(1);
+  expect(JSON.parse(String(batch.rows[0]?.config_json))).toEqual(level);
+});
+
+test("simultaneous requests with one operation key create one ledger entry and share its result", async () => {
+  const { client, service } = await createLedger();
+  await insertSettings(client);
+
+  const [first, second] = await Promise.all([
+    service.createWarn({ ...baseInput, amount: 1, operationKey: "warn:parallel" }),
+    service.createWarn({ ...baseInput, amount: 1, operationKey: "warn:parallel" }),
+  ]);
+  const counts = await client.execute(
+    "SELECT (SELECT COUNT(*) FROM mod_cases WHERE operation_key = 'warn:parallel') AS cases, (SELECT COUNT(*) FROM warns WHERE guild_id = 'guild') AS warns",
+  );
+
+  expect(first.case?.id).toBe(second.case?.id);
+  expect(first.finalWarnCount).toBe(1);
+  expect(second.finalWarnCount).toBe(1);
+  expect(counts.rows).toEqual([{ cases: 1, warns: 1 }]);
+});

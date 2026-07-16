@@ -183,6 +183,7 @@ export const modCases = sqliteTable(
       ],
     }).notNull(),
     reason: text("reason").notNull().default(""),
+    resultingWarnCount: integer("resulting_warn_count"),
     duration: integer("duration"),
     dmSent: integer("dm_sent", { mode: "boolean" }).notNull().default(false),
     status: text("status", {
@@ -322,6 +323,7 @@ export const warnPunishmentBatches = sqliteTable(
     targetUserId: text("target_user_id").notNull(),
     threshold: integer("threshold").notNull(),
     operationKey: text("operation_key").notNull(),
+    configJson: text("config_json").notNull().default("{}"),
     state: text("state", {
       enum: [
         "pending",
