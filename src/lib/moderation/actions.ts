@@ -114,6 +114,7 @@ export type ClaimPunishmentItemInput = {
 
 export type ApplyPunishmentItemInput = ClaimPunishmentItemInput & {
   reason?: string;
+  bypassActorPermissions?: boolean;
 };
 
 export type ApplyEligibleItemsInput = {
@@ -699,7 +700,7 @@ export class ModActionService {
 
       const leaseToken = crypto.randomUUID();
       const now = this.getNow();
-      const [item] = await transaction
+      const items = await transaction
         .update(warnPunishmentItems)
         .set({
           state: "executing",
@@ -719,6 +720,8 @@ export class ModActionService {
           ),
         )
         .returning();
+      if (items.length !== 1) return null;
+      const item = items[0];
       await transaction.insert(warnPunishmentAttempts).values({
         guildId: input.guildId,
         itemId: item.id,
@@ -758,7 +761,7 @@ export class ModActionService {
 
     if (
       record.item.punishmentType === "kick" &&
-      (await this.hasAppliedBan(input.guildId, record.item.batchId))
+      (await this.hasBlockingBan(input.guildId, record.item.batchId))
     )
       return this.recordUnclaimedOutcome(
         record,
@@ -776,7 +779,7 @@ export class ModActionService {
     const validation = this.validatePunishmentContext(
       record.item,
       context,
-      false,
+      input.bypassActorPermissions ?? false,
     );
     if (validation)
       return this.recordUnclaimedOutcome(
@@ -868,6 +871,7 @@ export class ModActionService {
       .orderBy(asc(warnPunishmentItems.ordinal));
     if (items.length === 0) return [];
 
+    let bypassActorPermissions = false;
     if (input.automatic) {
       const settings = await this.getRequiredWarnSettings(
         this.database,
@@ -875,6 +879,7 @@ export class ModActionService {
       );
       const level = this.readBatchLevel(selectedBatch.configJson);
       if (!settings.autoApplyWarnPunishments || !level?.autoConfirm) return [];
+      bypassActorPermissions = settings.dangerouslyBypassWarnPermissions;
 
       const adapter = this.requirePunishmentAdapter();
       const checks = await Promise.all(
@@ -888,7 +893,7 @@ export class ModActionService {
           return this.validatePunishmentContext(
             item,
             context,
-            settings.dangerouslyBypassWarnPermissions,
+            bypassActorPermissions,
           );
         }),
       );
@@ -908,6 +913,7 @@ export class ModActionService {
           itemId: item.id,
           actorId: input.actorId,
           reason: input.reason,
+          bypassActorPermissions,
         }),
       );
     }
@@ -922,7 +928,7 @@ export class ModActionService {
   }): Promise<boolean> {
     return this.database.transaction(async (transaction) => {
       const now = this.getNow();
-      const [batch] = await transaction
+      const batches = await transaction
         .update(warnPunishmentBatches)
         .set({
           dismissedBy: input.actorId,
@@ -938,6 +944,8 @@ export class ModActionService {
           ),
         )
         .returning();
+      if (batches.length !== 1) return false;
+      const batch = batches[0];
       await transaction.insert(caseNotes).values({
         guildId: input.guildId,
         caseId: batch.warnCaseId,
@@ -995,20 +1003,8 @@ export class ModActionService {
     token: string;
   }): Promise<boolean> {
     const adapter = this.requirePunishmentAdapter();
-    const tokenRows = await this.database
-      .select()
-      .from(temporaryBanTokens)
-      .where(
-        and(
-          eq(temporaryBanTokens.guildId, input.guildId),
-          eq(temporaryBanTokens.caseId, input.internalCaseId),
-          eq(temporaryBanTokens.token, input.token),
-          sql`${temporaryBanTokens.consumedAt} IS NULL`,
-        ),
-      )
-      .limit(1);
-    const token = tokenRows.at(0);
-    if (!token || token.expiresAt > this.getNow()) return false;
+    const claim = await this.claimAutoUnbanToken(input);
+    if (!claim) return false;
 
     const outcome = await adapter.unban({
       guildId: input.guildId,
@@ -1016,8 +1012,10 @@ export class ModActionService {
       reason: "Temporary ban expired.",
     });
     if (!outcome.success) {
-      if (outcome.retryable)
+      if (outcome.retryable) {
+        await this.releaseAutoUnbanToken(input.guildId, claim);
         throw new Error(outcome.failureCode ?? "autoUnbanRetryableFailure");
+      }
       await this.database
         .update(modCases)
         .set({
@@ -1034,18 +1032,71 @@ export class ModActionService {
       return false;
     }
 
-    const consumed = await this.database
+    return true;
+  }
+
+  private async claimAutoUnbanToken(input: {
+    guildId: string;
+    userId: string;
+    internalCaseId: number;
+    token: string;
+  }): Promise<{ id: number; claimedAt: number } | null> {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      try {
+        return await this.database.transaction(async (transaction) => {
+          const caseRows = await transaction
+            .select({ userId: modCases.userId })
+            .from(modCases)
+            .where(
+              and(
+                eq(modCases.guildId, input.guildId),
+                eq(modCases.id, input.internalCaseId),
+                eq(modCases.userId, input.userId),
+              ),
+            )
+            .limit(1);
+          if (!caseRows.at(0)) return null;
+
+          const claimedAt = this.getNow();
+          const consumed = await transaction
+            .update(temporaryBanTokens)
+            .set({ consumedAt: claimedAt })
+            .where(
+              and(
+                eq(temporaryBanTokens.guildId, input.guildId),
+                eq(temporaryBanTokens.caseId, input.internalCaseId),
+                eq(temporaryBanTokens.token, input.token),
+                sql`${temporaryBanTokens.expiresAt} <= ${claimedAt}`,
+                sql`${temporaryBanTokens.consumedAt} IS NULL`,
+              ),
+            )
+            .returning({ id: temporaryBanTokens.id });
+          if (consumed.length !== 1) return null;
+          return { id: consumed[0].id, claimedAt };
+        });
+      } catch (error) {
+        if (!this.isDatabaseContention(error)) throw error;
+        await new Promise<void>((resolve) => setTimeout(resolve, 50));
+      }
+    }
+
+    return null;
+  }
+
+  private async releaseAutoUnbanToken(
+    guildId: string,
+    claim: { id: number; claimedAt: number },
+  ): Promise<void> {
+    await this.database
       .update(temporaryBanTokens)
-      .set({ consumedAt: this.getNow() })
+      .set({ consumedAt: null })
       .where(
         and(
-          eq(temporaryBanTokens.guildId, input.guildId),
-          eq(temporaryBanTokens.id, token.id),
-          sql`${temporaryBanTokens.consumedAt} IS NULL`,
+          eq(temporaryBanTokens.guildId, guildId),
+          eq(temporaryBanTokens.id, claim.id),
+          eq(temporaryBanTokens.consumedAt, claim.claimedAt),
         ),
-      )
-      .returning();
-    return consumed.length === 1;
+      );
   }
 
   private requirePunishmentAdapter(): PunishmentCapabilityAdapter {
@@ -1171,7 +1222,7 @@ export class ModActionService {
     return null;
   }
 
-  private async hasAppliedBan(
+  private async hasBlockingBan(
     guildId: string,
     batchId: number,
   ): Promise<boolean> {
@@ -1183,7 +1234,11 @@ export class ModActionService {
           eq(warnPunishmentItems.guildId, guildId),
           eq(warnPunishmentItems.batchId, batchId),
           eq(warnPunishmentItems.punishmentType, "ban"),
-          eq(warnPunishmentItems.state, "applied"),
+          inArray(warnPunishmentItems.state, [
+            "pending",
+            "executing",
+            "applied",
+          ]),
         ),
       )
       .limit(1);
