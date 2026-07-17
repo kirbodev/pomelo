@@ -2474,13 +2474,16 @@ export class ModActionService {
     return true;
   }
 
-  async getWarnSettings(guildId: string) {
+  async getWarnSettings(
+    guildId: string,
+  ): Promise<(typeof warnSettings)["$inferSelect"] | null> {
     const rows = await db
       .select()
       .from(warnSettings)
       .where(eq(warnSettings.guildId, guildId))
       .limit(1);
-    return rows[0] ?? null;
+    const row = rows[0] as (typeof warnSettings)["$inferSelect"] | undefined;
+    return row ?? null;
   }
 
   async getCasesForUser(

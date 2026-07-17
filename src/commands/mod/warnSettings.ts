@@ -35,7 +35,7 @@ import type { WarnLevel, WarnPunishment } from "../../lib/moderation/types.js";
 const formatDurationHours = (ms: number): string => {
   const hours = Math.floor(ms / 3600000);
   const days = Math.floor(hours / 24);
-  return days > 0 ? `${days}d` : `${hours}h`;
+  return days > 0 ? `${String(days)}d` : `${String(hours)}h`;
 };
 
 const punishmentLine = (p: WarnPunishment, t: TFunction): string => {
@@ -43,15 +43,23 @@ const punishmentLine = (p: WarnPunishment, t: TFunction): string => {
     case "mute":
       return `${t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.punishmentMute)} (${formatDurationHours(p.duration ?? 0)})`;
     case "kick":
-      return t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.punishmentKick);
+      return t(
+        LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.punishmentKick,
+      );
     case "ban":
       return p.duration
         ? `${t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.punishmentBan)} (${formatDurationHours(p.duration)})`
-        : t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.punishmentBanPerm);
+        : t(
+            LanguageKeys.Commands.Moderation.WarnSettings.Quickstart
+              .punishmentBanPerm,
+          );
     case "role":
       return p.roleId
         ? `${t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.punishmentRole)} -> <@&${p.roleId}>`
-        : t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.punishmentRole);
+        : t(
+            LanguageKeys.Commands.Moderation.WarnSettings.Quickstart
+              .punishmentRole,
+          );
   }
 };
 
@@ -67,7 +75,10 @@ const levelLine = (level: WarnLevel, t: TFunction): string => {
 };
 
 export class WarnSettingsCommand extends CommandUtils.PomeloSubcommand {
-  public constructor(context: Subcommand.LoaderContext, options: Subcommand.Options) {
+  public constructor(
+    context: Subcommand.LoaderContext,
+    options: Subcommand.Options,
+  ) {
     super(context, {
       ...options,
       description: "Manage warn system settings.",
@@ -78,30 +89,52 @@ export class WarnSettingsCommand extends CommandUtils.PomeloSubcommand {
 
   public override registerApplicationCommands(registry: Command.Registry) {
     registry.registerChatInputCommand((builder) =>
-      applyLocalizedBuilder(builder, LanguageKeys.Commands.Moderation.WarnSettings.commandName, LanguageKeys.Commands.Moderation.WarnSettings.commandDescription)
+      applyLocalizedBuilder(
+        builder,
+        LanguageKeys.Commands.Moderation.WarnSettings.commandName,
+        LanguageKeys.Commands.Moderation.WarnSettings.commandDescription,
+      )
         .setName(this.name)
         .setDescription(this.description)
         .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
         .addSubcommand((sub) =>
-          applyLocalizedBuilder(sub, LanguageKeys.Commands.Moderation.WarnSettings.subcommandActionsName, LanguageKeys.Commands.Moderation.WarnSettings.subcommandActionsDescription)
-            .setName("actions"),
+          applyLocalizedBuilder(
+            sub,
+            LanguageKeys.Commands.Moderation.WarnSettings.subcommandActionsName,
+            LanguageKeys.Commands.Moderation.WarnSettings
+              .subcommandActionsDescription,
+          ).setName("actions"),
         )
         .addSubcommand((sub) =>
-          applyLocalizedBuilder(sub, LanguageKeys.Commands.Moderation.WarnSettings.subcommandRolesName, LanguageKeys.Commands.Moderation.WarnSettings.subcommandRolesDescription)
-            .setName("roles"),
+          applyLocalizedBuilder(
+            sub,
+            LanguageKeys.Commands.Moderation.WarnSettings.subcommandRolesName,
+            LanguageKeys.Commands.Moderation.WarnSettings
+              .subcommandRolesDescription,
+          ).setName("roles"),
         )
         .addSubcommand((sub) =>
-          applyLocalizedBuilder(sub, LanguageKeys.Commands.Moderation.WarnSettings.subcommandPresetName, LanguageKeys.Commands.Moderation.WarnSettings.subcommandPresetDescription)
-            .setName("preset"),
+          applyLocalizedBuilder(
+            sub,
+            LanguageKeys.Commands.Moderation.WarnSettings.subcommandPresetName,
+            LanguageKeys.Commands.Moderation.WarnSettings
+              .subcommandPresetDescription,
+          ).setName("preset"),
         )
         .addSubcommand((sub) =>
-          applyLocalizedBuilder(sub, LanguageKeys.Commands.Moderation.WarnSettings.quickstartCommandName, LanguageKeys.Commands.Moderation.WarnSettings.quickstartCommandDescription)
-            .setName("quickstart"),
+          applyLocalizedBuilder(
+            sub,
+            LanguageKeys.Commands.Moderation.WarnSettings.quickstartCommandName,
+            LanguageKeys.Commands.Moderation.WarnSettings
+              .quickstartCommandDescription,
+          ).setName("quickstart"),
         ),
     );
   }
 
-  public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+  public override async chatInputRun(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
     const subcommand = interaction.options.getSubcommand();
     const guildId = interaction.guildId;
     if (!guildId) return;
@@ -193,7 +226,7 @@ export class WarnSettingsCommand extends CommandUtils.PomeloSubcommand {
     const guildId = interaction.guildId;
     if (!guildId) return;
     const settings = await modActionService.getWarnSettings(guildId);
-    const levels = normalizeActions(settings?.actions);
+    const levels = normalizeActions(settings.actions);
 
     const container = new ContainerBuilder()
       .setAccentColor(Colors.Info)
@@ -223,7 +256,9 @@ export class WarnSettingsCommand extends CommandUtils.PomeloSubcommand {
     );
   }
 
-  private async showRoleConfig(interaction: Command.ChatInputCommandInteraction) {
+  private async showRoleConfig(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
     const t = await fetchT(interaction);
     const guildId = interaction.guildId;
     if (!guildId) return;
@@ -231,14 +266,21 @@ export class WarnSettingsCommand extends CommandUtils.PomeloSubcommand {
     const modalId = nanoid();
     const modal = new ModalBuilder()
       .setCustomId(modalId)
-      .setTitle(t(LanguageKeys.Commands.Moderation.WarnSettings.roleConfigTitle))
+      .setTitle(
+        t(LanguageKeys.Commands.Moderation.WarnSettings.roleConfigTitle),
+      )
       .addComponents(
         new ActionRowBuilder<TextInputBuilder>().addComponents(
           new TextInputBuilder()
             .setCustomId("config")
-            .setLabel(t(LanguageKeys.Commands.Moderation.WarnSettings.roleConfigLabel))
+            .setLabel(
+              t(LanguageKeys.Commands.Moderation.WarnSettings.roleConfigLabel),
+            )
             .setPlaceholder(
-              t(LanguageKeys.Commands.Moderation.WarnSettings.roleConfigPlaceholder),
+              t(
+                LanguageKeys.Commands.Moderation.WarnSettings
+                  .roleConfigPlaceholder,
+              ),
             )
             .setStyle(TextInputStyle.Paragraph)
             .setRequired(false),
@@ -249,12 +291,15 @@ export class WarnSettingsCommand extends CommandUtils.PomeloSubcommand {
     const modalInteraction = await interaction
       .awaitModalSubmit({
         time: 600000,
-        filter: (i) => i.customId === modalId && i.user.id === interaction.user.id,
+        filter: (i) =>
+          i.customId === modalId && i.user.id === interaction.user.id,
       })
       .catch(() => null);
     if (!modalInteraction) return;
 
-    const configStr = modalInteraction.fields.getTextInputValue("config").trim();
+    const configStr = modalInteraction.fields
+      .getTextInputValue("config")
+      .trim();
 
     await db
       .insert(warnSettings)
@@ -264,7 +309,9 @@ export class WarnSettingsCommand extends CommandUtils.PomeloSubcommand {
         set: { roleApply: configStr || null },
       });
 
-    await modalInteraction.deferReply({ flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral });
+    await modalInteraction.deferReply({
+      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+    });
     const container = new ContainerBuilder()
       .setAccentColor(Colors.Success)
       .addTextDisplayComponents(
@@ -279,40 +326,56 @@ export class WarnSettingsCommand extends CommandUtils.PomeloSubcommand {
     );
   }
 
-  private async showPresetSelector(interaction: Command.ChatInputCommandInteraction) {
+  private async showPresetSelector(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
     const t = await fetchT(interaction);
     const selectId = nanoid();
     const select = new StringSelectMenuBuilder()
       .setCustomId(selectId)
       .setPlaceholder(
-        t(LanguageKeys.Commands.Moderation.WarnSettings.presetPickerPlaceholder),
+        t(
+          LanguageKeys.Commands.Moderation.WarnSettings.presetPickerPlaceholder,
+        ),
       )
       .addOptions([
         {
-          label: t(LanguageKeys.Commands.Moderation.WarnSettings.presetLemomeme),
+          label: t(
+            LanguageKeys.Commands.Moderation.WarnSettings.presetLemomeme,
+          ),
           description: t(
-            LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.presetLemomemeDesc,
+            LanguageKeys.Commands.Moderation.WarnSettings.Quickstart
+              .presetLemomemeDesc,
           ),
           value: "lemomeme",
         },
         {
-          label: t(LanguageKeys.Commands.Moderation.WarnSettings.presetRecommended),
+          label: t(
+            LanguageKeys.Commands.Moderation.WarnSettings.presetRecommended,
+          ),
           description: t(
-            LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.presetRecommendedDesc,
+            LanguageKeys.Commands.Moderation.WarnSettings.Quickstart
+              .presetRecommendedDesc,
           ),
           value: "recommended",
         },
         {
-          label: t(LanguageKeys.Commands.Moderation.WarnSettings.presetProgressive),
+          label: t(
+            LanguageKeys.Commands.Moderation.WarnSettings.presetProgressive,
+          ),
           description: t(
-            LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.presetProgressiveDesc,
+            LanguageKeys.Commands.Moderation.WarnSettings.Quickstart
+              .presetProgressiveDesc,
           ),
           value: "progressive",
         },
         {
-          label: t(LanguageKeys.Commands.Moderation.WarnSettings.presetStrictStrike),
+          label: t(
+            LanguageKeys.Commands.Moderation.WarnSettings.presetStrictStrike,
+          ),
           description: t(
-            LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.presetStrictStrikeDesc,
+            LanguageKeys.Commands.Moderation.WarnSettings.Quickstart
+              .presetStrictStrikeDesc,
           ),
           value: "strictStrike",
         },
@@ -325,14 +388,20 @@ export class WarnSettingsCommand extends CommandUtils.PomeloSubcommand {
           `# ${t(LanguageKeys.Commands.Moderation.WarnSettings.presetPickerTitle)}`,
         ),
         new TextDisplayBuilder().setContent(
-          t(LanguageKeys.Commands.Moderation.WarnSettings.presetPickerDescription),
+          t(
+            LanguageKeys.Commands.Moderation.WarnSettings
+              .presetPickerDescription,
+          ),
         ),
       );
 
     await this.reply(
       interaction,
       {
-        components: [container, new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select)],
+        components: [
+          container,
+          new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select),
+        ],
         flags: MessageFlags.IsComponentsV2,
       },
       { type: PomeloReplyType.Success },
@@ -340,18 +409,22 @@ export class WarnSettingsCommand extends CommandUtils.PomeloSubcommand {
 
     const selectInteraction = await interaction.channel
       ?.awaitMessageComponent({
-        filter: (i) => i.customId === selectId && i.user.id === interaction.user.id,
+        filter: (i) =>
+          i.customId === selectId && i.user.id === interaction.user.id,
         time: 60000,
         componentType: ComponentType.StringSelect,
       })
       .catch(() => null);
     if (!selectInteraction) return;
 
-    const preset = selectInteraction.values[0] as keyof typeof PRESETS;
-    if (!PRESETS[preset]) return;
+    const presetEntry = Object.entries(PRESETS).find(
+      ([key]) => key === selectInteraction.values[0],
+    );
+    if (!presetEntry) return;
+    const preset = presetEntry[1];
     const guildId = interaction.guildId;
     if (!guildId) return;
-    const actionsJson = JSON.stringify(PRESETS[preset].levels);
+    const actionsJson = JSON.stringify(preset.levels);
 
     await db
       .insert(warnSettings)
@@ -378,7 +451,9 @@ export class WarnSettingsCommand extends CommandUtils.PomeloSubcommand {
     );
   }
 
-  private async runQuickstart(interaction: Command.ChatInputCommandInteraction) {
+  private async runQuickstart(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
     const guildId = interaction.guildId;
     if (!guildId) return;
     const state = createWarnQuickstartState({
