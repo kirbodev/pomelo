@@ -159,7 +159,7 @@ export default {
     descWithReason: FT<{ user: string; reason: string; amount: string }>(
       "commands/moderation:warn.descWithReason",
     ),
-    warnedCount: FT<{ count: string }>("commands/moderation:warn.warnedCount"),
+    warnedCount: FT<{ count: number }>("commands/moderation:warn.warnedCount"),
     heavywarnCommandName: T("commands/moderation:warn.heavywarnCommandName"),
     heavywarnCommandDescription: T(
       "commands/moderation:warn.heavywarnCommandDescription",
@@ -235,7 +235,7 @@ export default {
     viewDisabled: T("commands/moderation:warnSettings.viewDisabled"),
     actionsListTitle: T("commands/moderation:warnSettings.actionsListTitle"),
     actionsListEmpty: T("commands/moderation:warnSettings.actionsListEmpty"),
-    actionsListLine: FT<{ count: string; action: string; duration: string }>(
+    actionsListLine: FT<{ count: number; action: string; duration: string }>(
       "commands/moderation:warnSettings.actionsListLine",
     ),
     actionsListDuration: T(
@@ -583,4 +583,4 @@ export default {
     ),
     multiWarnParseError: T("commands/moderation:errors.multiWarnParseError"),
   },
-} as unknown as CapitalizedObjectKeys<typeof moderation>;
+} as const;
