@@ -44,6 +44,11 @@ import type { PunishmentItemState } from "../lib/moderation/types.js";
 
 const PendingStates: PunishmentItemState[] = ["pending", "retryable_failed"];
 
+const QuickstartLanguageKeys = LanguageKeys.Commands.Moderation
+  .WarnSettings as unknown as {
+  Quickstart: (typeof LanguageKeys.Commands.Moderation.WarnSettings)["quickstart"];
+};
+
 const requiredPermission = {
   ban: PermissionFlagsBits.BanMembers,
   kick: PermissionFlagsBits.KickMembers,
@@ -55,14 +60,22 @@ const toPermission = (
   type: WarnPunishmentItem["punishmentType"],
 ): keyof typeof requiredPermission | null => (type === "message" ? null : type);
 
-function displayItem(item: WarnPunishmentItem): string {
+function displayItem(
+  item: WarnPunishmentItem,
+  t: Awaited<ReturnType<typeof fetchT>>,
+): string {
+  const key = QuickstartLanguageKeys.Quickstart;
   if (item.punishmentType === "role")
-    return item.roleId ? `<@&${item.roleId}>` : "Role";
+    return item.roleId ? `<@&${item.roleId}>` : t(key.punishmentRole);
   if (item.punishmentType === "mute" && item.duration)
-    return `Mute (${String(item.duration)}ms)`;
-  return (
-    item.punishmentType.charAt(0).toUpperCase() + item.punishmentType.slice(1)
-  );
+    return t(key.approvalTimedPunishment, {
+      punishment: t(key.punishmentMute),
+      duration: String(item.duration),
+    });
+  if (item.punishmentType === "mute") return t(key.punishmentMute);
+  if (item.punishmentType === "kick") return t(key.punishmentKick);
+  if (item.punishmentType === "ban") return t(key.punishmentBan);
+  return t(key.approvalMessage);
 }
 
 async function resolveMember(
@@ -257,6 +270,7 @@ export class WarnApprovalHandler extends InteractionHandler {
           guildId,
           itemId: item.id,
           actorId: interaction.user.id,
+          expectedBatchRevision: parsed.revision,
         });
     }
     if (parsed.action === "apply-selected") {
@@ -267,12 +281,14 @@ export class WarnApprovalHandler extends InteractionHandler {
         revision: parsed.revision,
       });
       const itemIds = authorizePendingSelection(selected, record.items);
-      for (const itemId of itemIds)
-        await service.applyPunishmentItem({
-          guildId,
-          itemId,
-          actorId: interaction.user.id,
-        });
+      await service.applyEligibleItems({
+        guildId,
+        batchId: record.batch.id,
+        actorId: interaction.user.id,
+        automatic: false,
+        expectedBatchRevision: parsed.revision,
+        itemIds,
+      });
     }
     if (parsed.action === "apply-all")
       await service.applyEligibleItems({
@@ -280,6 +296,7 @@ export class WarnApprovalHandler extends InteractionHandler {
         batchId: record.batch.id,
         actorId: interaction.user.id,
         automatic: false,
+        expectedBatchRevision: parsed.revision,
       });
 
     const current = await this.getRecord(guildId, record.batch.publicId);
@@ -373,16 +390,14 @@ export class WarnApprovalHandler extends InteractionHandler {
       .setAccentColor(Colors.Warning)
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-          `# ${t(LanguageKeys.Commands.Moderation.WarnSettings.quickstart.confirmLevelTitle, { level: batch.threshold })}`,
+          `# ${t(QuickstartLanguageKeys.Quickstart.confirmLevelTitle, { level: batch.threshold })}`,
         ),
         new TextDisplayBuilder().setContent(
-          t(
-            LanguageKeys.Commands.Moderation.WarnSettings.quickstart
-              .confirmLevelDesc,
-            {
-              punishments: pending.map(displayItem).join(", ") || "None",
-            },
-          ),
+          t(QuickstartLanguageKeys.Quickstart.confirmLevelDesc, {
+            punishments:
+              pending.map((item) => displayItem(item, t)).join(", ") ||
+              t(QuickstartLanguageKeys.Quickstart.none),
+          }),
         ),
       );
     if (pending.length === 0) return [containerBuilder];
@@ -398,23 +413,13 @@ export class WarnApprovalHandler extends InteractionHandler {
             .setCustomId(
               createApprovalCustomId(batch.publicId, batch.revision, "apply"),
             )
-            .setLabel(
-              t(
-                LanguageKeys.Commands.Moderation.WarnSettings.quickstart
-                  .confirmLevelConfirm,
-              ),
-            )
+            .setLabel(t(QuickstartLanguageKeys.Quickstart.confirmLevelConfirm))
             .setStyle(ButtonStyle.Success),
           new ButtonBuilder()
             .setCustomId(
               createApprovalCustomId(batch.publicId, batch.revision, "dismiss"),
             )
-            .setLabel(
-              t(
-                LanguageKeys.Commands.Moderation.WarnSettings.quickstart
-                  .approvalDismiss,
-              ),
-            )
+            .setLabel(t(QuickstartLanguageKeys.Quickstart.approvalDismiss))
             .setStyle(ButtonStyle.Secondary),
         ),
       );
@@ -430,7 +435,7 @@ export class WarnApprovalHandler extends InteractionHandler {
           .setMaxValues(pending.length)
           .addOptions(
             pending.map((item) => ({
-              label: displayItem(item),
+              label: displayItem(item, t),
               value: String(item.id),
             })),
           ),
@@ -444,34 +449,19 @@ export class WarnApprovalHandler extends InteractionHandler {
               "apply-selected",
             ),
           )
-          .setLabel(
-            t(
-              LanguageKeys.Commands.Moderation.WarnSettings.quickstart
-                .approvalApplySelected,
-            ),
-          )
+          .setLabel(t(QuickstartLanguageKeys.Quickstart.approvalApplySelected))
           .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
           .setCustomId(
             createApprovalCustomId(batch.publicId, batch.revision, "apply-all"),
           )
-          .setLabel(
-            t(
-              LanguageKeys.Commands.Moderation.WarnSettings.quickstart
-                .approvalApplyAll,
-            ),
-          )
+          .setLabel(t(QuickstartLanguageKeys.Quickstart.approvalApplyAll))
           .setStyle(ButtonStyle.Primary),
         new ButtonBuilder()
           .setCustomId(
             createApprovalCustomId(batch.publicId, batch.revision, "dismiss"),
           )
-          .setLabel(
-            t(
-              LanguageKeys.Commands.Moderation.WarnSettings.quickstart
-                .approvalDismiss,
-            ),
-          )
+          .setLabel(t(QuickstartLanguageKeys.Quickstart.approvalDismiss))
           .setStyle(ButtonStyle.Secondary),
       ),
     );
@@ -486,10 +476,7 @@ export class WarnApprovalHandler extends InteractionHandler {
       .setAccentColor(Colors.Warning)
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-          t(
-            LanguageKeys.Commands.Moderation.WarnSettings.quickstart
-              .approvalUnavailable,
-          ),
+          t(QuickstartLanguageKeys.Quickstart.approvalUnavailable),
         ),
       );
     await interaction.reply({

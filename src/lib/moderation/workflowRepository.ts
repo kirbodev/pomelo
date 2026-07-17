@@ -41,6 +41,11 @@ export type WorkflowRedis = {
     seconds: number,
   ): Promise<unknown>;
   del(key: string): Promise<unknown>;
+  eval(
+    script: string,
+    numberOfKeys: number,
+    ...args: string[]
+  ): Promise<unknown>;
 };
 
 export type ApprovalCustomId = {
@@ -55,6 +60,23 @@ export type QuickstartCustomId = {
   action: QuickstartAction;
   entityId?: string;
 };
+
+const QuickstartStepActions: Partial<
+  Record<number, readonly QuickstartAction[]>
+> = {
+  1: ["preset", "scratch"],
+  2: ["select-preset"],
+  3: ["expiry", "toggle-dm", "levels"],
+  4: ["back", "review"],
+  6: ["back", "save", "cancel"],
+};
+
+export function isQuickstartActionAllowed(
+  step: number,
+  action: QuickstartAction,
+): boolean {
+  return QuickstartStepActions[step]?.includes(action) ?? false;
+}
 
 const opaquePart = /^[A-Za-z0-9_-]{1,48}$/;
 
@@ -242,11 +264,28 @@ export class WarnWorkflowRepository {
   public async advance(
     state: WarnWorkflowState,
   ): Promise<WarnWorkflowState | null> {
-    const current = await this.get(state.id);
-    if (!current || current.revision !== state.revision) return null;
+    const validated = validateWorkflowState(state);
+    if (!validated) throw new Error("invalidWarnWorkflow");
     const next = { ...state, revision: state.revision + 1 };
-    await this.save(next);
-    return next;
+    const result = await this.redis.eval(
+      `
+        local raw = redis.call("GET", KEYS[1])
+        if not raw then return 0 end
+        local ok, current = pcall(cjson.decode, raw)
+        if not ok or current.status ~= "active" or current.revision ~= tonumber(ARGV[1]) or current.expiresAt <= tonumber(ARGV[2]) then
+          return 0
+        end
+        redis.call("SET", KEYS[1], ARGV[3], "EX", ARGV[4])
+        return 1
+      `,
+      1,
+      this.workflowKey(state.id),
+      String(state.revision),
+      String(this.now()),
+      JSON.stringify(next),
+      String(WorkflowTtlSeconds),
+    );
+    return result === 1 || result === "1" ? next : null;
   }
 
   public async delete(id: string): Promise<void> {

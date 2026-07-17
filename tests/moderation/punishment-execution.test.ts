@@ -421,3 +421,98 @@ test("a stale dismiss revision returns false without adding a note", async () =>
   expect(result).toBe(false);
   expect(notes.rows[0]?.count).toBe(0);
 });
+
+test("a batch revision changes atomically prevent a stale approval from applying an item", async () => {
+  let calls = 0;
+  const adapter = capabilities();
+  adapter.apply = async () => {
+    calls++;
+    return { success: true };
+  };
+  const { database, service, batch, item } = await createExecution(adapter);
+  await database
+    .update(schema.warnPunishmentBatches)
+    .set({ revision: batch.revision + 1 })
+    .where(eq(schema.warnPunishmentBatches.id, batch.id));
+
+  const result = await service.applyPunishmentItem({
+    guildId: "guild",
+    itemId: item.id,
+    actorId: "moderator",
+    expectedBatchRevision: batch.revision,
+  });
+
+  expect(result.state).toBe("pending");
+  expect(calls).toBe(0);
+});
+
+test("failed batches cannot process pending punishments", async () => {
+  let calls = 0;
+  const adapter = capabilities();
+  adapter.apply = async () => {
+    calls++;
+    return { success: true };
+  };
+  const { database, service, batch } = await createExecution(adapter);
+  await database
+    .update(schema.warnPunishmentBatches)
+    .set({ state: "failed" })
+    .where(eq(schema.warnPunishmentBatches.id, batch.id));
+
+  const results = await service.applyEligibleItems({
+    guildId: "guild",
+    batchId: batch.id,
+    actorId: "moderator",
+    automatic: false,
+    expectedBatchRevision: batch.revision,
+  });
+
+  expect(results).toEqual([]);
+  expect(calls).toBe(0);
+});
+
+test("expired batches cannot process pending punishments", async () => {
+  let calls = 0;
+  const adapter = capabilities();
+  adapter.apply = async () => {
+    calls++;
+    return { success: true };
+  };
+  const { client, service, batch } = await createExecution(adapter);
+  await client.execute(
+    "UPDATE warn_punishment_batches SET expires_at = ? WHERE id = ?",
+    [now - 1, batch.id],
+  );
+
+  const results = await service.applyEligibleItems({
+    guildId: "guild",
+    batchId: batch.id,
+    actorId: "moderator",
+    automatic: false,
+  });
+
+  expect(results).toEqual([]);
+  expect(calls).toBe(0);
+});
+
+test("concurrent dismissal creates exactly one immutable dismissal note", async () => {
+  const { client, service, batch } = await createExecution();
+  const [first, second] = await Promise.all([
+    service.dismissBatch({
+      guildId: "guild",
+      batchId: batch.id,
+      actorId: "moderator",
+      expectedRevision: batch.revision,
+    }),
+    service.dismissBatch({
+      guildId: "guild",
+      batchId: batch.id,
+      actorId: "moderator",
+      expectedRevision: batch.revision,
+    }),
+  ]);
+  const notes = await client.execute("SELECT COUNT(*) AS count FROM case_notes");
+
+  expect([first, second].filter(Boolean)).toHaveLength(1);
+  expect(notes.rows[0]?.count).toBe(1);
+});

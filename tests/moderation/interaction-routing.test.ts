@@ -3,10 +3,12 @@ import {
   WarnWorkflowRepository,
   authorizePendingSelection,
   createApprovalSelectionKey,
+  isQuickstartActionAllowed,
   parseApprovalCustomId,
   parseQuickstartCustomId,
   type WorkflowRedis,
 } from "../../src/lib/moderation/workflowRepository.js";
+import { renderWarnQuickstart } from "../../src/interaction-handlers/warnQuickstart.js";
 
 class MemoryRedis implements WorkflowRedis {
   public readonly values = new Map<string, string>();
@@ -29,6 +31,29 @@ class MemoryRedis implements WorkflowRedis {
 
   del(key: string): Promise<number> {
     return Promise.resolve(this.values.delete(key) ? 1 : 0);
+  }
+
+  eval(
+    _script: string,
+    numberOfKeys: number,
+    ...args: string[]
+  ): Promise<number> {
+    if (numberOfKeys !== 1) throw new Error("Expected one workflow key");
+    const [key, expectedRevision, now, serializedNext, ttl] = args;
+    if (!key || !expectedRevision || !now || !serializedNext || !ttl)
+      throw new Error("Missing compare-and-swap arguments");
+    const raw = this.values.get(key);
+    if (!raw) return Promise.resolve(0);
+    const current = JSON.parse(raw) as typeof state;
+    if (
+      current.status !== "active" ||
+      current.revision !== Number(expectedRevision) ||
+      current.expiresAt <= Number(now)
+    )
+      return Promise.resolve(0);
+    this.values.set(key, serializedNext);
+    this.ttl.set(key, Number(ttl));
+    return Promise.resolve(1);
   }
 }
 
@@ -98,6 +123,52 @@ test("workflow lookup rejects expired, cross-guild, stale, and replayed controls
   expect(await repository.get("expired")).toBeNull();
 });
 
+test("quickstart rejects a forged action that does not belong to its current step", () => {
+  expect(isQuickstartActionAllowed(1, "save")).toBe(false);
+  expect(isQuickstartActionAllowed(1, "preset")).toBe(true);
+  expect(isQuickstartActionAllowed(3, "review")).toBe(false);
+  expect(isQuickstartActionAllowed(4, "review")).toBe(true);
+});
+
+test("quickstart rejects controls from another owner or message", async () => {
+  const redis = new MemoryRedis();
+  const repository = new WarnWorkflowRepository(redis);
+  await repository.save(state);
+
+  expect(
+    await repository.loadForInteraction({
+      sessionId: state.id,
+      guildId: state.guildId,
+      ownerId: "another-moderator",
+      messageId: state.messageId,
+      revision: state.revision,
+    }),
+  ).toBeNull();
+  expect(
+    await repository.loadForInteraction({
+      sessionId: state.id,
+      guildId: state.guildId,
+      ownerId: state.ownerId,
+      messageId: "another-message",
+      revision: state.revision,
+    }),
+  ).toBeNull();
+});
+
+test("only one concurrent transition for the same workflow revision wins", async () => {
+  const redis = new MemoryRedis();
+  const repository = new WarnWorkflowRepository(redis);
+  await repository.save(state);
+
+  const [first, second] = await Promise.all([
+    repository.advance({ ...state, step: 2 }),
+    repository.advance({ ...state, step: 2 }),
+  ]);
+
+  expect([first, second].filter(Boolean)).toHaveLength(1);
+  expect((await repository.get(state.id))?.revision).toBe(2);
+});
+
 test("selection keys are scoped and no longer-pending items are never authorized", () => {
   expect(createApprovalSelectionKey("guild", "batch", "moderator", 4)).toBe(
     "warn-punishment-selection:guild:batch:moderator:4",
@@ -108,4 +179,15 @@ test("selection keys are scoped and no longer-pending items are never authorized
       { id: 2, state: "applied" },
     ]),
   ).toEqual([1]);
+});
+
+test("quickstart renders a serializable Components v2 payload", () => {
+  const payload = renderWarnQuickstart(state, ((key: string) => key) as never).map(
+    (component) => component.toJSON(),
+  );
+
+  expect(payload).toHaveLength(2);
+  expect(payload[0]?.type).toBe(17);
+  expect(payload[1]?.type).toBe(1);
+  expect(payload[1]?.components[0]?.custom_id).toMatch(/^pm:wq:1:/);
 });

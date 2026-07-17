@@ -110,6 +110,7 @@ export type ClaimPunishmentItemInput = {
   itemId: number;
   actorId: string;
   expectedVersion?: number;
+  expectedBatchRevision?: number;
 };
 
 export type ApplyPunishmentItemInput = ClaimPunishmentItemInput & {
@@ -123,6 +124,8 @@ export type ApplyEligibleItemsInput = {
   actorId: string;
   automatic: boolean;
   reason?: string;
+  expectedBatchRevision?: number;
+  itemIds?: readonly number[];
 };
 
 export type CreateWarnInput = {
@@ -694,7 +697,10 @@ export class ModActionService {
       const expectedVersion = input.expectedVersion ?? record.item.version;
       if (
         record.item.version !== expectedVersion ||
-        !["pending", "retryable_failed"].includes(record.item.state)
+        !["pending", "retryable_failed"].includes(record.item.state) ||
+        !this.isProcessableBatch(record.batch) ||
+        (input.expectedBatchRevision !== undefined &&
+          record.batch.revision !== input.expectedBatchRevision)
       )
         return null;
 
@@ -717,6 +723,7 @@ export class ModActionService {
             eq(warnPunishmentItems.id, input.itemId),
             eq(warnPunishmentItems.version, expectedVersion),
             inArray(warnPunishmentItems.state, ["pending", "retryable_failed"]),
+            this.batchClaimCondition(input),
           ),
         )
         .returning();
@@ -852,9 +859,10 @@ export class ModActionService {
       )
       .limit(1);
     const selectedBatch = batch.at(0);
+    if (!selectedBatch || !this.isProcessableBatch(selectedBatch)) return [];
     if (
-      !selectedBatch ||
-      ["cancelled", "completed"].includes(selectedBatch.state)
+      input.expectedBatchRevision !== undefined &&
+      !(await this.claimBatchRevision(input))
     )
       return [];
 
@@ -866,6 +874,9 @@ export class ModActionService {
           eq(warnPunishmentItems.guildId, input.guildId),
           eq(warnPunishmentItems.batchId, input.batchId),
           inArray(warnPunishmentItems.state, ["pending", "retryable_failed"]),
+          input.itemIds && input.itemIds.length > 0
+            ? inArray(warnPunishmentItems.id, [...input.itemIds])
+            : sql`1 = 1`,
         ),
       )
       .orderBy(asc(warnPunishmentItems.ordinal));
@@ -926,36 +937,41 @@ export class ModActionService {
     actorId: string;
     expectedRevision: number;
   }): Promise<boolean> {
-    return this.database.transaction(async (transaction) => {
-      const now = this.getNow();
-      const batches = await transaction
-        .update(warnPunishmentBatches)
-        .set({
-          dismissedBy: input.actorId,
-          dismissedAt: now,
-          revision: sql`${warnPunishmentBatches.revision} + 1`,
-          updatedAt: now,
-        })
-        .where(
-          and(
-            eq(warnPunishmentBatches.guildId, input.guildId),
-            eq(warnPunishmentBatches.id, input.batchId),
-            eq(warnPunishmentBatches.revision, input.expectedRevision),
-          ),
-        )
-        .returning();
-      if (batches.length !== 1) return false;
-      const batch = batches[0];
-      await transaction.insert(caseNotes).values({
-        guildId: input.guildId,
-        caseId: batch.warnCaseId,
-        operationKey: `warn-batch-dismiss:${String(batch.id)}:${String(batch.revision)}`,
-        moderatorId: input.actorId,
-        note: "Warning punishment approval display dismissed.",
-        createdAt: now,
+    try {
+      return await this.database.transaction(async (transaction) => {
+        const now = this.getNow();
+        const batches = await transaction
+          .update(warnPunishmentBatches)
+          .set({
+            dismissedBy: input.actorId,
+            dismissedAt: now,
+            revision: sql`${warnPunishmentBatches.revision} + 1`,
+            updatedAt: now,
+          })
+          .where(
+            and(
+              eq(warnPunishmentBatches.guildId, input.guildId),
+              eq(warnPunishmentBatches.id, input.batchId),
+              eq(warnPunishmentBatches.revision, input.expectedRevision),
+            ),
+          )
+          .returning();
+        if (batches.length !== 1) return false;
+        const batch = batches[0];
+        await transaction.insert(caseNotes).values({
+          guildId: input.guildId,
+          caseId: batch.warnCaseId,
+          operationKey: `warn-batch-dismiss:${String(batch.id)}:${String(batch.revision)}`,
+          moderatorId: input.actorId,
+          note: "Warning punishment approval display dismissed.",
+          createdAt: now,
+        });
+        return true;
       });
-      return true;
-    });
+    } catch (error) {
+      if (this.isDatabaseContention(error)) return false;
+      throw error;
+    }
   }
 
   public async recoverExpiredClaims(): Promise<number> {
@@ -1130,6 +1146,55 @@ export class ModActionService {
       (error.message.includes("SQLITE_BUSY") ||
         error.message.includes("database is locked"))
     );
+  }
+
+  private isProcessableBatch(
+    batch: Pick<WarnPunishmentBatch, "state" | "expiresAt">,
+  ): boolean {
+    return (
+      (batch.state === "pending" || batch.state === "partially_applied") &&
+      (batch.expiresAt === null || batch.expiresAt > this.getNow())
+    );
+  }
+
+  private batchClaimCondition(input: ClaimPunishmentItemInput) {
+    const revisionCondition =
+      input.expectedBatchRevision === undefined
+        ? sql`1 = 1`
+        : sql`revision = ${input.expectedBatchRevision}`;
+    return sql`${warnPunishmentItems.batchId} IN (
+      SELECT id FROM warn_punishment_batches
+      WHERE guild_id = ${input.guildId}
+        AND state IN ('pending', 'partially_applied')
+        AND (expires_at IS NULL OR expires_at > ${this.getNow()})
+        AND ${revisionCondition}
+    )`;
+  }
+
+  private async claimBatchRevision(
+    input: ApplyEligibleItemsInput,
+  ): Promise<boolean> {
+    const expectedRevision = input.expectedBatchRevision;
+    if (expectedRevision === undefined) return false;
+    const claimed = await this.database
+      .update(warnPunishmentBatches)
+      .set({
+        revision: sql`${warnPunishmentBatches.revision} + 1`,
+        updatedAt: this.getNow(),
+      })
+      .where(
+        and(
+          eq(warnPunishmentBatches.guildId, input.guildId),
+          eq(warnPunishmentBatches.id, input.batchId),
+          eq(warnPunishmentBatches.revision, expectedRevision),
+          inArray(warnPunishmentBatches.state, [
+            "pending",
+            "partially_applied",
+          ]),
+        ),
+      )
+      .returning({ id: warnPunishmentBatches.id });
+    return claimed.length === 1;
   }
 
   private async recoverPunishmentContention(

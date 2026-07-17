@@ -23,6 +23,7 @@ import { PRESETS } from "../lib/moderation/presets.js";
 import {
   WarnWorkflowRepository,
   createQuickstartCustomId,
+  isQuickstartActionAllowed,
   parseQuickstartCustomId,
   type QuickstartCustomId,
 } from "../lib/moderation/workflowRepository.js";
@@ -31,6 +32,11 @@ import type { WarnWorkflowState } from "../lib/moderation/types.js";
 export const warnWorkflowRepository = new WarnWorkflowRepository(
   container.redis,
 );
+
+const QuickstartLanguageKeys = LanguageKeys.Commands.Moderation
+  .WarnSettings as unknown as {
+  Quickstart: (typeof LanguageKeys.Commands.Moderation.WarnSettings)["quickstart"];
+};
 
 export function createWarnQuickstartState(input: {
   id: string;
@@ -80,20 +86,26 @@ export class WarnQuickstartHandler extends InteractionHandler {
       revision: parsed.revision,
     });
     if (!state) return this.replyUnavailable(interaction);
+    if (!isQuickstartActionAllowed(state.step, parsed.action))
+      return this.replyUnavailable(interaction);
 
-    const next = await this.reduce(state, interaction, parsed);
-    if (!next) return this.replyUnavailable(interaction);
+    const next = this.reduce(state, interaction, parsed);
+    if (next === null) {
+      await this.replyUnavailable(interaction);
+      return;
+    }
     const stored = await warnWorkflowRepository.advance(next);
     if (!stored) return this.replyUnavailable(interaction);
+    if (parsed.action === "save") await this.saveSettings(stored);
     const t = await fetchT(interaction);
     await interaction.update({ components: renderWarnQuickstart(stored, t) });
   }
 
-  private async reduce(
+  private reduce(
     state: WarnWorkflowState,
     interaction: MessageComponentInteraction,
     parsed: QuickstartCustomId,
-  ): Promise<WarnWorkflowState | null> {
+  ): WarnWorkflowState | null {
     if (parsed.action === "preset") return { ...state, step: 2 };
     if (parsed.action === "scratch") return { ...state, step: 3 };
     if (parsed.action === "select-preset" && interaction.isStringSelectMenu()) {
@@ -127,27 +139,30 @@ export class WarnQuickstartHandler extends InteractionHandler {
     if (parsed.action === "review") return { ...state, step: 6 };
     if (parsed.action === "cancel") return { ...state, status: "cancelled" };
     if (parsed.action === "save") {
-      await db
-        .insert(warnSettings)
-        .values({
-          guildId: state.guildId,
+      return { ...state, status: "completed" };
+    }
+    return null;
+  }
+
+  private async saveSettings(state: WarnWorkflowState): Promise<void> {
+    await db
+      .insert(warnSettings)
+      .values({
+        guildId: state.guildId,
+        defaultExpiryDays: state.config.defaultExpiryDays,
+        dmOnWarn: state.config.dmOnWarn,
+        logChannelId: state.config.logChannelId ?? null,
+        actions: JSON.stringify(state.config.levels),
+      })
+      .onConflictDoUpdate({
+        target: warnSettings.guildId,
+        set: {
           defaultExpiryDays: state.config.defaultExpiryDays,
           dmOnWarn: state.config.dmOnWarn,
           logChannelId: state.config.logChannelId ?? null,
           actions: JSON.stringify(state.config.levels),
-        })
-        .onConflictDoUpdate({
-          target: warnSettings.guildId,
-          set: {
-            defaultExpiryDays: state.config.defaultExpiryDays,
-            dmOnWarn: state.config.dmOnWarn,
-            logChannelId: state.config.logChannelId ?? null,
-            actions: JSON.stringify(state.config.levels),
-          },
-        });
-      return { ...state, status: "completed" };
-    }
-    return null;
+        },
+      });
   }
 
   private async replyUnavailable(
@@ -160,10 +175,7 @@ export class WarnQuickstartHandler extends InteractionHandler {
           .setAccentColor(Colors.Warning)
           .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-              t(
-                LanguageKeys.Commands.Moderation.WarnSettings.quickstart
-                  .approvalUnavailable,
-              ),
+              t(QuickstartLanguageKeys.Quickstart.approvalUnavailable),
             ),
           ),
       ],
@@ -176,7 +188,7 @@ export function renderWarnQuickstart(
   state: WarnWorkflowState,
   t: Awaited<ReturnType<typeof fetchT>>,
 ) {
-  const key = LanguageKeys.Commands.Moderation.WarnSettings.quickstart;
+  const key = QuickstartLanguageKeys.Quickstart;
   const container = new ContainerBuilder().setAccentColor(Colors.Info);
   const button = (
     action: QuickstartCustomId["action"],

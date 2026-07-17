@@ -487,6 +487,24 @@ export default {
       punishmentRole: T(
         "commands/moderation:warnSettings.quickstart.punishmentRole",
       ),
+      approvalApplySelected: T(
+        "commands/moderation:warnSettings.quickstart.approvalApplySelected",
+      ),
+      approvalApplyAll: T(
+        "commands/moderation:warnSettings.quickstart.approvalApplyAll",
+      ),
+      approvalDismiss: T(
+        "commands/moderation:warnSettings.quickstart.approvalDismiss",
+      ),
+      approvalUnavailable: T(
+        "commands/moderation:warnSettings.quickstart.approvalUnavailable",
+      ),
+      approvalTimedPunishment: FT<{ punishment: string; duration: string }>(
+        "commands/moderation:warnSettings.quickstart.approvalTimedPunishment",
+      ),
+      approvalMessage: T(
+        "commands/moderation:warnSettings.quickstart.approvalMessage",
+      ),
     },
   },
   Case: {

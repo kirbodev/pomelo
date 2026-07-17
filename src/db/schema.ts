@@ -340,6 +340,7 @@ export const warnPunishmentBatches = sqliteTable(
     dismissedAt: integer("dismissed_at"),
     displayChannelId: text("display_channel_id"),
     displayMessageId: text("display_message_id"),
+    expiresAt: integer("expires_at"),
     createdAt: integer("created_at").notNull().default(nowMilliseconds),
     updatedAt: integer("updated_at").notNull().default(nowMilliseconds),
   },
@@ -361,6 +362,9 @@ export const warnPunishmentBatches = sqliteTable(
     guildStateCreatedIndex: index(
       "warn_punishment_batches_guild_state_created_index",
     ).on(table.guildId, table.state, table.createdAt),
+    expiryIndex: index("warn_punishment_batches_expiry_index").on(
+      table.expiresAt,
+    ),
   }),
 );
 

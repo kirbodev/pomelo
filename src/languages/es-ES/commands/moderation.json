@@ -255,7 +255,13 @@
       "punishmentKick": "Expulsar",
       "punishmentBan": "Banear",
       "punishmentBanPerm": "Ban permanente",
-      "punishmentRole": "Rol"
+      "punishmentRole": "Rol",
+      "approvalApplySelected": "Aplicar seleccionados",
+      "approvalApplyAll": "Aplicar todos",
+      "approvalDismiss": "Ocultar",
+      "approvalUnavailable": "Esta aprobación ya no está disponible.",
+      "approvalTimedPunishment": "{{punishment}} ({{duration}} ms)",
+      "approvalMessage": "Mensaje"
     }
   },
   "case": {
