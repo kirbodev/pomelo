@@ -366,6 +366,47 @@ test("a retryable auto-unban failure releases its token for the retry", async ()
   expect(attempts).toBe(2);
 });
 
+test("a thrown auto-unban adapter error consumes its token and sends the case to manual review", async () => {
+  let attempts = 0;
+  const adapter = capabilities();
+  adapter.unban = async () => {
+    attempts++;
+    throw new Error("adapter exception should not become an unbounded failure code");
+  };
+  const { client, service } = await createExecution(adapter);
+  await client.execute(
+    "INSERT INTO mod_cases (guild_id, case_number, operation_key, user_id, moderator_id, action_type) VALUES ('guild', 2, 'ban:case', 'member', 'moderator', 'ban')",
+  );
+  await client.execute(
+    "INSERT INTO temporary_ban_tokens (guild_id, case_id, token, expires_at) VALUES ('guild', 2, 'token', ?)",
+    [now],
+  );
+
+  const first = await service.runAutoUnban({
+    guildId: "guild",
+    userId: "member",
+    internalCaseId: 2,
+    token: "token",
+  });
+  const retry = await service.runAutoUnban({
+    guildId: "guild",
+    userId: "member",
+    internalCaseId: 2,
+    token: "token",
+  });
+  const token = await client.execute("SELECT consumed_at FROM temporary_ban_tokens");
+  const caseRecord = await client.execute("SELECT status, failure_code FROM mod_cases WHERE id = 2");
+
+  expect(first).toBe(false);
+  expect(retry).toBe(false);
+  expect(attempts).toBe(1);
+  expect(token.rows[0]?.consumed_at).not.toBeNull();
+  expect(caseRecord.rows[0]).toEqual({
+    status: "manual_review",
+    failure_code: "autoUnbanAdapterException",
+  });
+});
+
 test("a stale dismiss revision returns false without adding a note", async () => {
   const { client, service, batch } = await createExecution();
 

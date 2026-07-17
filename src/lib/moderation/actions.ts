@@ -1006,33 +1006,52 @@ export class ModActionService {
     const claim = await this.claimAutoUnbanToken(input);
     if (!claim) return false;
 
-    const outcome = await adapter.unban({
-      guildId: input.guildId,
-      userId: input.userId,
-      reason: "Temporary ban expired.",
-    });
+    let outcome: Awaited<ReturnType<PunishmentCapabilityAdapter["unban"]>>;
+    try {
+      outcome = await adapter.unban({
+        guildId: input.guildId,
+        userId: input.userId,
+        reason: "Temporary ban expired.",
+      });
+    } catch {
+      await this.markAutoUnbanManualReview(
+        input.guildId,
+        input.internalCaseId,
+        "autoUnbanAdapterException",
+      );
+      return false;
+    }
     if (!outcome.success) {
       if (outcome.retryable) {
         await this.releaseAutoUnbanToken(input.guildId, claim);
         throw new Error(outcome.failureCode ?? "autoUnbanRetryableFailure");
       }
-      await this.database
-        .update(modCases)
-        .set({
-          status: "manual_review",
-          failureCode: outcome.failureCode ?? "autoUnbanUnconfirmed",
-          updatedAt: this.getNow(),
-        })
-        .where(
-          and(
-            eq(modCases.guildId, input.guildId),
-            eq(modCases.id, input.internalCaseId),
-          ),
-        );
+      await this.markAutoUnbanManualReview(
+        input.guildId,
+        input.internalCaseId,
+        outcome.failureCode ?? "autoUnbanUnconfirmed",
+      );
       return false;
     }
 
     return true;
+  }
+
+  private async markAutoUnbanManualReview(
+    guildId: string,
+    internalCaseId: number,
+    failureCode: string,
+  ): Promise<void> {
+    await this.database
+      .update(modCases)
+      .set({
+        status: "manual_review",
+        failureCode,
+        updatedAt: this.getNow(),
+      })
+      .where(
+        and(eq(modCases.guildId, guildId), eq(modCases.id, internalCaseId)),
+      );
   }
 
   private async claimAutoUnbanToken(input: {
