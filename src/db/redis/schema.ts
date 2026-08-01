@@ -2,7 +2,7 @@
 import { Locale } from "discord.js";
 import { z } from "zod";
 
-const ChannelRegex = /^\d{17,20}$/gm;
+const ChannelRegex = /^\d{17,20}$/;
 
 //NOTE - ONLY USE THIS FOR TESTING
 export const Test = z.object({
@@ -38,7 +38,35 @@ export const UserSettings = z.object({
   locale: z.nativeEnum(Locale),
   preferEphemeral: z.boolean().default(true),
   allowUrgentPings: z.boolean().default(true),
+  autoAfkRemoval: z.boolean().default(false),
 });
+
+export const SubActionSchema = z.object({
+  type: z.enum(["warn", "mute", "addRole", "sendDm", "kick", "ban"]),
+  warnAmount: z.number().min(1).max(10).optional(),
+  warnReason: z.string().max(512).optional(),
+  muteDuration: z.number().positive().optional(),
+  roleId: z.string().optional(),
+  dmMessage: z.string().max(2000).optional(),
+  kickReason: z.string().max(512).optional(),
+  banReason: z.string().max(512).optional(),
+  banDuration: z.number().positive().optional(),
+  banDeleteMessageDays: z.number().optional(),
+});
+
+export const QuickActionDefinitionSchema = z.object({
+  id: z.string(),
+  label: z.string().min(1).max(80),
+  triggers: z.array(z.enum(["mute", "warn"])).min(1),
+  subactions: z.array(SubActionSchema).min(1).max(5),
+});
+
+const QuickActionsConfigObject = z.object({
+  actions: z.array(QuickActionDefinitionSchema).default([]),
+});
+
+export const QuickActionsConfigSchema = QuickActionsConfigObject
+  .default({ actions: [] });
 
 export const GuildSettings = z.object({
   createdAt: z
@@ -66,6 +94,7 @@ export const GuildSettings = z.object({
   afkEnabled: z.boolean().default(true),
   blockAfkMentions: z.boolean().default(false),
   announcementChannel: z.string().regex(ChannelRegex).optional(),
+  quickActions: QuickActionsConfigSchema,
 });
 
 export const Afk = z.object({
@@ -83,6 +112,9 @@ export const Afk = z.object({
   text: z.string().min(1).max(512).optional(),
   attachment: z.string().optional(),
   eventId: z.string().optional(),
+  // Armed by the presence listener once the user goes offline while AFK;
+  // coming back online only auto-removes when this is set.
+  wentOffline: z.boolean().optional(),
   pastUsername: z
     .array(
       z.object({
@@ -94,3 +126,26 @@ export const Afk = z.object({
 });
 
 export type Afk = z.infer<typeof Afk>;
+
+export const QrScanner = z.object({
+  mode: z.enum(["allowlist", "blocklist", "off"]).default("off"),
+  customAllowlist: z.array(z.string()).default([]),
+  customBlocklist: z.array(z.string()).default([]),
+  defaultBlocklistEnabled: z.boolean().default(false),
+  defaultAllowlistEnabled: z.boolean().default(false),
+  safeAction: z
+    .object({
+      enabled: z.boolean().default(false),
+      channelId: z.string().regex(ChannelRegex).optional(),
+    })
+    .default({}),
+  unsafeAction: z
+    .object({
+      enabled: z.boolean().default(true),
+      channelId: z.string().regex(ChannelRegex).optional(),
+      deleteMessage: z.boolean().default(true),
+    })
+    .default({}),
+});
+
+export type QrScannerSettings = z.infer<typeof QrScanner>;

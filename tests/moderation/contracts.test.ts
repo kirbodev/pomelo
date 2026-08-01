@@ -4,14 +4,18 @@ import {
   validateWarnLevel,
   validateWorkflowState,
 } from "../../src/lib/moderation/migration.js";
+import type {
+  WarnLevel,
+  WarnWorkflowState,
+} from "../../src/lib/moderation/types.js";
 
-const validLevel = {
+const validLevel: WarnLevel = {
   warnCount: 1,
   punishments: [{ type: "mute", duration: 3_600_000 }],
   autoConfirm: false,
 };
 
-const validWorkflow = {
+const validWorkflow: WarnWorkflowState = {
   id: "workflow",
   revision: 1,
   ownerId: "owner",

@@ -67,6 +67,15 @@ import {
   EditListener,
   recentReversions,
 } from "../../listeners/afk/preventAutomodRuleEdit.js";
+import { modActionService } from "../../lib/moderation/actions.js";
+import { normalizeActions } from "../../lib/moderation/migration.js";
+import { WarnWorkflowRepository } from "../../lib/moderation/workflowRepository.js";
+import {
+  createWarnQuickstartState,
+  renderWarnQuickstart,
+  warnSettingsBackupRepository,
+  warnWorkflowRepository,
+} from "../../interaction-handlers/warnQuickstart.js";
 
 type SettingData =
   | {
@@ -132,11 +141,16 @@ export class SettingsCommand extends CommandUtils.PomeloSubcommand {
           messageRun: "messageRunUser",
           chatInputRun: "chatInputRunUser",
         },
+        {
+          name: "mod",
+          chatInputRun: "chatInputRunMod",
+          runIn: "GUILD_ANY",
+        },
       ],
       requiredClientPermissions: [PermissionFlagsBits.EmbedLinks],
       detailedDescription: {
-        syntax: "<guild|user>",
-        examples: ["guild", "user"],
+        syntax: "<guild|user|mod>",
+        examples: ["guild", "user", "mod"],
       },
     });
   }
@@ -162,6 +176,13 @@ export class SettingsCommand extends CommandUtils.PomeloSubcommand {
             builder,
             LanguageKeys.Commands.Utility.Settings.subcommandUserName,
             LanguageKeys.Commands.Utility.Settings.subcommandUserDescription,
+          ),
+        )
+        .addSubcommand((builder) =>
+          applyLocalizedBuilder(
+            builder,
+            LanguageKeys.Commands.Utility.Settings.subcommandModName,
+            LanguageKeys.Commands.Utility.Settings.subcommandModDescription,
           ),
         );
     });
@@ -317,6 +338,59 @@ export class SettingsCommand extends CommandUtils.PomeloSubcommand {
     void this.executeUser(message);
   }
 
+  public async chatInputRunMod(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
+    const guildId = interaction.guildId;
+    if (!guildId) return;
+
+    if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+      void this.error(interaction, this, {
+        error: "MissingPermission",
+        context: {
+          permission: this.container.utilities.commandUtils.getPermissionNames(
+            new PermissionsBitField(PermissionFlagsBits.ManageGuild),
+          ),
+        },
+      });
+      return;
+    }
+
+    const state = createWarnQuickstartState({
+      id: WarnWorkflowRepository.createId(),
+      ownerId: interaction.user.id,
+      guildId,
+      messageId: "pending",
+    });
+
+    const existing = await modActionService.getWarnSettings(guildId);
+    if (existing) {
+      // The server is already configured — skip the setup wizard and jump
+      // straight into editing the saved settings.
+      state.step = 3;
+      state.hadExistingSettings = true;
+      state.config = {
+        defaultExpiryDays: existing.defaultExpiryDays,
+        dmOnWarn: existing.dmOnWarn,
+        logChannelId: existing.logChannelId,
+        levels: normalizeActions(existing.actions),
+      };
+    } else {
+      // Fresh setup — surface the restore option when a reset from the last
+      // 24 hours left a backup behind.
+      const backup = await warnSettingsBackupRepository.get(guildId);
+      state.backupAvailable = backup !== null;
+    }
+
+    const t = await fetchT(interaction);
+    const reply = await interaction.reply({
+      components: renderWarnQuickstart(state, t, interaction.guild),
+      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+    });
+    const message = await reply.fetch();
+    await warnWorkflowRepository.save({ ...state, messageId: message.id });
+  }
+
   public async chatInputRunUser(
     interaction: Command.ChatInputCommandInteraction,
   ) {
@@ -411,6 +485,12 @@ export class SettingsCommand extends CommandUtils.PomeloSubcommand {
             }
           })();
         },
+      })
+      .set("autoAfkRemoval", {
+        name: t(LanguageKeys.Settings.User.autoAfkRemoval.name),
+        description: t(LanguageKeys.Settings.User.autoAfkRemoval.description),
+        type: "boolean",
+        currentValue: settings.autoAfkRemoval,
       });
 
     void this.createSettingsEmbed("user", user.id, interaction, validFields);

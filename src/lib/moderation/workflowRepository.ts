@@ -2,8 +2,8 @@ import { nanoid } from "nanoid";
 import { validateWorkflowState } from "./migration.js";
 import type { PunishmentItemState, WarnWorkflowState } from "./types.js";
 
-const WorkflowTtlSeconds = 600;
-const SelectionTtlSeconds = 300;
+const WorkflowTtlSeconds = 604800;
+const SelectionTtlSeconds = 604800;
 
 const ApprovalActions = [
   "apply",
@@ -24,13 +24,45 @@ const QuickstartActions = [
   "levels",
   "select-level",
   "add-level",
+  "add-punishment",
+  "edit-punishment",
+  "remove-punishment",
+  "edit-details",
+  "remove-level",
   "review",
   "save",
   "cancel",
+  "select-general-setting",
+  "set-expiry",
+  "toggle-dm-from-menu",
+  "set-log-channel",
+  "select-punishment",
+  "start-add-punishment",
+  "choose-add-punishment-type",
+  "confirm-add-punishment",
+  "cancel-add-punishment",
+  "select-level-setting",
+  "toggle-auto-from-menu",
+  "edit-message",
+  "clear-message",
+  "reset",
+  "confirm-reset",
+  "cancel-reset",
+  "restore-backup",
+  "start-over",
 ] as const;
 
 export type ApprovalAction = (typeof ApprovalActions)[number];
 export type QuickstartAction = (typeof QuickstartActions)[number];
+
+const QuickstartModalActions = [
+  "edit-punishment",
+  "edit-details",
+  "add-punishment",
+  "reset-settings",
+] as const;
+
+export type QuickstartModalAction = (typeof QuickstartModalActions)[number];
 
 export type WorkflowRedis = {
   get(key: string): Promise<string | null>;
@@ -61,14 +93,23 @@ export type QuickstartCustomId = {
   entityId?: string;
 };
 
+export type QuickstartModalCustomId = {
+  sessionId: string;
+  revision: number;
+  action: QuickstartModalAction;
+  entityId?: string;
+};
+
 const QuickstartStepActions: Partial<
   Record<number, readonly QuickstartAction[]>
 > = {
-  1: ["preset", "scratch"],
+  1: ["preset", "scratch", "restore-backup"],
   2: ["select-preset"],
-  3: ["expiry", "toggle-dm", "levels"],
-  4: ["back", "review"],
+  3: ["expiry", "toggle-dm", "levels", "back", "select-general-setting", "toggle-dm-from-menu", "set-expiry", "set-log-channel", "reset"],
+  4: ["back", "review", "select-level", "add-level"],
+  5: ["add-punishment", "edit-punishment", "remove-punishment", "edit-details", "remove-level", "back", "select-punishment", "start-add-punishment", "choose-add-punishment-type", "confirm-add-punishment", "cancel-add-punishment", "select-level-setting", "toggle-auto-from-menu", "edit-message", "clear-message"],
   6: ["back", "save", "cancel"],
+  7: ["confirm-reset", "cancel-reset", "restore-backup", "back", "start-over"],
 };
 
 export function isQuickstartActionAllowed(
@@ -166,6 +207,57 @@ export function createQuickstartCustomId(
   return ["pm", "wq", "1", sessionId, String(revision), action, entityId]
     .filter((part): part is string => part !== undefined)
     .join(":");
+}
+
+export function createQuickstartModalCustomId(
+  sessionId: string,
+  revision: number,
+  action: QuickstartModalAction,
+  entityId?: string,
+): string {
+  return ["pm", "wm", "1", sessionId, String(revision), action, entityId]
+    .filter((part): part is string => part !== undefined)
+    .join(":");
+}
+
+export function parseQuickstartModalCustomId(
+  value: string,
+): QuickstartModalCustomId | null {
+  const parts = value.split(":");
+  if (
+    parts.length < 6 ||
+    parts.length > 7 ||
+    parts[0] !== "pm" ||
+    parts[1] !== "wm" ||
+    parts[2] !== "1"
+  )
+    return null;
+  const sessionId = parts[3];
+  const revisionPart = parts[4];
+  const action = parts[5];
+  if (!sessionId || !revisionPart || !action || !opaquePart.test(sessionId))
+    return null;
+  const revision = validRevision(revisionPart);
+  if (
+    revision === null ||
+    !QuickstartModalActions.includes(action as QuickstartModalAction)
+  )
+    return null;
+  if (parts.length === 7) {
+    const entityId = parts[6];
+    if (!opaquePart.test(entityId)) return null;
+    return {
+      sessionId,
+      revision,
+      action: action as QuickstartModalAction,
+      entityId,
+    };
+  }
+  return {
+    sessionId,
+    revision,
+    action: action as QuickstartModalAction,
+  };
 }
 
 export function createApprovalSelectionKey(

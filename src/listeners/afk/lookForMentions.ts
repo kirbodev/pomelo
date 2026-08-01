@@ -1,10 +1,9 @@
 import { container, Events, Listener } from "@sapphire/framework";
-import { ButtonInteraction, Message, MessageFlags } from "discord.js";
+import { Message } from "discord.js";
 import type { Afk } from "../../db/redis/schema.js";
 import EmbedUtils from "../../utilities/embedUtils.js";
-import { fetchT, type TFunction } from "@sapphire/plugin-i18next";
+import { type TFunction } from "@sapphire/plugin-i18next";
 import { LanguageKeys } from "../../lib/i18n/languageKeys.js";
-import ComponentUtils from "../../utilities/componentUtils.js";
 import { MessageBuilder } from "@sapphire/discord.js-utilities";
 import { convertToDiscordTimestamp } from "../../lib/helpers/timestamp.js";
 import { getAFKData, sendAFKEmbed } from "../../lib/helpers/afk.js";
@@ -45,43 +44,6 @@ export class LookForMentionsListener extends Listener {
 
     return sendAFKEmbed(afks, message);
   }
-}
-
-export async function handleButton(
-  btn: ButtonInteraction,
-  afks: Map<string, Afk>,
-  interacted: Map<
-    string,
-    InstanceType<typeof ComponentUtils.MenuPaginatedMessage>
-  >
-) {
-  const oldPage = interacted.get(btn.user.id);
-  if (oldPage) {
-    oldPage.collector?.stop("messageDelete");
-    if (oldPage.response) {
-      if (oldPage.response instanceof Message) {
-        void oldPage.response.delete().catch();
-      } else {
-        void oldPage.response.deleteReply().catch();
-      }
-    }
-  }
-
-  await btn.deferReply({ flags: MessageFlags.Ephemeral });
-  const t = await fetchT(btn);
-
-  const pages = await createPages(t, afks);
-  if (pages.length === 1) {
-    await btn.editReply(pages[0]);
-    return;
-  }
-
-  const paginate = new ComponentUtils.MenuPaginatedMessage();
-  pages.forEach((page) => paginate.addPageBuilder(page));
-
-  const pageInteraction = await paginate.run(btn).catch(() => null);
-  if (pageInteraction) interacted.set(btn.user.id, pageInteraction);
-  return pageInteraction;
 }
 
 export async function createPages(

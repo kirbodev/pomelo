@@ -67,6 +67,10 @@ export default {
       "commands/utility:settings.subcommandUserDescription",
     ),
     subcommandUserName: T("commands/utility:settings.subcommandUserName"),
+    subcommandModDescription: T(
+      "commands/utility:settings.subcommandModDescription",
+    ),
+    subcommandModName: T("commands/utility:settings.subcommandModName"),
   },
   Afk: {
     commandName: T("commands/utility:afk.commandName"),
@@ -103,6 +107,9 @@ export default {
     removeTitle: T("commands/utility:afk.removeTitle"),
     removeDescription: T("commands/utility:afk.removeDescription"),
     removeTip: T("commands/utility:afk.removeTip"),
+    autoRemoveDescription: FT<{
+      time: string;
+    }>("commands/utility:afk.autoRemoveDescription"),
     blockedAfk: T("commands/utility:afk.blockedAfk"),
     recommended: ArrayT<string>("commands/utility:afk.recommended"),
   },
@@ -144,5 +151,14 @@ export default {
     desc: T("commands/utility:changelog.desc"),
     lastUpdate: T("commands/utility:changelog.lastUpdate"),
     updateDisclaimer: T("commands/utility:changelog.updateDisclaimer"),
+  },
+  Snipe: {
+    commandName: T("commands/utility:snipe.commandName"),
+    commandDescription: T("commands/utility:snipe.commandDescription"),
+    noSnipeData: T("commands/utility:snipe.noSnipeData"),
+    deletedBy: T("commands/utility:snipe.deletedBy"),
+    deletedAt: T("commands/utility:snipe.deletedAt"),
+    noTextContent: T("commands/utility:snipe.noTextContent"),
+    messageContent: FT<{ content: string }>("commands/utility:snipe.messageContent"),
   },
 } as CapitalizedObjectKeys<typeof utility>;

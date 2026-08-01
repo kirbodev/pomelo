@@ -16,7 +16,11 @@ import {
   fetchT,
 } from "@sapphire/plugin-i18next";
 import { getOptionLocalizations } from "../../lib/i18n/utils.js";
-import { deleteAFKData, getAFKData } from "../../lib/helpers/afk.js";
+import {
+  deleteAFKData,
+  getAFKData,
+  restoreAfkNicknames,
+} from "../../lib/helpers/afk.js";
 import { ApplicationIntegrationType } from "discord.js";
 import EmbedUtils from "../../utilities/embedUtils.js";
 import { Colors } from "../../lib/colors.js";
@@ -157,6 +161,7 @@ export class AfkRemoveCommand extends CommandUtils.PomeloCommand {
     }
 
     await deleteAFKData(userId);
+    await restoreAfkNicknames(userId, afkData);
 
     const autoAFK = await this.container.redis.jsonGet(`${userId}AUTO`, "Afk");
     if (autoAFK) {

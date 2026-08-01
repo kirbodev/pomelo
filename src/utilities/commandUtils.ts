@@ -293,21 +293,15 @@ export default class CommandUtils extends Utility {
       pomeloOptions.type === PomeloReplyType.Sensitive;
     const replyOptions = {
       ...options,
-      flags: useEphemeral ? MessageFlags.Ephemeral : options.flags,
+      flags: useEphemeral ? (options.flags ?? 0) | MessageFlags.Ephemeral : options.flags,
     } as InteractionReplyOptions;
 
     //NOTE - Announcements should be injected here
 
     if (interaction.deferred || interaction.replied)
-      return (await interaction.editReply({
-        ...replyOptions,
-        flags: undefined,
-      })) as T extends Message ? Message : never;
+      return (await interaction.editReply(replyOptions)) as T extends Message ? Message : never;
     if (interaction.isMessageComponent())
-      return (await interaction.update({
-        ...replyOptions,
-        flags: undefined,
-      })) as T extends Message ? never : InteractionResponse;
+      return (await interaction.update(replyOptions)) as T extends Message ? never : InteractionResponse;
 
     return (await interaction.reply(replyOptions)) as T extends Message
       ? never

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pomelo Discord Feature Testing"
+  short_description: "Test Pomelo features safely in Discord"
+  default_prompt: "Use $pomelo-discord-feature-testing to test the new Pomelo feature in the Bot Testing server."

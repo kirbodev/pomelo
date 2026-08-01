@@ -464,6 +464,45 @@ export const warnPunishmentAttempts = sqliteTable(
   }),
 );
 
+export const punishmentRoles = sqliteTable(
+  "punishment_roles",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    guildId: text("guild_id").notNull(),
+    userId: text("user_id").notNull(),
+    roleId: text("role_id").notNull(),
+    warnLevel: integer("warn_level").notNull(),
+    caseId: integer("case_id"),
+    expiresAt: integer("expires_at"),
+    removed: integer("removed", { mode: "boolean" }).notNull().default(false),
+    removedBy: text("removed_by"),
+    removedAt: integer("removed_at"),
+    createdAt: integer("created_at").notNull().default(nowMilliseconds),
+    updatedAt: integer("updated_at").notNull().default(nowMilliseconds),
+  },
+  (table) => ({
+    guildCaseForeignKey: foreignKey({
+      columns: [table.guildId, table.caseId],
+      foreignColumns: [modCases.guildId, modCases.id],
+      name: "punishment_roles_guild_case_fk",
+    }),
+    guildUserRoleUnique: uniqueIndex("punishment_roles_guild_user_role_unique").on(
+      table.guildId,
+      table.userId,
+      table.roleId,
+    ),
+    guildUserActiveIndex: index("punishment_roles_guild_user_active_index").on(
+      table.guildId,
+      table.userId,
+      table.removed,
+    ),
+    expiryIndex: index("punishment_roles_expiry_index").on(
+      table.removed,
+      table.expiresAt,
+    ),
+  }),
+);
+
 export const temporaryBanTokens = sqliteTable(
   "temporary_ban_tokens",
   {
@@ -510,6 +549,35 @@ export type WarnPunishmentItemInsert = typeof warnPunishmentItems.$inferInsert;
 export type WarnPunishmentAttempt = typeof warnPunishmentAttempts.$inferSelect;
 export type WarnPunishmentAttemptInsert =
   typeof warnPunishmentAttempts.$inferInsert;
+export type PunishmentRole = typeof punishmentRoles.$inferSelect;
+export type PunishmentRoleInsert = typeof punishmentRoles.$inferInsert;
 export type TemporaryBanToken = typeof temporaryBanTokens.$inferSelect;
 export type TemporaryBanTokenInsert = typeof temporaryBanTokens.$inferInsert;
+//!SECTION
+
+//SECTION - Redis Backup
+
+export const redisBackups = sqliteTable(
+  "redis_backups",
+  {
+    topic: text("topic").notNull(),
+    key: text("key").notNull(),
+    payload: text("payload"),
+    contentHash: text("content_hash").notNull(),
+    deleted: integer("deleted", { mode: "boolean" }).notNull().default(false),
+    updatedAt: integer("updated_at").notNull().default(nowMilliseconds),
+  },
+  (table) => ({
+    topicKeyPk: primaryKey({
+      columns: [table.topic, table.key],
+    }),
+    topicDeletedIndex: index("redis_backups_topic_deleted_index").on(
+      table.topic,
+      table.deleted,
+    ),
+  }),
+);
+
+export type RedisBackup = typeof redisBackups.$inferSelect;
+export type RedisBackupInsert = typeof redisBackups.$inferInsert;
 //!SECTION

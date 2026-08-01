@@ -117,5 +117,6 @@
     "sourceMap": true,
     "inlineSources": true
   },
-  "include": ["src/**/*", "tests"]
+  "include": ["src/**/*", "tests"],
+  "exclude": ["src/db/migrations/schema.ts", "src/db/migrations/relations.ts"]
 }

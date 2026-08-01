@@ -39,6 +39,10 @@ import {
   type PunishmentItemState,
 } from "./types.js";
 import { normalizeActions, sanitizeLevelMessage } from "./migration.js";
+import {
+  recordPunishmentRole,
+  releaseUnjustifiedPunishmentRoles,
+} from "./punishmentRoles.js";
 import { ModerationError } from "./errors.js";
 
 type ModerationDatabase = typeof db;
@@ -364,7 +368,7 @@ export class ModActionService {
   }
 
   public async revokeWarn(input: RevokeWarnInput): Promise<WarnLedgerResult> {
-    return this.runLedgerOperation(input, () =>
+    const result = await this.runLedgerOperation(input, () =>
       this.database.transaction(async (transaction) => {
         const now = this.getNow();
         await this.getRequiredWarnSettings(transaction, input.guildId);
@@ -413,6 +417,15 @@ export class ModActionService {
         return { case: caseEntry, finalWarnCount, batches: [] };
       }),
     );
+    // The revoked warns may leave persisted punishment roles without a
+    // justifying warn level — release them and strip the roles.
+    if (result.case)
+      await releaseUnjustifiedPunishmentRoles(
+        { guildId: input.guildId, userId: input.targetId, removedBy: input.actorId },
+        this.database,
+        this.getNow(),
+      );
+    return result;
   }
 
   private async getRequiredWarnSettings(
@@ -1487,6 +1500,24 @@ export class ModActionService {
             eq(warnPunishmentItems.id, item.id),
           ),
         );
+      // Persist applied role punishments so they survive leave/rejoin until
+      // the backing warns expire or staff release them.
+      if (
+        input.state === "applied" &&
+        item.punishmentType === "role" &&
+        item.roleId
+      )
+        await recordPunishmentRole(
+          {
+            guildId: item.guildId,
+            userId: input.claim.batch.targetUserId,
+            roleId: item.roleId,
+            warnLevel: input.claim.batch.threshold,
+            caseId: input.claim.batch.warnCaseId,
+          },
+          transaction,
+          now,
+        );
       if (
         input.state === "applied" &&
         item.punishmentType === "ban" &&
@@ -1884,16 +1915,39 @@ export class ModActionService {
     dmSent: boolean,
     duration?: number,
   ): Promise<ModCase> {
+    const now = Date.now();
+    const [counter] = await db
+      .insert(caseCounters)
+      .values({
+        guildId,
+        nextCaseNumber: 2,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: caseCounters.guildId,
+        set: {
+          nextCaseNumber: sql`${caseCounters.nextCaseNumber} + 1`,
+          updatedAt: now,
+        },
+      })
+      .returning({
+        caseNumber: sql<number>`${caseCounters.nextCaseNumber} - 1`,
+      });
+
     const [caseEntry] = await db
       .insert(modCases)
       .values({
         guildId,
+        caseNumber: counter.caseNumber,
+        operationKey: crypto.randomUUID(),
         userId,
         moderatorId,
         actionType,
         reason: reason || "",
         duration,
         dmSent,
+        createdAt: now,
+        updatedAt: now,
       })
       .returning();
     return caseEntry;
@@ -2138,6 +2192,7 @@ export class ModActionService {
     const preCount = await this.getActiveWarnCount(guild.id, target.id);
 
     const settings = await this.getWarnSettings(guild.id);
+    if (!settings) throw new ModerationError("warnSettingsNotConfigured");
     const expiryDays = customExpiryDays ?? settings.defaultExpiryDays;
     const expiryMs = expiryDays * 86400000;
 
@@ -2152,7 +2207,7 @@ export class ModActionService {
 
     for (let i = 0; i < amount; i++) {
       const expiresAt = expiryDays
-        ? new Date(Date.now() + (i + 1) * expiryMs)
+        ? Date.now() + (i + 1) * expiryMs
         : null;
       await db.insert(warns).values({
         caseId: caseEntry.id,
@@ -2197,6 +2252,7 @@ export class ModActionService {
             target,
             level,
             reason,
+            caseEntry.id,
           );
           thresholdActions.push({
             level,
@@ -2242,7 +2298,22 @@ export class ModActionService {
     level?: number,
     reason?: string,
   ): Promise<WarnLedgerResult | WarnActionResult> {
-    if ("guildId" in inputOrGuild) return this.setWarnLevelLedger(inputOrGuild);
+    if ("guildId" in inputOrGuild) {
+      const result = await this.setWarnLevelLedger(inputOrGuild);
+      // Lowering the level revokes warns, which can orphan persisted
+      // punishment roles from higher levels.
+      if (result.case?.actionType === "unwarn")
+        await releaseUnjustifiedPunishmentRoles(
+          {
+            guildId: inputOrGuild.guildId,
+            userId: inputOrGuild.targetId,
+            removedBy: inputOrGuild.actorId,
+          },
+          this.database,
+          this.getNow(),
+        );
+      return result;
+    }
     if (!moderator || !target || level === undefined)
       throw new Error("invalidLegacyWarnLevelInput");
     return this.setWarnLevelLegacy(
@@ -2287,8 +2358,9 @@ export class ModActionService {
     );
 
     const settings = await this.getWarnSettings(guild.id);
+    if (!settings) throw new ModerationError("warnSettingsNotConfigured");
     const expiryDays = settings.defaultExpiryDays;
-    const expiresAt = new Date(Date.now() + expiryDays * 86400000);
+    const expiresAt = Date.now() + expiryDays * 86400000;
 
     for (let i = 0; i < level; i++) {
       await db.insert(warns).values({
@@ -2318,6 +2390,7 @@ export class ModActionService {
             target,
             lvl,
             reason,
+            caseEntry.id,
           );
           thresholdActions.push({
             level: lvl,
@@ -2358,9 +2431,18 @@ export class ModActionService {
 
     const activeWarns = await db
       .update(warns)
-      .set({ revoked: true, revokedBy: moderatorId, revokedAt: new Date() })
+      .set({ revoked: true, revokedBy: moderatorId, revokedAt: Date.now() })
       .where(and(eq(warns.caseId, caseId), eq(warns.revoked, false)))
       .returning();
+
+    // With those warns gone, punishment roles from levels the user no longer
+    // meets must stop persisting (and come off the member).
+    if (activeWarns.length > 0)
+      await releaseUnjustifiedPunishmentRoles({
+        guildId: existingCase.guildId,
+        userId: existingCase.userId,
+        removedBy: moderatorId,
+      });
 
     return {
       success: activeWarns.length > 0,
@@ -2376,6 +2458,7 @@ export class ModActionService {
     target: GuildMember,
     level: WarnLevel,
     reason?: string,
+    caseId?: number,
   ): Promise<LevelExecResult> {
     const results: PunishResult[] = [];
     for (const punishment of level.punishments) {
@@ -2386,6 +2469,7 @@ export class ModActionService {
           target,
           punishment,
           reason,
+          { warnLevel: level.warnCount, caseId: caseId ?? null },
         );
         results.push({ punishment, success: true });
       } catch (err) {
@@ -2400,7 +2484,8 @@ export class ModActionService {
     moderator: GuildMember,
     target: GuildMember,
     punishment: WarnPunishment,
-    reason?: string,
+    reason: string | undefined,
+    context: { warnLevel: number; caseId: number | null },
   ): Promise<void> {
     switch (punishment.type) {
       case "ban":
@@ -2419,7 +2504,23 @@ export class ModActionService {
       case "role":
         if (punishment.roleId) {
           const role = guild.roles.cache.get(punishment.roleId);
-          if (role) await target.roles.add(role, reason);
+          if (role) {
+            await target.roles.add(role, reason);
+            // Track the assignment so the role survives leave/rejoin until
+            // the warning behind it expires or staff remove it.
+            await recordPunishmentRole({
+              guildId: guild.id,
+              userId: target.id,
+              roleId: role.id,
+              warnLevel: context.warnLevel,
+              caseId: context.caseId,
+            }).catch((error: unknown) => {
+              container.logger.error(
+                "Failed to persist punishment role assignment",
+                error,
+              );
+            });
+          }
         }
         break;
     }
@@ -2436,7 +2537,7 @@ export class ModActionService {
 
     await db
       .update(modCases)
-      .set({ duration: newDurationMs, updatedAt: new Date() })
+      .set({ duration: newDurationMs, updatedAt: Date.now() })
       .where(eq(modCases.id, caseId));
 
     if (existing.actionType === "warn") {
@@ -2449,7 +2550,7 @@ export class ModActionService {
         await db
           .update(warns)
           .set({
-            expiresAt: new Date(Date.now() + newDurationMs * w.warnCount),
+            expiresAt: Date.now() + newDurationMs * w.warnCount,
           })
           .where(eq(warns.id, w.id));
       }
@@ -2470,7 +2571,13 @@ export class ModActionService {
       .limit(1);
     if (rows.length === 0) return false;
 
-    await db.insert(caseNotes).values({ caseId, moderatorId, note });
+    await db.insert(caseNotes).values({
+      guildId: rows[0].guildId,
+      caseId,
+      operationKey: crypto.randomUUID(),
+      moderatorId,
+      note,
+    });
     return true;
   }
 

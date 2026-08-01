@@ -52,7 +52,9 @@
     "subcommandUserName": "usuario",
     "subcommandGuildName": "server",
     "subcommandUserDescription": "Administre su configuración.",
-    "subcommandGuildDescription": "Administrar la configuración del server."
+    "subcommandGuildDescription": "Administrar la configuración del server.",
+    "subcommandModName": "mod",
+    "subcommandModDescription": "Configura y gestiona el sistema de moderación."
   },
   "afk": {
     "commandName": "afk",
@@ -78,6 +80,7 @@
     "removeTitle": "AFK Removido",
     "removeDescription": "Has dejado de estar AFK. Has estado AFK durante {{time}}.",
     "removeTip": "Puedes detenerlo añadiendo --afk a tu mensaje.",
+    "autoRemoveDescription": "¡Bienvenido de vuelta! Estás en línea de nuevo, así que he removido tu estado AFK. Has estado AFK durante {{time}}.",
     "blockedAfk": "No puedes mencionar a ese usuario porque está AFK.",
     "recommended": [
       "Vuelvo en un rato",
@@ -128,5 +131,14 @@
     "title": "Cambios",
     "lastUpdate": "El último cambio que has visto fue {{lastUpdate}}.",
     "updateDisclaimer": "Puedes necesitar aceptar nuevas funciones o cambiar la configuración cuando se agreguen."
+  },
+  "snipe": {
+    "commandName": "snipe",
+    "commandDescription": "Muestra el último mensaje eliminado en este canal.",
+    "noSnipeData": "No hay nada que snipear aquí.",
+    "deletedBy": "Eliminado por",
+    "deletedAt": "Eliminado",
+    "noTextContent": "Sin contenido de texto",
+    "messageContent": "Snipeado: \"{{content}}\""
   }
 }

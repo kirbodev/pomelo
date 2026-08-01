@@ -188,5 +188,30 @@
     "title": "<:clockerror:1397690377065988308> Non AFK",
     "desc": "Quel utente non è AFK.",
     "desc_detailed": "Quel utente non è AFK."
+  },
+  "interactionExpired": {
+    "title": "<:hourglassoff:1397692063658545152> Scaduto",
+    "desc": "Questi controlli non sono più attivi. Riesegui il comando per averne di nuovi.",
+    "desc_detailed": "Questi controlli non sono più attivi. Riesegui il comando per averne di nuovi."
+  },
+  "qrScanFailed": {
+    "title": "<:pomwarning:1397677600012501042> Scansione QR Fallita",
+    "desc": "Non sono riuscito a scansionare quel codice QR.",
+    "desc_detailed": "Non sono riuscito a scansionare quel codice QR. Potrebbe essere troppo sfocato o danneggiato."
+  },
+  "qrImageTooLarge": {
+    "title": "<:attachmenterror:1397690751680254042> Immagine Troppo Grande",
+    "desc": "Quell'immagine è troppo grande da scansionare.",
+    "desc_detailed": "Quell'immagine è troppo grande da scansionare. Provane una più piccola."
+  },
+  "qrInvalidPattern": {
+    "title": "<:confused:1397678924011409542> Pattern Non Valido",
+    "desc": "Quel pattern non sembra corretto.",
+    "desc_detailed": "Quel pattern non sembra corretto. Controlla il formato e riprova."
+  },
+  "qrFeatureDisabled": {
+    "title": "<:block:1397680563040817152> Funzionalità Disattivata",
+    "desc": "La scansione QR non è attiva qui.",
+    "desc_detailed": "La scansione QR non è attiva per questo server. Chiedi a un moderatore di attivarla."
   }
 }

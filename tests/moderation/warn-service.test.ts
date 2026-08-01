@@ -221,7 +221,7 @@ test("retries return the original persisted result even when later warnings and 
 
   expect(retry.case?.id).toBe(original.case?.id);
   expect(retry.finalWarnCount).toBe(2);
-  expect(storedCase.rows).toEqual([
+  expect(storedCase.rows as unknown[]).toEqual([
     { user_id: "member", resulting_warn_count: 2 },
   ]);
 });
@@ -262,7 +262,7 @@ test("simultaneous requests with one operation key create one ledger entry and s
   expect(first.case?.id).toBe(second.case?.id);
   expect(first.finalWarnCount).toBe(1);
   expect(second.finalWarnCount).toBe(1);
-  expect(counts.rows).toEqual([{ cases: 1, warns: 1 }]);
+  expect(counts.rows as unknown[]).toEqual([{ cases: 1, warns: 1 }]);
 });
 
 test("simultaneous same-key level changes create one immutable ledger result", async () => {
@@ -281,7 +281,7 @@ test("simultaneous same-key level changes create one immutable ledger result", a
   expect(first.case?.id).toBe(second.case?.id);
   expect(first.finalWarnCount).toBe(3);
   expect(second.finalWarnCount).toBe(3);
-  expect(counts.rows).toEqual([{ cases: 1, warns: 3 }]);
+  expect(counts.rows as unknown[]).toEqual([{ cases: 1, warns: 3 }]);
 });
 
 test("simultaneous same-key revocations create one immutable ledger result", async () => {
@@ -314,7 +314,7 @@ test("simultaneous same-key revocations create one immutable ledger result", asy
   expect(first.case?.id).toBe(second.case?.id);
   expect(first.finalWarnCount).toBe(0);
   expect(second.finalWarnCount).toBe(0);
-  expect(counts.rows).toEqual([{ cases: 1, revoked: 2 }]);
+  expect(counts.rows as unknown[]).toEqual([{ cases: 1, revoked: 2 }]);
 });
 
 test("separate services recover one same-key create operation from durable storage", async () => {
@@ -339,5 +339,5 @@ test("separate services recover one same-key create operation from durable stora
   expect(first.case?.id).toBe(second.case?.id);
   expect(first.finalWarnCount).toBe(1);
   expect(second.finalWarnCount).toBe(1);
-  expect(counts.rows).toEqual([{ cases: 1, warns: 1 }]);
+  expect(counts.rows as unknown[]).toEqual([{ cases: 1, warns: 1 }]);
 });

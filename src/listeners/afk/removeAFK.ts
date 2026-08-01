@@ -3,27 +3,25 @@ import { Events } from "@sapphire/framework";
 import {
   ActionRowBuilder,
   ButtonBuilder,
-  ButtonInteraction,
   ButtonStyle,
-  ComponentType,
-  MessageFlags,
   type Message,
 } from "discord.js";
 import { LanguageKeys } from "../../lib/i18n/languageKeys.js";
 import EmbedUtils from "../../utilities/embedUtils.js";
-import { fetchT, type TFunction } from "@sapphire/plugin-i18next";
+import { fetchT } from "@sapphire/plugin-i18next";
 import { Colors } from "../../lib/colors.js";
 import { PomeloReplyType } from "../../utilities/commandUtils.js";
 import { DEFAULT_EPHEMERAL_DELETION_TIMEOUT } from "../../lib/helpers/constants.js";
 import ms from "ms";
-import {
-  deleteAFKData,
-  getAFKData,
-  getAFKSetEmbed,
-} from "../../lib/helpers/afk.js";
+import { deleteAFKData, getAFKData, restoreAfkNicknames } from "../../lib/helpers/afk.js";
 import { Emojis } from "../../lib/emojis.js";
 import { nanoid } from "nanoid";
-import type { Afk } from "../../db/redis/schema.js";
+import {
+  createComponentId,
+  saveComponentSession,
+} from "../../lib/helpers/componentSessions.js";
+
+export const AFK_REVERT_FEATURE = "ar";
 
 const NO_REMOVE_AFK_PREFIXES = [
   "--afk",
@@ -75,25 +73,26 @@ export class RemoveAFKListener extends Listener {
       message.member?.nickname &&
       message.member.nickname.startsWith("[AFK]")
     ) {
-      const pastUsernames = afkData.pastUsername;
-      if (!pastUsernames) return;
-      for (const pastName of pastUsernames) {
-        const guild = await this.container.client.guilds
-          .fetch(pastName.guildId)
-          .catch(() => null);
-        if (!guild) continue;
-        const member = await guild.members
-          .fetch(message.author.id)
-          .catch(() => null);
-        if (!member) continue;
-        await member.setNickname(pastName.username).catch(() => null);
-      }
+      await restoreAfkNicknames(message.author.id, afkData);
     }
 
-    const buttonId = nanoid();
+    const deletionTimeoutSeconds =
+      guildSettings?.ephemeralDeletionTimeout ??
+      DEFAULT_EPHEMERAL_DELETION_TIMEOUT;
+
+    // Persistent revert button — routed through the afkRevert interaction
+    // handler with the previous AFK state stored in Redis until the reply is
+    // deleted.
+    const sessionId = nanoid();
+    await saveComponentSession(
+      AFK_REVERT_FEATURE,
+      sessionId,
+      { userId: message.author.id, afk: afkData },
+      Math.max(deletionTimeoutSeconds, 1),
+    );
     const revertButton = new ActionRowBuilder<ButtonBuilder>().setComponents(
       new ButtonBuilder()
-        .setCustomId(buttonId)
+        .setCustomId(createComponentId(AFK_REVERT_FEATURE, sessionId))
         .setEmoji(Emojis.Undo)
         .setStyle(ButtonStyle.Secondary),
     );
@@ -129,55 +128,8 @@ export class RemoveAFKListener extends Listener {
         type: PomeloReplyType.Success,
       },
     );
-    setTimeout(
-      () => {
-        void response.delete().catch(() => null);
-      },
-      (guildSettings?.ephemeralDeletionTimeout ??
-        DEFAULT_EPHEMERAL_DELETION_TIMEOUT) * 1000,
-    );
-
-    void response
-      .awaitMessageComponent({
-        filter: (i) =>
-          i.customId === buttonId && i.user.id === message.author.id,
-        componentType: ComponentType.Button,
-        time:
-          (guildSettings?.ephemeralDeletionTimeout ??
-            DEFAULT_EPHEMERAL_DELETION_TIMEOUT) * 1000,
-      })
-      .catch(() => null)
-      .then(async (i) => {
-        if (!i) return;
-        await this.handleButton(i, afkData, t);
-        void this.container.utilities.componentUtils.disableButtons(response);
-      });
-  }
-
-  public async handleButton(
-    interaction: ButtonInteraction,
-    afkData: Afk,
-    t: TFunction,
-  ) {
-    await interaction.deferReply({
-      flags: MessageFlags.Ephemeral,
-    });
-
-    await this.container.redis.jsonSet(interaction.user.id, "Afk", afkData);
-
-    const duration = afkData.endsAt
-      ? new Date(afkData.endsAt).getTime() - Date.now()
-      : undefined;
-    const embed = getAFKSetEmbed(t, afkData.text, duration, afkData.attachment);
-
-    return await this.container.utilities.commandUtils.reply(
-      interaction,
-      {
-        embeds: [embed],
-      },
-      {
-        type: PomeloReplyType.Sensitive,
-      },
-    );
+    setTimeout(() => {
+      void response.delete().catch(() => null);
+    }, deletionTimeoutSeconds * 1000);
   }
 }

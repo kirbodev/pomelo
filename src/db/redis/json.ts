@@ -1,9 +1,14 @@
 import { Redis, type RedisOptions } from "ioredis";
 import { container } from "@sapphire/framework";
 import * as Schemas from "./schema.js";
-import { z, ZodType } from "zod";
+import { z, ZodType, ZodObject, ZodDefault, ZodOptional } from "zod";
 import { objectKeys } from "@sapphire/utilities";
 import type { NullPartial } from "../../lib/types/utils.js";
+import {
+  DIRTY_SET_KEY,
+  encodeDirtyMember,
+  isBackupTopic,
+} from "../../lib/helpers/backup.js";
 
 type InferSchemaType<T> = T extends ZodType<infer U> ? U : never;
 export const topics = objectKeys(Schemas);
@@ -79,15 +84,16 @@ export class PomeloRedis extends Redis {
     if (!topics.includes(topic)) throw new Error("Invalid topic | Not found");
     const validate = Schemas[topic].safeParse(value);
     if (!validate.success) throw new Error(validate.error.message);
-    return (
+    const result =
       (await this.call(
         "JSON.SET",
         `${topic}:${key}`,
         "$",
         JSON.stringify(validate.data),
         ...(condition ? [condition] : [])
-      )) === "OK"
-    );
+      )) === "OK";
+    if (result) await this.markDirty(topic, key);
+    return result;
   }
 
   /**
@@ -105,18 +111,26 @@ export class PomeloRedis extends Redis {
     value: NullPartial<InferSchemaType<(typeof Schemas)[T]>>
   ) {
     if (!topics.includes(topic)) throw new Error("Invalid topic | Not found");
-    const validate = this.nullable(Schemas[topic].partial()).safeParse(value);
+    const schema = Schemas[topic] as unknown;
+    const inner =
+      schema instanceof ZodDefault || schema instanceof ZodOptional
+        ? (schema as ZodDefault<ZodObject<any>> | ZodOptional<ZodObject<any>>)._def
+            .innerType
+        : schema;
+    const zodObj = inner as ZodObject<any>;
+    const validate = this.nullable(zodObj.partial()).safeParse(value);
     if (!validate.success) throw new Error(validate.error.message);
-    if ("updatedAt" in Schemas[topic].shape && !("updatedAt" in value))
+    if ("updatedAt" in zodObj.shape && !("updatedAt" in value))
       Reflect.set(value, "updatedAt", new Date());
-    return (
+    const result =
       (await this.call(
         "JSON.MERGE",
         `${topic}:${key}`,
         "$",
         JSON.stringify(value)
-      )) === "OK"
-    );
+      )) === "OK";
+    if (result) await this.markDirty(topic, key);
+    return result;
   }
 
   /**
@@ -141,11 +155,13 @@ export class PomeloRedis extends Redis {
     path?: `$.${string}`
   ) {
     if (!topics.includes(topic)) throw new Error("Invalid topic | Not found");
-    return (await this.call(
+    const deleted = (await this.call(
       "JSON.DEL",
       `${topic}:${key}`,
       path ?? "$"
     )) as number;
+    if (deleted > 0) await this.markDirty(topic, key);
+    return deleted;
   }
 
   /**
@@ -183,6 +199,47 @@ export class PomeloRedis extends Redis {
       keys.map((key) => this.jsonGet(key, topic))
     );
     return values.filter((value) => value !== null);
+  }
+
+  /**
+   * Gets all the keys in a topic without blocking Redis (SCAN-based)
+   * @param topic The topic to get keys from (schema)
+   * @remarks Prefer this over jsonKeys for full sweeps
+   * @returns Array of keys
+   */
+  async scanTopicKeys(topic: keyof typeof Schemas): Promise<string[]> {
+    if (!topics.includes(topic)) throw new Error("Invalid topic | Not found");
+    const prefix = `${this.options.keyPrefix ?? ""}${topic}:`;
+    const stream = this.scanStream({ match: `${prefix}*`, count: 250 });
+    const keys: string[] = [];
+    return new Promise((resolve, reject) => {
+      stream.on("data", (batch: string[]) => {
+        for (const key of batch) keys.push(key.slice(prefix.length));
+      });
+      stream.on("end", () => {
+        resolve(keys);
+      });
+      stream.on("error", reject);
+    });
+  }
+
+  /**
+   * Flags a key as changed so the backup task picks it up.
+   * Bookkeeping only — must never break the primary write; the daily
+   * consistency sweep catches anything missed here.
+   */
+  private async markDirty(topic: keyof typeof Schemas, key: string) {
+    if (!isBackupTopic(topic)) return;
+    try {
+      await this.sadd(DIRTY_SET_KEY, encodeDirtyMember(topic, key));
+    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (container.logger)
+        container.logger.warn(
+          `Failed to mark ${topic}:${key} for backup:`,
+          error
+        );
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

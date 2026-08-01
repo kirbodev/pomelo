@@ -189,5 +189,8 @@ test("quickstart renders a serializable Components v2 payload", () => {
   expect(payload).toHaveLength(2);
   expect(payload[0]?.type).toBe(17);
   expect(payload[1]?.type).toBe(1);
-  expect(payload[1]?.components[0]?.custom_id).toMatch(/^pm:wq:1:/);
+  const control = payload[1]?.components[0];
+  expect(
+    "custom_id" in control ? control.custom_id : undefined,
+  ).toMatch(/^pm:wq:1:/);
 });

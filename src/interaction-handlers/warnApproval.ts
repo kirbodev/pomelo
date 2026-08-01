@@ -44,11 +44,6 @@ import type { PunishmentItemState } from "../lib/moderation/types.js";
 
 const PendingStates: PunishmentItemState[] = ["pending", "retryable_failed"];
 
-const QuickstartLanguageKeys = LanguageKeys.Commands.Moderation
-  .WarnSettings as unknown as {
-  Quickstart: (typeof LanguageKeys.Commands.Moderation.WarnSettings)["quickstart"];
-};
-
 const requiredPermission = {
   ban: PermissionFlagsBits.BanMembers,
   kick: PermissionFlagsBits.KickMembers,
@@ -64,7 +59,7 @@ function displayItem(
   item: WarnPunishmentItem,
   t: Awaited<ReturnType<typeof fetchT>>,
 ): string {
-  const key = QuickstartLanguageKeys.Quickstart;
+  const key = LanguageKeys.Commands.Moderation.WarnSettings.Quickstart;
   if (item.punishmentType === "role")
     return item.roleId ? `<@&${item.roleId}>` : t(key.punishmentRole);
   if (item.punishmentType === "mute" && item.duration)
@@ -390,13 +385,13 @@ export class WarnApprovalHandler extends InteractionHandler {
       .setAccentColor(Colors.Warning)
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-          `# ${t(QuickstartLanguageKeys.Quickstart.confirmLevelTitle, { level: batch.threshold })}`,
+          `# ${t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.confirmLevelTitle, { level: batch.threshold })}`,
         ),
         new TextDisplayBuilder().setContent(
-          t(QuickstartLanguageKeys.Quickstart.confirmLevelDesc, {
+          t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.confirmLevelDesc, {
             punishments:
               pending.map((item) => displayItem(item, t)).join(", ") ||
-              t(QuickstartLanguageKeys.Quickstart.none),
+              t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.none),
           }),
         ),
       );
@@ -413,13 +408,13 @@ export class WarnApprovalHandler extends InteractionHandler {
             .setCustomId(
               createApprovalCustomId(batch.publicId, batch.revision, "apply"),
             )
-            .setLabel(t(QuickstartLanguageKeys.Quickstart.confirmLevelConfirm))
+            .setLabel(t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.confirmLevelConfirm))
             .setStyle(ButtonStyle.Success),
           new ButtonBuilder()
             .setCustomId(
               createApprovalCustomId(batch.publicId, batch.revision, "dismiss"),
             )
-            .setLabel(t(QuickstartLanguageKeys.Quickstart.approvalDismiss))
+            .setLabel(t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.approvalDismiss))
             .setStyle(ButtonStyle.Secondary),
         ),
       );
@@ -449,19 +444,19 @@ export class WarnApprovalHandler extends InteractionHandler {
               "apply-selected",
             ),
           )
-          .setLabel(t(QuickstartLanguageKeys.Quickstart.approvalApplySelected))
+          .setLabel(t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.approvalApplySelected))
           .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
           .setCustomId(
             createApprovalCustomId(batch.publicId, batch.revision, "apply-all"),
           )
-          .setLabel(t(QuickstartLanguageKeys.Quickstart.approvalApplyAll))
+          .setLabel(t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.approvalApplyAll))
           .setStyle(ButtonStyle.Primary),
         new ButtonBuilder()
           .setCustomId(
             createApprovalCustomId(batch.publicId, batch.revision, "dismiss"),
           )
-          .setLabel(t(QuickstartLanguageKeys.Quickstart.approvalDismiss))
+          .setLabel(t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.approvalDismiss))
           .setStyle(ButtonStyle.Secondary),
       ),
     );
@@ -476,7 +471,7 @@ export class WarnApprovalHandler extends InteractionHandler {
       .setAccentColor(Colors.Warning)
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-          t(QuickstartLanguageKeys.Quickstart.approvalUnavailable),
+          t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.approvalUnavailable),
         ),
       );
     await interaction.reply({

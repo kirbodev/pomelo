@@ -40,8 +40,6 @@ import {
   User,
   UserSelectMenuBuilder,
   UserSelectMenuComponent,
-  type ButtonComponentData,
-  type InteractionButtonComponentData,
   type InteractionEditReplyOptions,
   type InteractionReplyOptions,
   type MessageActionRowComponentBuilder,
@@ -241,81 +239,6 @@ export default class ComponentUtils extends Utility {
         .setLabel(cancel.text)
         .setStyle(cancel.style);
       return [confirmButton, cancelButton];
-    }
-  };
-
-  static EphemeralButton = class EphemeralButton extends ButtonBuilder {
-    customId: string;
-
-    public constructor(rawData?: InteractionButtonComponentData) {
-      const customId = nanoid();
-      const defaults: Partial<ButtonComponentData> = {
-        style: ButtonStyle.Secondary,
-        emoji: "👁️",
-        type: ComponentType.Button,
-      };
-      const data = {
-        ...defaults,
-        ...rawData,
-        customId,
-      };
-      super(data);
-
-      this.customId = customId;
-    }
-
-    public async waitForResponse(
-      interaction: AnyInteractableInteraction | Message,
-      timeout = 1000 * 60 * 10
-    ) {
-      const i = await interaction.channel
-        ?.awaitMessageComponent({
-          filter: (i) => i.customId === this.customId,
-          time: timeout,
-          componentType: ComponentType.Button,
-        })
-        .catch(() => null);
-      if (!i) return null;
-      return await this.execute(i);
-    }
-
-    public async execute(interaction: ButtonInteraction) {
-      const message = interaction.message;
-
-      const filteredComponents = message.components
-        .map((row) => {
-          if (row.type !== ComponentType.ActionRow) return row;
-          return new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
-            row.components
-              .map((component: unknown) => {
-                if (
-                  !(
-                    component instanceof ButtonComponent &&
-                    component.customId === this.customId
-                  )
-                )
-                  return component;
-              })
-              .filter(
-                (component: unknown) => component !== undefined
-              ) as unknown as MessageActionRowComponentBuilder[]
-          );
-        })
-        .filter(
-          (row) =>
-            "components" in row &&
-            Array.isArray(row.components) &&
-            row.components.length > 0
-        );
-
-      return await interaction
-        .reply({
-          content: message.content,
-          embeds: message.embeds,
-          components: filteredComponents,
-          flags: MessageFlags.Ephemeral,
-        })
-        .catch(() => null);
     }
   };
 

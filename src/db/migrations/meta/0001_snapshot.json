@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "635b32a8-3d57-430f-af24-dc7ee826203a",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "f6bca587-e1dd-4533-95bb-19a5e8455865",
+  "prevId": "635b32a8-3d57-430f-af24-dc7ee826203a",
   "tables": {
     "calendarAccount": {
       "name": "calendarAccount",
@@ -520,6 +520,13 @@
           "autoincrement": false,
           "default": "''"
         },
+        "resulting_warn_count": {
+          "name": "resulting_warn_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "duration": {
           "name": "duration",
           "type": "integer",
@@ -633,6 +640,76 @@
         }
       },
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "redis_backups": {
+      "name": "redis_backups",
+      "columns": {
+        "topic": {
+          "name": "topic",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "payload": {
+          "name": "payload",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "content_hash": {
+          "name": "content_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "deleted": {
+          "name": "deleted",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch() * 1000)"
+        }
+      },
+      "indexes": {
+        "redis_backups_topic_deleted_index": {
+          "name": "redis_backups_topic_deleted_index",
+          "columns": [
+            "topic",
+            "deleted"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "redis_backups_topic_key_pk": {
+          "columns": [
+            "key",
+            "topic"
+          ],
+          "name": "redis_backups_topic_key_pk"
+        }
+      },
       "uniqueConstraints": {}
     },
     "calendarSession": {
@@ -1100,6 +1177,14 @@
           "notNull": true,
           "autoincrement": false
         },
+        "config_json": {
+          "name": "config_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        },
         "state": {
           "name": "state",
           "type": "text",
@@ -1140,6 +1225,13 @@
         "display_message_id": {
           "name": "display_message_id",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -1192,6 +1284,13 @@
             "guild_id",
             "state",
             "created_at"
+          ],
+          "isUnique": false
+        },
+        "warn_punishment_batches_expiry_index": {
+          "name": "warn_punishment_batches_expiry_index",
+          "columns": [
+            "expires_at"
           ],
           "isUnique": false
         }

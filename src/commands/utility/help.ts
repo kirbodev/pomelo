@@ -50,15 +50,7 @@ export class HelpCommand extends CommandUtils.PomeloCommand {
           option
             .setName("command")
             .setDescription("The command to get help for.")
-            .setRequired(false)
-            .setChoices(
-              this.getCommands().map((command) => {
-                return {
-                  name: command.name,
-                  value: command.name,
-                };
-              }),
-            ),
+            .setRequired(false),
         );
     });
   }

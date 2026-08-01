@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "notion": {
+      "type": "remote",
+      "url": "https://mcp.notion.com/mcp",
+      "enabled": true,
+      "oauth": {
+        "redirectUri": "http://127.0.0.1:57123/mcp/oauth/callback?server=notion&directory=C%3A%2FUsers%2Flucap%2FOneDrive%2FDocuments%2Fpomelo"
+      }
+    }
+  }
+}

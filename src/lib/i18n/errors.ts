@@ -220,9 +220,34 @@ export default {
     title: T("errors:notAFK.title"),
     desc_detailed: T("errors:notAFK.desc_detailed"),
   },
+  InteractionExpired: {
+    desc: T("errors:interactionExpired.desc"),
+    title: T("errors:interactionExpired.title"),
+    desc_detailed: T("errors:interactionExpired.desc_detailed"),
+  },
   NotInGuild: {
     desc: T("errors:notInGuild.desc"),
     title: T("errors:notInGuild.title"),
     desc_detailed: T("errors:notInGuild.desc_detailed"),
+  },
+  QrScanFailed: {
+    desc: T("errors:qrScanFailed.desc"),
+    title: T("errors:qrScanFailed.title"),
+    desc_detailed: T("errors:qrScanFailed.desc_detailed"),
+  },
+  QrImageTooLarge: {
+    desc: T("errors:qrImageTooLarge.desc"),
+    title: T("errors:qrImageTooLarge.title"),
+    desc_detailed: T("errors:qrImageTooLarge.desc_detailed"),
+  },
+  QrInvalidPattern: {
+    desc: T("errors:qrInvalidPattern.desc"),
+    title: T("errors:qrInvalidPattern.title"),
+    desc_detailed: T("errors:qrInvalidPattern.desc_detailed"),
+  },
+  QrFeatureDisabled: {
+    desc: T("errors:qrFeatureDisabled.desc"),
+    title: T("errors:qrFeatureDisabled.title"),
+    desc_detailed: T("errors:qrFeatureDisabled.desc_detailed"),
   },
 } as CapitalizedObjectKeys<typeof errors>;

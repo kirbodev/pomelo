@@ -179,5 +179,30 @@
     "title": "<:clockerror:1397690377065988308> No AFK",
     "desc": "Ese usuario no está AFK.",
     "desc_detailed": "Ese usuario no está AFK."
+  },
+  "interactionExpired": {
+    "title": "<:hourglassoff:1397692063658545152> Caducado",
+    "desc": "Esos controles ya no están activos. Vuelve a ejecutar el comando para tener unos nuevos.",
+    "desc_detailed": "Esos controles ya no están activos. Vuelve a ejecutar el comando para tener unos nuevos."
+  },
+  "qrScanFailed": {
+    "title": "<:pomwarning:1397677600012501042> Escaneo QR Fallido",
+    "desc": "No pude escanear ese codigo QR.",
+    "desc_detailed": "No pude escanear ese codigo QR. Podria estar demasiado borroso o dañado."
+  },
+  "qrImageTooLarge": {
+    "title": "<:attachmenterror:1397690751680254042> Imagen Demasiado Grande",
+    "desc": "Esa imagen es demasiado grande para escanearla.",
+    "desc_detailed": "Esa imagen es demasiado grande para escanearla. Prueba con una mas pequena."
+  },
+  "qrInvalidPattern": {
+    "title": "<:confused:1397678924011409542> Patron No Valido",
+    "desc": "Ese patron no parece correcto.",
+    "desc_detailed": "Ese patron no parece correcto. Revisa el formato e intentalo de nuevo."
+  },
+  "qrFeatureDisabled": {
+    "title": "<:block:1397680563040817152> Funcion Desactivada",
+    "desc": "El escaneo QR no esta activado aqui.",
+    "desc_detailed": "El escaneo QR no esta activado para este servidor. Pidele a un moderador que lo active."
   }
 }

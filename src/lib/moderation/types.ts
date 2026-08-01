@@ -59,6 +59,17 @@ export type WarnWorkflowState = {
   status: WarnWorkflowStatus;
   expiresAt: number;
   step: number;
+  editingLevelIndex?: number;
+  editingGeneralSetting?: "expiry" | "dm" | "logChannel";
+  editingLevelSetting?: "menu" | "message" | "autoConfirm";
+  selectedPunishmentIndex?: number;
+  addPunishmentStep?: "type" | "duration" | "role" | "confirm";
+  addPunishmentType?: WarnPunishmentType;
+  addPunishmentDraft?: Partial<WarnPunishment>;
+  hadExistingSettings?: boolean;
+  backupAvailable?: boolean;
+  resetStage?: "confirm" | "done" | "restored";
+  restoreExpiresAt?: number;
   config: WarnWorkflowConfig;
 };
 
@@ -97,3 +108,38 @@ export type ModActionOptions = {
   duration?: number;
   deleteMessageDays?: 0 | 86400 | 259200 | 604800;
 };
+
+// Quick Actions (POM-57)
+export type QuickActionBuiltin = "mute" | "kick" | "ban" | "warn";
+export type QuickActionTrigger = "mute" | "warn";
+export type SubActionType = "warn" | "mute" | "addRole" | "sendDm" | "kick" | "ban";
+
+export interface SubAction {
+  type: SubActionType;
+  warnAmount?: number;
+  warnReason?: string;
+  muteDuration?: number;
+  roleId?: string;
+  dmMessage?: string;
+  kickReason?: string;
+  banReason?: string;
+  banDuration?: number;
+  banDeleteMessageDays?: number;
+}
+
+export interface QuickActionDefinition {
+  id: string;
+  label: string;
+  triggers: QuickActionTrigger[];
+  subactions: SubAction[];
+}
+
+export type QuickActionSession = {
+  guildId: string;
+  moderatorId: string;
+  targetId: string;
+  channelId: string;
+} & (
+  | { kind: "builtin"; action: QuickActionBuiltin }
+  | { kind: "custom"; label: string; subactions: SubAction[] }
+);

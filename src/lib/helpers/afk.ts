@@ -1,5 +1,4 @@
 import { container } from "@sapphire/framework";
-import ComponentUtils from "../../utilities/componentUtils.js";
 import {
   DEFAULT_EPHEMERAL_DELETION_TIMEOUT,
   URGENT_PING,
@@ -10,7 +9,7 @@ import {
   AutoModerationRuleEventType,
   AutoModerationRuleTriggerType,
   ButtonBuilder,
-  ComponentType,
+  ButtonStyle,
   Message,
   TimestampStyles,
 } from "discord.js";
@@ -23,10 +22,16 @@ import {
   type AnyInteractableInteraction,
 } from "@sapphire/discord.js-utilities";
 import { Afk } from "../../db/redis/schema.js";
-import { handleButton } from "../../listeners/afk/lookForMentions.js";
 import { Emojis } from "../emojis.js";
 import { recentReversions } from "../../listeners/afk/preventAutomodRuleEdit.js";
 import { Colors } from "../colors.js";
+import { nanoid } from "nanoid";
+import {
+  createComponentId,
+  saveComponentSession,
+} from "./componentSessions.js";
+
+export const AFK_VIEW_FEATURE = "av";
 
 export async function getAFKData(userId: string) {
   let afkData = await container.redis.jsonGet(userId, "Afk");
@@ -38,6 +43,32 @@ export async function deleteAFKData(userId: string) {
   const pathsDeleted = await container.redis.jsonDel(userId, "Afk");
   if (pathsDeleted === 0) {
     return await container.redis.jsonDel(`${userId}AUTO`, "Afk");
+  }
+}
+
+/**
+ * Restores the user's nicknames after an AFK removal. Uses the stored
+ * pre-trim username when one exists, otherwise strips the "[AFK] " prefix.
+ */
+export async function restoreAfkNicknames(userId: string, afkData: Afk) {
+  const pastUsernames = afkData.pastUsername ?? [];
+  const fetchedGuilds = await container.client.guilds.fetch().catch(() => null);
+  if (!fetchedGuilds) return;
+  for (const oauthGuild of fetchedGuilds.values()) {
+    const guild = await oauthGuild.fetch().catch(() => null);
+    if (!guild) continue;
+    const member = await guild.members.fetch(userId).catch(() => null);
+    if (!member?.nickname?.startsWith("[AFK]")) continue;
+    const pastName = pastUsernames.find((p) => p.guildId === guild.id);
+    const restored =
+      pastName?.username ?? member.nickname.replace(/^\[AFK\]\s*/, "");
+    await member
+      .setNickname(
+        restored.length === 0 || restored === member.user.displayName
+          ? null
+          : restored,
+      )
+      .catch(() => null);
   }
 }
 
@@ -116,10 +147,29 @@ export async function sendAFKEmbed(
     ? await container.redis.jsonGet(message.guildId, "GuildSettings")
     : null;
 
-  const ephemeralBtn = new ComponentUtils.EphemeralButton();
+  const timeToDelete =
+    (guildSettings?.ephemeralDeletionTimeout ??
+      DEFAULT_EPHEMERAL_DELETION_TIMEOUT) * 1000;
+
+  // Persistent "view details" button — routed through the afkView interaction
+  // handler, with the mentioned user IDs stored in Redis for the lifetime of
+  // the message.
+  const viewSessionId = nanoid();
   const ephemeralRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    ephemeralBtn,
+    new ButtonBuilder()
+      .setCustomId(createComponentId(AFK_VIEW_FEATURE, viewSessionId))
+      .setEmoji("👁️")
+      .setStyle(ButtonStyle.Secondary),
   );
+
+  if (withButton) {
+    await saveComponentSession(
+      AFK_VIEW_FEATURE,
+      viewSessionId,
+      { userIds: Array.from(afks.keys()) },
+      deleteMsg ? Math.max(Math.ceil(timeToDelete / 1000), 1) : 604_800,
+    );
+  }
 
   const t = await fetchT(message);
 
@@ -170,28 +220,6 @@ export async function sendAFKEmbed(
       : message.deferred || message.replied
         ? await message.editReply(args)
         : await (await message.reply(args)).fetch();
-
-  const timeToDelete =
-    (guildSettings?.ephemeralDeletionTimeout ??
-      DEFAULT_EPHEMERAL_DELETION_TIMEOUT) * 1000;
-
-  if (withButton) {
-    const interacted = new Map<
-      string,
-      InstanceType<typeof ComponentUtils.MenuPaginatedMessage>
-    >();
-    response.channel
-      .createMessageComponentCollector({
-        componentType: ComponentType.Button,
-        filter: (interaction) =>
-          interaction.isButton() &&
-          interaction.customId === ephemeralBtn.customId,
-        time: timeToDelete,
-      })
-      .on("collect", (btn) => {
-        void handleButton(btn, afks, interacted);
-      });
-  }
 
   if (deleteMsg) {
     setTimeout(() => {

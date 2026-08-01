@@ -152,7 +152,7 @@ test("manual execution applies only items the moderator can perform", async () =
 
   expect(applied).toEqual(["ban"]);
   expect(results.map((result) => result.state)).toEqual(["applied", "pending"]);
-  expect(states.rows).toEqual([
+  expect(states.rows as unknown[]).toEqual([
     { punishment_type: "ban", state: "applied" },
     { punishment_type: "role", state: "pending" },
   ]);
@@ -401,7 +401,7 @@ test("a thrown auto-unban adapter error consumes its token and sends the case to
   expect(retry).toBe(false);
   expect(attempts).toBe(1);
   expect(token.rows[0]?.consumed_at).not.toBeNull();
-  expect(caseRecord.rows[0]).toEqual({
+  expect(caseRecord.rows[0] as unknown).toEqual({
     status: "manual_review",
     failure_code: "autoUnbanAdapterException",
   });

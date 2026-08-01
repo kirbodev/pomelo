@@ -25,6 +25,10 @@ export default {
       name: T("settings:user.allowUrgentPings.name"),
       description: T("settings:user.allowUrgentPings.description"),
     },
+    autoAfkRemoval: {
+      name: T("settings:user.autoAfkRemoval.name"),
+      description: T("settings:user.autoAfkRemoval.description"),
+    },
   },
   Guild: {
     locale: {
@@ -62,6 +66,10 @@ export default {
     blockAfkMentions: {
       name: T("settings:guild.blockAfkMentions.name"),
       description: T("settings:guild.blockAfkMentions.description"),
+    },
+    announcementChannel: {
+      name: T("settings:guild.announcementChannel.name"),
+      description: T("settings:guild.announcementChannel.description"),
     },
   },
 } as CapitalizedObjectKeys<typeof settings>;

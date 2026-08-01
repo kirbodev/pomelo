@@ -79,7 +79,24 @@ const workflowStateSchema = z
     messageId: z.string().trim().min(1),
     status: z.enum(["active", "completed", "cancelled", "expired"]),
     expiresAt: z.number().int().positive(),
-    step: z.number().int().min(1).max(6),
+    step: z.number().int().min(1).max(7),
+    editingLevelIndex: z.number().int().min(0).optional(),
+    editingGeneralSetting: z.enum(["expiry", "dm", "logChannel"]).optional(),
+    editingLevelSetting: z.enum(["menu", "message", "autoConfirm"]).optional(),
+    selectedPunishmentIndex: z.number().int().min(0).optional(),
+    addPunishmentStep: z.enum(["type", "duration", "role", "confirm"]).optional(),
+    addPunishmentType: z.enum(["mute", "kick", "ban", "role"]).optional(),
+    addPunishmentDraft: z
+      .object({
+        type: z.enum(["mute", "kick", "ban", "role"]).optional(),
+        duration: z.number().int().positive().optional(),
+        roleId: z.string().trim().min(1).optional(),
+      })
+      .optional(),
+    hadExistingSettings: z.boolean().optional(),
+    backupAvailable: z.boolean().optional(),
+    resetStage: z.enum(["confirm", "done", "restored"]).optional(),
+    restoreExpiresAt: z.number().int().positive().optional(),
     config: workflowConfigSchema,
   })
   .strict();
