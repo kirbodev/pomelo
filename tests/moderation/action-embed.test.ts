@@ -66,11 +66,15 @@ test("warnHistoryFieldValue renders counts plus one line per recent warn", () =>
     recent: [
       { id: 12, reason: "spam", expiresAt: 1_700_000_100_000 },
       { id: 8, reason: null, expiresAt: null },
+      { id: 5, reason: "spam again", expiresAt: null },
+      { id: 3, reason: "oldest", expiresAt: null },
     ],
   };
   const lines = warnHistoryFieldValue(history, fakeT).split("\n");
   expect(lines[0]).toBe("**2** active · **1** expired · **3** total");
-  expect(lines).toHaveLength(3);
+  expect(lines).toHaveLength(4);
   expect(lines[1]).toContain("#12 — spam (expires <t:1700000100:R>)");
   expect(lines[2]).toContain("#8 — No reason");
+  expect(lines[3]).toContain("#5 — spam again");
+  expect(lines.join("\n")).not.toContain("#3");
 });
