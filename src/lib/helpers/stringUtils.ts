@@ -12,7 +12,7 @@ export function trimTextSection(
   startPosition: number,
   sectionLength: number,
   maxLength: number,
-  ellipsis: string = "..."
+  ellipsis: string = "...",
 ): string {
   // Validate inputs
   if (startPosition < 0 || startPosition >= text.length) {
@@ -46,4 +46,13 @@ export function trimTextSection(
 
   // Reconstruct the text
   return beforeSection + trimmedSection + afterSection;
+}
+
+/**
+ * Formats a user as a raw mention followed by the username in parentheses.
+ * @param user - The user (id + username are always present on User/GuildMember)
+ * @returns e.g. `<@695228246966534255> (kdv_)`
+ */
+export function userMention(user: { id: string; username: string }): string {
+  return `<@${user.id}> (${user.username})`;
 }

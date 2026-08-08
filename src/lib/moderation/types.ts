@@ -112,7 +112,13 @@ export type ModActionOptions = {
 // Quick Actions (POM-57)
 export type QuickActionBuiltin = "mute" | "kick" | "ban" | "warn";
 export type QuickActionTrigger = "mute" | "warn";
-export type SubActionType = "warn" | "mute" | "addRole" | "sendDm" | "kick" | "ban";
+export type SubActionType =
+  | "warn"
+  | "mute"
+  | "addRole"
+  | "sendDm"
+  | "kick"
+  | "ban";
 
 export interface SubAction {
   type: SubActionType;
@@ -143,3 +149,16 @@ export type QuickActionSession = {
   | { kind: "builtin"; action: QuickActionBuiltin }
   | { kind: "custom"; label: string; subactions: SubAction[] }
 );
+
+export type WarnHistoryEntry = {
+  id: number;
+  reason: string | null;
+  expiresAt: number | null;
+};
+
+export type WarnHistory = {
+  active: number;
+  expired: number;
+  total: number;
+  recent: WarnHistoryEntry[];
+};
