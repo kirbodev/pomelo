@@ -63,7 +63,7 @@ const baseInput = {
 test("missing warn settings reject without writing a case or warning unit", async () => {
   const { client, service } = await createLedger();
 
-  await expect(
+  expect(
     service.createWarn({ ...baseInput, amount: 1, operationKey: "warn:missing" }),
   ).rejects.toThrow("warnSettingsNotConfigured");
 

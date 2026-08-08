@@ -50,7 +50,7 @@ async function insertCase(
 ) {
   await client.execute({
     sql: "INSERT INTO mod_cases (id, guild_id, case_number, operation_key, user_id, moderator_id, action_type, reason, dm_sent, created_at, updated_at) VALUES (?, 'guild', ?, ?, 'member', 'moderator', 'warn', ?, 0, 1700000000000, 1700000000000)",
-    args: [id, caseNumber, `key-${id}`, reason],
+    args: [id, caseNumber, `key-${String(id)}`, reason],
   });
 }
 
