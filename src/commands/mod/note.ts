@@ -3,22 +3,24 @@ import { Subcommand } from "@sapphire/plugin-subcommands";
 import { applyLocalizedBuilder, fetchT } from "@sapphire/plugin-i18next";
 import {
   ApplicationIntegrationType,
-  Message,
   MessageFlags,
   PermissionFlagsBits,
 } from "discord.js";
 import { LanguageKeys } from "../../lib/i18n/languageKeys.js";
 import CommandUtils, { PomeloReplyType } from "../../utilities/commandUtils.js";
 import { getOptionLocalizations } from "../../lib/i18n/utils.js";
-import { modActionService } from "../../lib/moderation/actions.js";
 import { Colors } from "../../lib/colors.js";
 import { db } from "../../db/index.js";
 import { modCases, caseNotes, caseCounters } from "../../db/schema.js";
 import { eq, and, desc, sql } from "drizzle-orm";
 import EmbedUtils from "../../utilities/embedUtils.js";
+import { userMention } from "../../lib/helpers/stringUtils.js";
 
 export class NoteCommand extends CommandUtils.PomeloSubcommand {
-  public constructor(context: Subcommand.LoaderContext, options: Subcommand.Options) {
+  public constructor(
+    context: Subcommand.LoaderContext,
+    options: Subcommand.Options,
+  ) {
     super(context, {
       ...options,
       description: "Manage mod notes on users.",
@@ -43,35 +45,71 @@ export class NoteCommand extends CommandUtils.PomeloSubcommand {
     );
 
     registry.registerChatInputCommand((builder) => {
-      applyLocalizedBuilder(builder, LanguageKeys.Commands.Moderation.Note.commandName, LanguageKeys.Commands.Moderation.Note.commandDescription)
+      applyLocalizedBuilder(
+        builder,
+        LanguageKeys.Commands.Moderation.Note.commandName,
+        LanguageKeys.Commands.Moderation.Note.commandDescription,
+      )
         .setName(this.name)
         .setDescription(this.description)
         .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
 
         .addSubcommand((sub) =>
-          applyLocalizedBuilder(sub, LanguageKeys.Commands.Moderation.Note.subcommandAddName, LanguageKeys.Commands.Moderation.Note.subcommandAddDescription)
+          applyLocalizedBuilder(
+            sub,
+            LanguageKeys.Commands.Moderation.Note.subcommandAddName,
+            LanguageKeys.Commands.Moderation.Note.subcommandAddDescription,
+          )
             .setName("add")
             .addUserOption((option) =>
-              option.setName(userLocs.englishName).setNameLocalizations(userLocs.names).setDescription(userLocs.englishDescription).setDescriptionLocalizations(userLocs.descriptions).setRequired(true),
+              option
+                .setName(userLocs.englishName)
+                .setNameLocalizations(userLocs.names)
+                .setDescription(userLocs.englishDescription)
+                .setDescriptionLocalizations(userLocs.descriptions)
+                .setRequired(true),
             )
             .addStringOption((option) =>
-              option.setName(noteLocs.englishName).setNameLocalizations(noteLocs.names).setDescription(noteLocs.englishDescription).setDescriptionLocalizations(noteLocs.descriptions).setRequired(true),
+              option
+                .setName(noteLocs.englishName)
+                .setNameLocalizations(noteLocs.names)
+                .setDescription(noteLocs.englishDescription)
+                .setDescriptionLocalizations(noteLocs.descriptions)
+                .setRequired(true),
             ),
         )
 
         .addSubcommand((sub) =>
-          applyLocalizedBuilder(sub, LanguageKeys.Commands.Moderation.Note.subcommandListName, LanguageKeys.Commands.Moderation.Note.subcommandListDescription)
+          applyLocalizedBuilder(
+            sub,
+            LanguageKeys.Commands.Moderation.Note.subcommandListName,
+            LanguageKeys.Commands.Moderation.Note.subcommandListDescription,
+          )
             .setName("list")
             .addUserOption((option) =>
-              option.setName(userLocs.englishName).setNameLocalizations(userLocs.names).setDescription(userLocs.englishDescription).setDescriptionLocalizations(userLocs.descriptions).setRequired(true),
+              option
+                .setName(userLocs.englishName)
+                .setNameLocalizations(userLocs.names)
+                .setDescription(userLocs.englishDescription)
+                .setDescriptionLocalizations(userLocs.descriptions)
+                .setRequired(true),
             ),
         )
 
         .addSubcommand((sub) =>
-          applyLocalizedBuilder(sub, LanguageKeys.Commands.Moderation.Note.subcommandRemoveName, LanguageKeys.Commands.Moderation.Note.subcommandRemoveDescription)
+          applyLocalizedBuilder(
+            sub,
+            LanguageKeys.Commands.Moderation.Note.subcommandRemoveName,
+            LanguageKeys.Commands.Moderation.Note.subcommandRemoveDescription,
+          )
             .setName("remove")
             .addIntegerOption((option) =>
-              option.setName(caseIdLocs.englishName).setNameLocalizations(caseIdLocs.names).setDescription(caseIdLocs.englishDescription).setDescriptionLocalizations(caseIdLocs.descriptions).setRequired(true),
+              option
+                .setName(caseIdLocs.englishName)
+                .setNameLocalizations(caseIdLocs.names)
+                .setDescription(caseIdLocs.englishDescription)
+                .setDescriptionLocalizations(caseIdLocs.descriptions)
+                .setRequired(true),
             ),
         );
 
@@ -79,7 +117,9 @@ export class NoteCommand extends CommandUtils.PomeloSubcommand {
     });
   }
 
-  public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+  public override async chatInputRun(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const subcommand = interaction.options.getSubcommand();
 
@@ -105,18 +145,21 @@ export class NoteCommand extends CommandUtils.PomeloSubcommand {
           caseNumber: sql<number>`${caseCounters.nextCaseNumber} - 1`,
         });
 
-      const [caseEntry] = await db.insert(modCases).values({
-        guildId,
-        caseNumber: counter.caseNumber,
-        operationKey: crypto.randomUUID(),
-        userId: user.id,
-        moderatorId: interaction.user.id,
-        actionType: "note",
-        reason: note,
-        dmSent: false,
-        createdAt: now,
-        updatedAt: now,
-      }).returning();
+      const [caseEntry] = await db
+        .insert(modCases)
+        .values({
+          guildId,
+          caseNumber: counter.caseNumber,
+          operationKey: crypto.randomUUID(),
+          userId: user.id,
+          moderatorId: interaction.user.id,
+          actionType: "note",
+          reason: note,
+          dmSent: false,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning();
 
       // Then add the note
       await db.insert(caseNotes).values({
@@ -131,8 +174,22 @@ export class NoteCommand extends CommandUtils.PomeloSubcommand {
       const t = await fetchT(interaction);
       const embed = new EmbedUtils.EmbedConstructor()
         .setColor(Colors.Success)
-        .setDescription(t(LanguageKeys.Commands.Moderation.Note.addedDesc, { user: user.tag }));
-      await this.reply(interaction, { embeds: [embed] }, { type: PomeloReplyType.Success });
+        .setTitle(t(LanguageKeys.Commands.Moderation.Note.addedTitle))
+        .setDescription(
+          t(LanguageKeys.Commands.Moderation.Note.addedDesc, {
+            user: userMention(user),
+          }),
+        )
+        .addFields({
+          name: t(LanguageKeys.Commands.Moderation.Fields.note),
+          value: note,
+          inline: false,
+        });
+      await this.reply(
+        interaction,
+        { embeds: [embed] },
+        { type: PomeloReplyType.Success },
+      );
     }
 
     if (subcommand === "list") {
@@ -150,31 +207,57 @@ export class NoteCommand extends CommandUtils.PomeloSubcommand {
           createdAt: modCases.createdAt,
         })
         .from(modCases)
-        .where(and(eq(modCases.guildId, guildId), eq(modCases.userId, user.id), eq(modCases.actionType, "note")))
+        .where(
+          and(
+            eq(modCases.guildId, guildId),
+            eq(modCases.userId, user.id),
+            eq(modCases.actionType, "note"),
+          ),
+        )
         .orderBy(desc(modCases.createdAt))
         .limit(50);
 
       if (userNotes.length === 0) {
         const embed = new EmbedUtils.EmbedConstructor()
+          .setTitle(
+            t(LanguageKeys.Commands.Moderation.Note.listTitle, {
+              user: userMention(user),
+            }),
+          )
           .setColor(Colors.Info)
           .setDescription(t(LanguageKeys.Commands.Moderation.Note.listEmpty));
-        await this.reply(interaction, { embeds: [embed] }, { type: PomeloReplyType.Success });
+        await this.reply(
+          interaction,
+          { embeds: [embed] },
+          { type: PomeloReplyType.Success },
+        );
+        return;
       }
 
       const embed = new EmbedUtils.EmbedConstructor()
-        .setTitle(t(LanguageKeys.Commands.Moderation.Note.listTitle, { user: user.tag }))
+        .setTitle(
+          t(LanguageKeys.Commands.Moderation.Note.listTitle, {
+            user: userMention(user),
+          }),
+        )
         .setColor(Colors.Info);
 
       for (const n of userNotes.slice(0, 10)) {
-        const dateStr = n.createdAt ? `<t:${Math.floor(new Date(n.createdAt).getTime() / 1000)}:R>` : "";
+        const dateStr = n.createdAt
+          ? `<t:${Math.floor(new Date(n.createdAt).getTime() / 1000).toString()}:R>`
+          : "";
         embed.addFields({
-          name: `#${n.id} ${dateStr}`,
+          name: `#${n.id.toString()} ${dateStr}`,
           value: `<@${n.moderatorId}>: ${n.reason}`,
           inline: false,
         });
       }
 
-      await this.reply(interaction, { embeds: [embed] }, { type: PomeloReplyType.Success });
+      await this.reply(
+        interaction,
+        { embeds: [embed] },
+        { type: PomeloReplyType.Success },
+      );
     }
 
     if (subcommand === "remove") {
@@ -183,12 +266,24 @@ export class NoteCommand extends CommandUtils.PomeloSubcommand {
       if (!guildId) return;
       const t = await fetchT(interaction);
 
-      const [existing] = await db.select().from(modCases).where(eq(modCases.id, caseId)).limit(1);
+      const [existing] = await db
+        .select()
+        .from(modCases)
+        .where(eq(modCases.id, caseId))
+        .limit(1);
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!existing || existing.actionType !== "note") {
         const embed = new EmbedUtils.EmbedConstructor()
           .setColor(Colors.Error)
-          .setDescription(t(LanguageKeys.Commands.Moderation.Errors.caseNotFound));
-        await this.reply(interaction, { embeds: [embed] }, { type: PomeloReplyType.Error });
+          .setDescription(
+            t(LanguageKeys.Commands.Moderation.Errors.caseNotFound),
+          );
+        await this.reply(
+          interaction,
+          { embeds: [embed] },
+          { type: PomeloReplyType.Error },
+        );
+        return;
       }
 
       await db.delete(caseNotes).where(eq(caseNotes.caseId, caseId));
@@ -196,8 +291,33 @@ export class NoteCommand extends CommandUtils.PomeloSubcommand {
 
       const embed = new EmbedUtils.EmbedConstructor()
         .setColor(Colors.Success)
-        .setDescription(t(LanguageKeys.Commands.Moderation.Note.removedDesc, { id: String(caseId) }));
-      await this.reply(interaction, { embeds: [embed] }, { type: PomeloReplyType.Success });
+        .setTitle(t(LanguageKeys.Commands.Moderation.Note.removedTitle))
+        .setDescription(
+          t(LanguageKeys.Commands.Moderation.Note.removedDesc, {
+            id: String(caseId),
+          }),
+        )
+        .addFields(
+          ...(existing.reason
+            ? [
+                {
+                  name: t(LanguageKeys.Commands.Moderation.Fields.note),
+                  value: existing.reason,
+                  inline: false,
+                },
+              ]
+            : []),
+          {
+            name: t(LanguageKeys.Commands.Moderation.Fields.moderator),
+            value: `<@${existing.moderatorId}>`,
+            inline: true,
+          },
+        );
+      await this.reply(
+        interaction,
+        { embeds: [embed] },
+        { type: PomeloReplyType.Success },
+      );
     }
   }
 }

@@ -17,6 +17,7 @@ import { db } from "../../db/index.js";
 import { caseNotes } from "../../db/schema.js";
 import { eq, count } from "drizzle-orm";
 import type { ActionType } from "../../lib/moderation/types.js";
+import { userMention } from "../../lib/helpers/stringUtils.js";
 
 export class CaseCommand extends CommandUtils.ModCommand {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -44,7 +45,11 @@ export class CaseCommand extends CommandUtils.ModCommand {
     );
 
     registry.registerChatInputCommand((builder) =>
-      applyLocalizedBuilder(builder, LanguageKeys.Commands.Moderation.Case.commandName, LanguageKeys.Commands.Moderation.Case.commandDescription)
+      applyLocalizedBuilder(
+        builder,
+        LanguageKeys.Commands.Moderation.Case.commandName,
+        LanguageKeys.Commands.Moderation.Case.commandDescription,
+      )
         .setName(this.name)
         .setDescription(this.description)
         .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
@@ -78,44 +83,66 @@ export class CaseCommand extends CommandUtils.ModCommand {
     );
   }
 
-  public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+  public override async chatInputRun(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
     const user = interaction.options.getUser("user", true);
     const actionType = interaction.options.getString("action-type") ?? "all";
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-    await this.showCases(interaction, user.id, user.tag, actionType);
+    await this.showCases(interaction, user, actionType);
   }
 
-  public override async messageRun(message: Message, args: import("@sapphire/framework").Args) {
+  public override async messageRun(
+    message: Message,
+    args: import("@sapphire/framework").Args,
+  ) {
     const user = await args.pick("user");
-    await this.showCases(message, user.id, user.tag, "all");
+    await this.showCases(message, user, "all");
   }
 
   private async showCases(
     interaction: Command.ChatInputCommandInteraction | Message,
-    userId: string,
-    userTag: string,
+    user: import("discord.js").User,
     filterType: string,
   ) {
     const guildId = interaction.guildId;
     if (!guildId) return;
     const t = await fetchT(interaction);
 
-    const { cases, total } = await modActionService.getCasesForUser(guildId, userId, filterType as ActionType, 100, 0);
+    const { cases, total } = await modActionService.getCasesForUser(
+      guildId,
+      user.id,
+      filterType as ActionType,
+      100,
+      0,
+    );
 
     if (total === 0) {
       const embed = new EmbedUtils.EmbedConstructor()
-        .setTitle(t(LanguageKeys.Commands.Moderation.Case.title, { user: userTag }))
+        .setTitle(
+          t(LanguageKeys.Commands.Moderation.Case.title, {
+            user: userMention(user),
+          }),
+        )
         .setDescription(t(LanguageKeys.Commands.Moderation.Case.empty))
         .setColor(Colors.Info);
-      return this.reply(interaction, { embeds: [embed] }, { type: PomeloReplyType.Success });
+      return this.reply(
+        interaction,
+        { embeds: [embed] },
+        { type: PomeloReplyType.Success },
+      );
     }
 
     // Get note counts for all cases
     const noteCounts = new Map<number, number>();
     for (const c of cases) {
       if (c.id) {
-        const [result] = await db.select({ c: count() }).from(caseNotes).where(eq(caseNotes.caseId, c.id));
+        const [result] = await db
+          .select({ c: count() })
+          .from(caseNotes)
+          .where(eq(caseNotes.caseId, c.id));
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         noteCounts.set(c.id, result.c ?? 0);
       }
     }
@@ -130,23 +157,36 @@ export class CaseCommand extends CommandUtils.ModCommand {
       const pageCases = cases.slice(start, start + pageSize);
 
       const embed = new EmbedUtils.EmbedConstructor()
-        .setTitle(t(LanguageKeys.Commands.Moderation.Case.title, { user: userTag }))
+        .setTitle(
+          t(LanguageKeys.Commands.Moderation.Case.title, {
+            user: userMention(user),
+          }),
+        )
         .setColor(Colors.Info)
-        .setFooter({ text: t(LanguageKeys.Commands.Moderation.Case.page, { page: String(page + 1), total: String(totalPages) }) });
+        .setFooter({
+          text: t(LanguageKeys.Commands.Moderation.Case.page, {
+            page: String(page + 1),
+            total: String(totalPages),
+          }),
+        });
 
       for (const c of pageCases) {
-        const actionBadge = c.actionType.toUpperCase();
-        const dateStr = c.createdAt ? `<t:${Math.floor(new Date(c.createdAt).getTime() / 1000)}:R>` : "Unknown";
+        const dateStr = c.createdAt
+          ? `<t:${Math.floor(new Date(c.createdAt).getTime() / 1000).toString()}:R>`
+          : t(LanguageKeys.Commands.Moderation.Fields.unknown);
         const nCount = noteCounts.get(c.id) ?? 0;
 
         embed.addFields({
-          name: `Case #${c.id} - ${actionBadge}`,
+          name: t(LanguageKeys.Commands.Moderation.Case.caseHeader, {
+            id: String(c.id),
+            action: c.actionType.toUpperCase(),
+          }),
           value: [
             `**${t(LanguageKeys.Commands.Moderation.Case.fields.moderator)}:** <@${c.moderatorId}>`,
-            `**${t(LanguageKeys.Commands.Moderation.Case.fields.reason)}:** ${c.reason || "No reason"}`,
+            `**${t(LanguageKeys.Commands.Moderation.Case.fields.reason)}:** ${c.reason || t(LanguageKeys.Commands.Moderation.Fields.noReason)}`,
             `**${t(LanguageKeys.Commands.Moderation.Case.fields.dmStatus)}:** ${c.dmSent ? ":white_check_mark:" : ":x:"}`,
             `**${t(LanguageKeys.Commands.Moderation.Case.fields.date)}:** ${dateStr}`,
-            `**${t(LanguageKeys.Commands.Moderation.Case.fields.notes)}:** ${nCount} note(s)`,
+            `**${t(LanguageKeys.Commands.Moderation.Case.fields.notes)}:** ${t(LanguageKeys.Commands.Moderation.Fields.notesCount, { count: nCount })}`,
           ].join("\n"),
           inline: false,
         });
@@ -155,7 +195,9 @@ export class CaseCommand extends CommandUtils.ModCommand {
       pages.push({ embeds: [embed] });
     }
 
-    const paginated = new ComponentUtils.PomeloPaginatedMessage().addPages(pages);
+    const paginated = new ComponentUtils.PomeloPaginatedMessage().addPages(
+      pages,
+    );
     await paginated.run(interaction);
   }
 }

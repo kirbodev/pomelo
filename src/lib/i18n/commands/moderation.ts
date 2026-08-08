@@ -1,5 +1,4 @@
-import { FT, T, type CapitalizedObjectKeys } from "../../types/utils.js";
-import moderation from "../../../languages/en-US/commands/moderation.json" with { type: "json" };
+import { FT, T } from "../../types/utils.js";
 
 export default {
   Kick: {
@@ -13,9 +12,6 @@ export default {
     ),
     title: T("commands/moderation:kick.title"),
     desc: FT<{ user: string }>("commands/moderation:kick.desc"),
-    descWithReason: FT<{ user: string; reason: string }>(
-      "commands/moderation:kick.descWithReason",
-    ),
     dmSent: T("commands/moderation:kick.dmSent"),
     dmNotSent: T("commands/moderation:kick.dmNotSent"),
   },
@@ -38,12 +34,6 @@ export default {
     ),
     title: T("commands/moderation:ban.title"),
     desc: FT<{ user: string }>("commands/moderation:ban.desc"),
-    descWithReason: FT<{ user: string; reason: string }>(
-      "commands/moderation:ban.descWithReason",
-    ),
-    descTemp: FT<{ user: string; duration: string }>(
-      "commands/moderation:ban.descTemp",
-    ),
     dmSent: T("commands/moderation:ban.dmSent"),
     dmNotSent: T("commands/moderation:ban.dmNotSent"),
     deleteMessagesNone: T("commands/moderation:ban.deleteMessagesNone"),
@@ -66,9 +56,6 @@ export default {
     ),
     title: T("commands/moderation:unban.title"),
     desc: FT<{ user: string }>("commands/moderation:unban.desc"),
-    descWithReason: FT<{ user: string; reason: string }>(
-      "commands/moderation:unban.descWithReason",
-    ),
   },
   Mute: {
     commandName: T("commands/moderation:mute.commandName"),
@@ -84,15 +71,9 @@ export default {
       "commands/moderation:mute.reasonFieldDescription",
     ),
     title: T("commands/moderation:mute.title"),
-    desc: FT<{ user: string; duration: string }>(
-      "commands/moderation:mute.desc",
-    ),
-    descWithReason: FT<{ user: string; duration: string; reason: string }>(
-      "commands/moderation:mute.descWithReason",
-    ),
+    desc: FT<{ user: string }>("commands/moderation:mute.desc"),
     dmSent: T("commands/moderation:mute.dmSent"),
     dmNotSent: T("commands/moderation:mute.dmNotSent"),
-    durationTooLong: T("commands/moderation:mute.durationTooLong"),
   },
   Unmute: {
     commandName: T("commands/moderation:unmute.commandName"),
@@ -105,9 +86,6 @@ export default {
     ),
     title: T("commands/moderation:unmute.title"),
     desc: FT<{ user: string }>("commands/moderation:unmute.desc"),
-    descWithReason: FT<{ user: string; reason: string }>(
-      "commands/moderation:unmute.descWithReason",
-    ),
   },
   Warn: {
     commandName: T("commands/moderation:warn.commandName"),
@@ -155,11 +133,39 @@ export default {
       "commands/moderation:warn.caseIdFieldDescription",
     ),
     title: T("commands/moderation:warn.title"),
-    desc: FT<{ user: string; amount: string }>("commands/moderation:warn.desc"),
-    descWithReason: FT<{ user: string; reason: string; amount: string }>(
-      "commands/moderation:warn.descWithReason",
+    desc: FT<{ user: string }>("commands/moderation:warn.desc"),
+    descTwice: FT<{ user: string }>("commands/moderation:warn.descTwice"),
+    descThrice: FT<{ user: string }>("commands/moderation:warn.descThrice"),
+    descTimes: FT<{ user: string; count: number }>(
+      "commands/moderation:warn.descTimes",
     ),
-    warnedCount: FT<{ count: number }>("commands/moderation:warn.warnedCount"),
+    punishment: T("commands/moderation:warn.punishment"),
+    punishmentN: FT<{ n: number }>("commands/moderation:warn.punishmentN"),
+    punishmentMuteFor: FT<{ duration: string }>(
+      "commands/moderation:warn.punishmentMuteFor",
+    ),
+    punishmentBanFor: FT<{ duration: string }>(
+      "commands/moderation:warn.punishmentBanFor",
+    ),
+    punishmentAtLevel: FT<{ level: number }>(
+      "commands/moderation:warn.punishmentAtLevel",
+    ),
+    punishmentWaiting: T("commands/moderation:warn.punishmentWaiting"),
+    historyField: T("commands/moderation:warn.historyField"),
+    historyCounts: FT<{ active: number; expired: number; total: number }>(
+      "commands/moderation:warn.historyCounts",
+    ),
+    historyEntry: FT<{ id: string; reason: string; expiry: string }>(
+      "commands/moderation:warn.historyEntry",
+    ),
+    historyEntryNoExpiry: FT<{ id: string; reason: string }>(
+      "commands/moderation:warn.historyEntryNoExpiry",
+    ),
+    removedTitle: T("commands/moderation:warn.removedTitle"),
+    removedDesc: FT<{ id: string }>("commands/moderation:warn.removedDesc"),
+    multiTitle: FT<{ count: number }>(
+      "commands/moderation:warn.multiTitle_other",
+    ),
     heavywarnCommandName: T("commands/moderation:warn.heavywarnCommandName"),
     heavywarnCommandDescription: T(
       "commands/moderation:warn.heavywarnCommandDescription",
@@ -442,9 +448,7 @@ export default {
       levelDetailsTitle: FT<{ level: number }>(
         "commands/moderation:warnSettings.quickstart.levelDetailsTitle",
       ),
-      editMessage: T(
-        "commands/moderation:warnSettings.quickstart.editMessage",
-      ),
+      editMessage: T("commands/moderation:warnSettings.quickstart.editMessage"),
       clearMessage: T(
         "commands/moderation:warnSettings.quickstart.clearMessage",
       ),
@@ -599,9 +603,7 @@ export default {
       startOverButton: T(
         "commands/moderation:warnSettings.quickstart.startOverButton",
       ),
-      restoreHint: T(
-        "commands/moderation:warnSettings.quickstart.restoreHint",
-      ),
+      restoreHint: T("commands/moderation:warnSettings.quickstart.restoreHint"),
       restoreExpired: T(
         "commands/moderation:warnSettings.quickstart.restoreExpired",
       ),
@@ -627,6 +629,9 @@ export default {
     noCases: T("commands/moderation:case.noCases"),
     page: FT<{ page: string; total: string }>("commands/moderation:case.page"),
     empty: T("commands/moderation:case.empty"),
+    caseHeader: FT<{ id: string; action: string }>(
+      "commands/moderation:case.caseHeader",
+    ),
     fields: {
       action: T("commands/moderation:case.fields.action"),
       moderator: T("commands/moderation:case.fields.moderator"),
@@ -669,15 +674,44 @@ export default {
     removedTitle: T("commands/moderation:note.removedTitle"),
     removedDesc: FT<{ id: string }>("commands/moderation:note.removedDesc"),
   },
+  Fields: {
+    reason: T("commands/moderation:fields.reason"),
+    duration: T("commands/moderation:fields.duration"),
+    dm: T("commands/moderation:fields.dm"),
+    moderator: T("commands/moderation:fields.moderator"),
+    users: T("commands/moderation:fields.users"),
+    messagesDeleted: T("commands/moderation:fields.messagesDeleted"),
+    noReason: T("commands/moderation:fields.noReason"),
+    never: T("commands/moderation:fields.never"),
+    unknown: T("commands/moderation:fields.unknown"),
+    note: T("commands/moderation:fields.note"),
+    notesCount: FT<{ count: number }>(
+      "commands/moderation:fields.notesCount_other",
+    ),
+  },
   SecuritySettings: {
     commandName: T("commands/moderation:securitySettings.commandName"),
-    commandDescription: T("commands/moderation:securitySettings.commandDescription"),
-    subcommandOverviewName: T("commands/moderation:securitySettings.subcommandOverviewName"),
-    subcommandOverviewDescription: T("commands/moderation:securitySettings.subcommandOverviewDescription"),
-    subcommandQrName: T("commands/moderation:securitySettings.subcommandQrName"),
-    subcommandQrDescription: T("commands/moderation:securitySettings.subcommandQrDescription"),
-    subcommandQuickstartName: T("commands/moderation:securitySettings.subcommandQuickstartName"),
-    subcommandQuickstartDescription: T("commands/moderation:securitySettings.subcommandQuickstartDescription"),
+    commandDescription: T(
+      "commands/moderation:securitySettings.commandDescription",
+    ),
+    subcommandOverviewName: T(
+      "commands/moderation:securitySettings.subcommandOverviewName",
+    ),
+    subcommandOverviewDescription: T(
+      "commands/moderation:securitySettings.subcommandOverviewDescription",
+    ),
+    subcommandQrName: T(
+      "commands/moderation:securitySettings.subcommandQrName",
+    ),
+    subcommandQrDescription: T(
+      "commands/moderation:securitySettings.subcommandQrDescription",
+    ),
+    subcommandQuickstartName: T(
+      "commands/moderation:securitySettings.subcommandQuickstartName",
+    ),
+    subcommandQuickstartDescription: T(
+      "commands/moderation:securitySettings.subcommandQuickstartDescription",
+    ),
     overviewTitle: T("commands/moderation:securitySettings.overviewTitle"),
     qrTitle: T("commands/moderation:securitySettings.qrTitle"),
     featureQr: T("commands/moderation:securitySettings.featureQr"),
@@ -688,80 +722,194 @@ export default {
     qrModeAllowlist: T("commands/moderation:securitySettings.qrModeAllowlist"),
     qrModeBlocklist: T("commands/moderation:securitySettings.qrModeBlocklist"),
     qrModeOff: T("commands/moderation:securitySettings.qrModeOff"),
-    qrDefaultBlocklist: T("commands/moderation:securitySettings.qrDefaultBlocklist"),
-    qrDescDefaultBlocklist: T("commands/moderation:securitySettings.qrDescDefaultBlocklist"),
-    qrDefaultAllowlist: T("commands/moderation:securitySettings.qrDefaultAllowlist"),
-    qrDescDefaultAllowlist: T("commands/moderation:securitySettings.qrDescDefaultAllowlist"),
-    qrCustomBlocklist: T("commands/moderation:securitySettings.qrCustomBlocklist"),
-    qrDescCustomBlocklist: T("commands/moderation:securitySettings.qrDescCustomBlocklist"),
-    qrCustomAllowlist: T("commands/moderation:securitySettings.qrCustomAllowlist"),
-    qrDescCustomAllowlist: T("commands/moderation:securitySettings.qrDescCustomAllowlist"),
+    qrDefaultBlocklist: T(
+      "commands/moderation:securitySettings.qrDefaultBlocklist",
+    ),
+    qrDescDefaultBlocklist: T(
+      "commands/moderation:securitySettings.qrDescDefaultBlocklist",
+    ),
+    qrDefaultAllowlist: T(
+      "commands/moderation:securitySettings.qrDefaultAllowlist",
+    ),
+    qrDescDefaultAllowlist: T(
+      "commands/moderation:securitySettings.qrDescDefaultAllowlist",
+    ),
+    qrCustomBlocklist: T(
+      "commands/moderation:securitySettings.qrCustomBlocklist",
+    ),
+    qrDescCustomBlocklist: T(
+      "commands/moderation:securitySettings.qrDescCustomBlocklist",
+    ),
+    qrCustomAllowlist: T(
+      "commands/moderation:securitySettings.qrCustomAllowlist",
+    ),
+    qrDescCustomAllowlist: T(
+      "commands/moderation:securitySettings.qrDescCustomAllowlist",
+    ),
     qrNoEntries: T("commands/moderation:securitySettings.qrNoEntries"),
-    qrEntryCount: FT<{ count: number }>("commands/moderation:securitySettings.qrEntryCount"),
+    qrEntryCount: FT<{ count: number }>(
+      "commands/moderation:securitySettings.qrEntryCount",
+    ),
     qrSafeChannel: T("commands/moderation:securitySettings.qrSafeChannel"),
     qrUnsafeChannel: T("commands/moderation:securitySettings.qrUnsafeChannel"),
-    qrDeleteOnUnsafe: T("commands/moderation:securitySettings.qrDeleteOnUnsafe"),
+    qrDeleteOnUnsafe: T(
+      "commands/moderation:securitySettings.qrDeleteOnUnsafe",
+    ),
     qrToggleEnabled: T("commands/moderation:securitySettings.qrToggleEnabled"),
-    qrToggleDisabled: T("commands/moderation:securitySettings.qrToggleDisabled"),
+    qrToggleDisabled: T(
+      "commands/moderation:securitySettings.qrToggleDisabled",
+    ),
     qrChangeMode: T("commands/moderation:securitySettings.qrChangeMode"),
-    qrUnsafeAlertTitle: T("commands/moderation:securitySettings.qrUnsafeAlertTitle"),
-    qrUnsafeAlertAuthor: T("commands/moderation:securitySettings.qrUnsafeAlertAuthor"),
-    qrUnsafeAlertChannel: T("commands/moderation:securitySettings.qrUnsafeAlertChannel"),
-    qrUnsafeAlertContentType: T("commands/moderation:securitySettings.qrUnsafeAlertContentType"),
-    qrSafeAlertTitle: T("commands/moderation:securitySettings.qrSafeAlertTitle"),
-    qrSafeAlertAuthor: T("commands/moderation:securitySettings.qrSafeAlertAuthor"),
-    qrSafeAlertChannel: T("commands/moderation:securitySettings.qrSafeAlertChannel"),
-    qrSafeAlertContentType: T("commands/moderation:securitySettings.qrSafeAlertContentType"),
+    qrUnsafeAlertTitle: T(
+      "commands/moderation:securitySettings.qrUnsafeAlertTitle",
+    ),
+    qrUnsafeAlertAuthor: T(
+      "commands/moderation:securitySettings.qrUnsafeAlertAuthor",
+    ),
+    qrUnsafeAlertChannel: T(
+      "commands/moderation:securitySettings.qrUnsafeAlertChannel",
+    ),
+    qrUnsafeAlertContentType: T(
+      "commands/moderation:securitySettings.qrUnsafeAlertContentType",
+    ),
+    qrSafeAlertTitle: T(
+      "commands/moderation:securitySettings.qrSafeAlertTitle",
+    ),
+    qrSafeAlertAuthor: T(
+      "commands/moderation:securitySettings.qrSafeAlertAuthor",
+    ),
+    qrSafeAlertChannel: T(
+      "commands/moderation:securitySettings.qrSafeAlertChannel",
+    ),
+    qrSafeAlertContentType: T(
+      "commands/moderation:securitySettings.qrSafeAlertContentType",
+    ),
     qrLogTitle: T("commands/moderation:securitySettings.qrLogTitle"),
     qrLogResult: T("commands/moderation:securitySettings.qrLogResult"),
-    qrLogResultUnsafe: T("commands/moderation:securitySettings.qrLogResultUnsafe"),
+    qrLogResultUnsafe: T(
+      "commands/moderation:securitySettings.qrLogResultUnsafe",
+    ),
     qrLogResultSafe: T("commands/moderation:securitySettings.qrLogResultSafe"),
-    qrLogResultNoMatch: T("commands/moderation:securitySettings.qrLogResultNoMatch"),
+    qrLogResultNoMatch: T(
+      "commands/moderation:securitySettings.qrLogResultNoMatch",
+    ),
     qrLogAuthor: T("commands/moderation:securitySettings.qrLogAuthor"),
     qrLogChannel: T("commands/moderation:securitySettings.qrLogChannel"),
-    qrLogContentType: T("commands/moderation:securitySettings.qrLogContentType"),
-    qrSafeActionLabel: T("commands/moderation:securitySettings.qrSafeActionLabel"),
-    qrUnsafeActionLabel: T("commands/moderation:securitySettings.qrUnsafeActionLabel"),
-    qrSetSafeChannel: T("commands/moderation:securitySettings.qrSetSafeChannel"),
-    qrSetUnsafeChannel: T("commands/moderation:securitySettings.qrSetUnsafeChannel"),
+    qrLogContentType: T(
+      "commands/moderation:securitySettings.qrLogContentType",
+    ),
+    qrSafeActionLabel: T(
+      "commands/moderation:securitySettings.qrSafeActionLabel",
+    ),
+    qrUnsafeActionLabel: T(
+      "commands/moderation:securitySettings.qrUnsafeActionLabel",
+    ),
+    qrSetSafeChannel: T(
+      "commands/moderation:securitySettings.qrSetSafeChannel",
+    ),
+    qrSetUnsafeChannel: T(
+      "commands/moderation:securitySettings.qrSetUnsafeChannel",
+    ),
     qrSetLogChannel: T("commands/moderation:securitySettings.qrSetLogChannel"),
-    qrToggleSafeAction: T("commands/moderation:securitySettings.qrToggleSafeAction"),
-    qrToggleUnsafeAction: T("commands/moderation:securitySettings.qrToggleUnsafeAction"),
+    qrToggleSafeAction: T(
+      "commands/moderation:securitySettings.qrToggleSafeAction",
+    ),
+    qrToggleUnsafeAction: T(
+      "commands/moderation:securitySettings.qrToggleUnsafeAction",
+    ),
     qrAddEntry: T("commands/moderation:securitySettings.qrAddEntry"),
     qrRemoveEntry: T("commands/moderation:securitySettings.qrRemoveEntry"),
-    qrAddDomainModalTitleBlocklist: T("commands/moderation:securitySettings.qrAddDomainModalTitleBlocklist"),
-    qrAddDomainModalTitleAllowlist: T("commands/moderation:securitySettings.qrAddDomainModalTitleAllowlist"),
-    qrModalDomainInput: T("commands/moderation:securitySettings.qrModalDomainInput"),
-    qrModalDomainPlaceholder: T("commands/moderation:securitySettings.qrModalDomainPlaceholder"),
+    qrAddDomainModalTitleBlocklist: T(
+      "commands/moderation:securitySettings.qrAddDomainModalTitleBlocklist",
+    ),
+    qrAddDomainModalTitleAllowlist: T(
+      "commands/moderation:securitySettings.qrAddDomainModalTitleAllowlist",
+    ),
+    qrModalDomainInput: T(
+      "commands/moderation:securitySettings.qrModalDomainInput",
+    ),
+    qrModalDomainPlaceholder: T(
+      "commands/moderation:securitySettings.qrModalDomainPlaceholder",
+    ),
     qrInvalidDomain: T("commands/moderation:securitySettings.qrInvalidDomain"),
-    qrDuplicateDomain: T("commands/moderation:securitySettings.qrDuplicateDomain"),
-    qrMaxEntriesReached: T("commands/moderation:securitySettings.qrMaxEntriesReached"),
-    qrDomainAdded: FT<{ domain: string }>("commands/moderation:securitySettings.qrDomainAdded"),
-    qrDomainRemoved: FT<{ domain: string }>("commands/moderation:securitySettings.qrDomainRemoved"),
-    qrSelectEntryToRemove: T("commands/moderation:securitySettings.qrSelectEntryToRemove"),
+    qrDuplicateDomain: T(
+      "commands/moderation:securitySettings.qrDuplicateDomain",
+    ),
+    qrMaxEntriesReached: T(
+      "commands/moderation:securitySettings.qrMaxEntriesReached",
+    ),
+    qrDomainAdded: FT<{ domain: string }>(
+      "commands/moderation:securitySettings.qrDomainAdded",
+    ),
+    qrDomainRemoved: FT<{ domain: string }>(
+      "commands/moderation:securitySettings.qrDomainRemoved",
+    ),
+    qrSelectEntryToRemove: T(
+      "commands/moderation:securitySettings.qrSelectEntryToRemove",
+    ),
     qrDescMode: T("commands/moderation:securitySettings.qrDescMode"),
-    qrDescSafeAction: T("commands/moderation:securitySettings.qrDescSafeAction"),
-    qrDescSafeChannel: T("commands/moderation:securitySettings.qrDescSafeChannel"),
-    qrDescUnsafeAction: T("commands/moderation:securitySettings.qrDescUnsafeAction"),
-    qrDescUnsafeChannel: T("commands/moderation:securitySettings.qrDescUnsafeChannel"),
-    qrDescDeleteOnUnsafe: T("commands/moderation:securitySettings.qrDescDeleteOnUnsafe"),
-    qrQuickstartTitle: T("commands/moderation:securitySettings.qrQuickstartTitle"),
-    qrQuickstepWelcome: T("commands/moderation:securitySettings.qrQuickstepWelcome"),
-    qrQuickstepEnable: T("commands/moderation:securitySettings.qrQuickstepEnable"),
+    qrDescSafeAction: T(
+      "commands/moderation:securitySettings.qrDescSafeAction",
+    ),
+    qrDescSafeChannel: T(
+      "commands/moderation:securitySettings.qrDescSafeChannel",
+    ),
+    qrDescUnsafeAction: T(
+      "commands/moderation:securitySettings.qrDescUnsafeAction",
+    ),
+    qrDescUnsafeChannel: T(
+      "commands/moderation:securitySettings.qrDescUnsafeChannel",
+    ),
+    qrDescDeleteOnUnsafe: T(
+      "commands/moderation:securitySettings.qrDescDeleteOnUnsafe",
+    ),
+    qrQuickstartTitle: T(
+      "commands/moderation:securitySettings.qrQuickstartTitle",
+    ),
+    qrQuickstepWelcome: T(
+      "commands/moderation:securitySettings.qrQuickstepWelcome",
+    ),
+    qrQuickstepEnable: T(
+      "commands/moderation:securitySettings.qrQuickstepEnable",
+    ),
     qrQuickstepMode: T("commands/moderation:securitySettings.qrQuickstepMode"),
-    qrQuickstepChannels: T("commands/moderation:securitySettings.qrQuickstepChannels"),
-    qrQuickstepDeleteToggle: T("commands/moderation:securitySettings.qrQuickstepDeleteToggle"),
-    qrQuickstepSummary: T("commands/moderation:securitySettings.qrQuickstepSummary"),
-    qrQuickstartEnable: T("commands/moderation:securitySettings.qrQuickstartEnable"),
-    qrQuickstartSkip: T("commands/moderation:securitySettings.qrQuickstartSkip"),
-    qrQuickstartBack: T("commands/moderation:securitySettings.qrQuickstartBack"),
-    qrQuickstartNext: T("commands/moderation:securitySettings.qrQuickstartNext"),
-    qrQuickstartFinish: T("commands/moderation:securitySettings.qrQuickstartFinish"),
-    qrQuickstartDone: T("commands/moderation:securitySettings.qrQuickstartDone"),
-    qrQuickstartConfirmTitle: T("commands/moderation:securitySettings.qrQuickstartConfirmTitle"),
+    qrQuickstepChannels: T(
+      "commands/moderation:securitySettings.qrQuickstepChannels",
+    ),
+    qrQuickstepDeleteToggle: T(
+      "commands/moderation:securitySettings.qrQuickstepDeleteToggle",
+    ),
+    qrQuickstepSummary: T(
+      "commands/moderation:securitySettings.qrQuickstepSummary",
+    ),
+    qrQuickstartEnable: T(
+      "commands/moderation:securitySettings.qrQuickstartEnable",
+    ),
+    qrQuickstartSkip: T(
+      "commands/moderation:securitySettings.qrQuickstartSkip",
+    ),
+    qrQuickstartBack: T(
+      "commands/moderation:securitySettings.qrQuickstartBack",
+    ),
+    qrQuickstartNext: T(
+      "commands/moderation:securitySettings.qrQuickstartNext",
+    ),
+    qrQuickstartFinish: T(
+      "commands/moderation:securitySettings.qrQuickstartFinish",
+    ),
+    qrQuickstartDone: T(
+      "commands/moderation:securitySettings.qrQuickstartDone",
+    ),
+    qrQuickstartConfirmTitle: T(
+      "commands/moderation:securitySettings.qrQuickstartConfirmTitle",
+    ),
     qrDeleteMessage: T("commands/moderation:securitySettings.qrDeleteMessage"),
-    qrMessageDeleted: T("commands/moderation:securitySettings.qrMessageDeleted"),
-    qrAutoDeletedNotice: FT<{ user: string }>("commands/moderation:securitySettings.qrAutoDeletedNotice"),
+    qrMessageDeleted: T(
+      "commands/moderation:securitySettings.qrMessageDeleted",
+    ),
+    qrAutoDeletedNotice: FT<{ user: string }>(
+      "commands/moderation:securitySettings.qrAutoDeletedNotice",
+    ),
   },
   Errors: {
     targetNotInGuild: T("commands/moderation:errors.targetNotInGuild"),
@@ -818,17 +966,27 @@ export default {
     wizardDone: T("commands/moderation:QuickActions.wizardDone"),
     wizardNameTitle: T("commands/moderation:QuickActions.wizardNameTitle"),
     wizardNameLabel: T("commands/moderation:QuickActions.wizardNameLabel"),
-    triggersPlaceholder: T("commands/moderation:QuickActions.triggersPlaceholder"),
-    triggersDescription: T("commands/moderation:QuickActions.triggersDescription"),
+    triggersPlaceholder: T(
+      "commands/moderation:QuickActions.triggersPlaceholder",
+    ),
+    triggersDescription: T(
+      "commands/moderation:QuickActions.triggersDescription",
+    ),
     triggersLabel: T("commands/moderation:QuickActions.triggersLabel"),
     triggersSelected: T("commands/moderation:QuickActions.triggersSelected"),
     clickContinue: T("commands/moderation:QuickActions.clickContinue"),
-    selectTriggersFirst: T("commands/moderation:QuickActions.selectTriggersFirst"),
+    selectTriggersFirst: T(
+      "commands/moderation:QuickActions.selectTriggersFirst",
+    ),
     subactionsLabel: T("commands/moderation:QuickActions.subactionsLabel"),
     addSubaction: T("commands/moderation:QuickActions.addSubaction"),
-    selectSubactionType: T("commands/moderation:QuickActions.selectSubactionType"),
+    selectSubactionType: T(
+      "commands/moderation:QuickActions.selectSubactionType",
+    ),
     noSubactionsYet: T("commands/moderation:QuickActions.noSubactionsYet"),
-    configureSubaction: T("commands/moderation:QuickActions.configureSubaction"),
+    configureSubaction: T(
+      "commands/moderation:QuickActions.configureSubaction",
+    ),
     warnAmountLabel: T("commands/moderation:QuickActions.warnAmountLabel"),
     durationLabel: T("commands/moderation:QuickActions.durationLabel"),
     roleIdLabel: T("commands/moderation:QuickActions.roleIdLabel"),
@@ -838,10 +996,14 @@ export default {
     invalidDuration: T("commands/moderation:QuickActions.invalidDuration"),
     invalidRoleId: T("commands/moderation:QuickActions.invalidRoleId"),
     invalidDmMessage: T("commands/moderation:QuickActions.invalidDmMessage"),
-    needAtLeastOneSubaction: T("commands/moderation:QuickActions.needAtLeastOneSubaction"),
+    needAtLeastOneSubaction: T(
+      "commands/moderation:QuickActions.needAtLeastOneSubaction",
+    ),
     validationFailed: T("commands/moderation:QuickActions.validationFailed"),
     quickActionSaved: T("commands/moderation:QuickActions.quickActionSaved"),
-    quickActionDeleted: T("commands/moderation:QuickActions.quickActionDeleted"),
+    quickActionDeleted: T(
+      "commands/moderation:QuickActions.quickActionDeleted",
+    ),
     wizardCancelled: T("commands/moderation:QuickActions.wizardCancelled"),
   },
 } as const;

@@ -7,10 +7,9 @@
     "reasonFieldName": "reason",
     "reasonFieldDescription": "The reason for the kick.",
     "title": "Kicked",
-    "desc": "**{{user}}** has been kicked.",
-    "descWithReason": "**{{user}}** has been kicked for **{{reason}}**.",
-    "dmSent": "DM sent to the user.",
-    "dmNotSent": "Couldn't DM the user."
+    "desc": "**{{user}}** has been kicked",
+    "dmSent": "DM sent",
+    "dmNotSent": "Couldn't DM"
   },
   "ban": {
     "commandName": "ban",
@@ -24,11 +23,9 @@
     "deleteMessagesFieldName": "delete-messages",
     "deleteMessagesFieldDescription": "Delete recent messages from the user.",
     "title": "Banned",
-    "desc": "**{{user}}** has been banned.",
-    "descWithReason": "**{{user}}** has been banned for **{{reason}}**.",
-    "descTemp": "**{{user}}** has been banned for **{{duration}}**.",
-    "dmSent": "DM sent to the user.",
-    "dmNotSent": "Couldn't DM the user.",
+    "desc": "**{{user}}** has been banned",
+    "dmSent": "DM sent",
+    "dmNotSent": "Couldn't DM",
     "deleteMessagesNone": "Don't delete any",
     "deleteMessages1h": "Last hour",
     "deleteMessages6h": "Last 6 hours",
@@ -44,8 +41,7 @@
     "reasonFieldName": "reason",
     "reasonFieldDescription": "The reason for the unban.",
     "title": "Unbanned",
-    "desc": "**{{user}}** has been unbanned.",
-    "descWithReason": "**{{user}}** has been unbanned: **{{reason}}**."
+    "desc": "**{{user}}** has been unbanned"
   },
   "mute": {
     "commandName": "mute",
@@ -57,11 +53,9 @@
     "reasonFieldName": "reason",
     "reasonFieldDescription": "The reason for the mute.",
     "title": "Muted",
-    "desc": "**{{user}}** has been muted for **{{duration}}**.",
-    "descWithReason": "**{{user}}** has been muted for **{{duration}}**: **{{reason}}**.",
-    "dmSent": "DM sent to the user.",
-    "dmNotSent": "Couldn't DM the user.",
-    "durationTooLong": "Timeouts can't be longer than 28 days."
+    "desc": "**{{user}}** has been muted",
+    "dmSent": "DM sent",
+    "dmNotSent": "Couldn't DM"
   },
   "unmute": {
     "commandName": "unmute",
@@ -71,8 +65,7 @@
     "reasonFieldName": "reason",
     "reasonFieldDescription": "The reason for the unmute.",
     "title": "Unmuted",
-    "desc": "**{{user}}** has been unmuted.",
-    "descWithReason": "**{{user}}** has been unmuted: **{{reason}}**."
+    "desc": "**{{user}}** has been unmuted"
   },
   "warn": {
     "commandName": "warn",
@@ -102,9 +95,24 @@
     "caseIdFieldName": "case-id",
     "caseIdFieldDescription": "The case ID of the warn to remove.",
     "title": "Warned",
-    "desc": "**{{user}}** has been warned (count: {{amount}}).",
-    "descWithReason": "**{{user}}** has been warned: **{{reason}}** (count: {{amount}}).",
-    "warnedCount": "User now has **{{count}}** active warn(s).",
+    "desc": "**{{user}}** has been warned",
+    "descTwice": "**{{user}}** has been warned **twice**",
+    "descThrice": "**{{user}}** has been warned **thrice**",
+    "descTimes": "**{{user}}** has been warned **{{count}} times**",
+    "punishment": "Punishment",
+    "punishmentN": "Punishment {{n}}",
+    "punishmentMuteFor": "Mute for {{duration}}",
+    "punishmentBanFor": "Ban for {{duration}}",
+    "punishmentAtLevel": "at warn level {{level}}",
+    "punishmentWaiting": "Waiting for a moderator to confirm",
+    "historyField": "Warn history",
+    "historyCounts": "**{{active}}** active · **{{expired}}** expired · **{{total}}** total",
+    "historyEntry": "#{{id}} — {{reason}} (expires {{expiry}})",
+    "historyEntryNoExpiry": "#{{id}} — {{reason}}",
+    "removedTitle": "Warn Removed",
+    "removedDesc": "Warn #{{id}} removed.",
+    "multiTitle_one": "Warned 1 user",
+    "multiTitle_other": "Warned {{count}} users",
     "heavywarnCommandName": "heavywarn",
     "heavywarnCommandDescription": "Issue a heavy warn (2 warn counts).",
     "warnsCommandName": "warns",
@@ -312,6 +320,7 @@
     "noCases": "No cases found for this user.",
     "page": "Page {{page}}/{{total}}",
     "empty": "This user has no moderation history.",
+    "caseHeader": "Case #{{id}} — {{action}}",
     "fields": {
       "action": "Action",
       "moderator": "Moderator",
@@ -337,12 +346,26 @@
     "caseIdFieldName": "case-id",
     "caseIdFieldDescription": "The case ID of the note to remove.",
     "addedTitle": "Note Added",
-    "addedDesc": "Note added to {{user}}.",
+    "addedDesc": "Note added to **{{user}}**.",
     "listTitle": "Notes for {{user}}",
     "listEntry": "#{{id}} — {{mod}}: {{note}}",
     "listEmpty": "No notes for this user.",
     "removedTitle": "Note Removed",
     "removedDesc": "Note #{{id}} has been removed."
+  },
+  "fields": {
+    "reason": "Reason",
+    "duration": "Duration",
+    "dm": "DM",
+    "moderator": "Moderator",
+    "users": "Users",
+    "messagesDeleted": "Messages deleted",
+    "noReason": "No reason",
+    "never": "Never",
+    "unknown": "Unknown",
+    "note": "Note",
+    "notesCount_one": "{{count}} note",
+    "notesCount_other": "{{count}} notes"
   },
   "securitySettings": {
     "commandName": "securitysettings",

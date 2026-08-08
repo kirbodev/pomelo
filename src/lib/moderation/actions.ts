@@ -37,6 +37,7 @@ import {
   type LevelExecResult,
   type ModActionOptions,
   type PunishmentItemState,
+  type WarnHistory,
 } from "./types.js";
 import { normalizeActions, sanitizeLevelMessage } from "./migration.js";
 import {
@@ -421,7 +422,11 @@ export class ModActionService {
     // justifying warn level — release them and strip the roles.
     if (result.case)
       await releaseUnjustifiedPunishmentRoles(
-        { guildId: input.guildId, userId: input.targetId, removedBy: input.actorId },
+        {
+          guildId: input.guildId,
+          userId: input.targetId,
+          removedBy: input.actorId,
+        },
         this.database,
         this.getNow(),
       );
@@ -1916,7 +1921,7 @@ export class ModActionService {
     duration?: number,
   ): Promise<ModCase> {
     const now = Date.now();
-    const [counter] = await db
+    const [counter] = await this.database
       .insert(caseCounters)
       .values({
         guildId,
@@ -1934,7 +1939,7 @@ export class ModActionService {
         caseNumber: sql<number>`${caseCounters.nextCaseNumber} - 1`,
       });
 
-    const [caseEntry] = await db
+    const [caseEntry] = await this.database
       .insert(modCases)
       .values({
         guildId,
@@ -2152,7 +2157,7 @@ export class ModActionService {
   }
 
   async getActiveWarnCount(guildId: string, userId: string): Promise<number> {
-    const result = await db
+    const result = await this.database
       .select({ count: count() })
       .from(warns)
       .where(
@@ -2160,10 +2165,61 @@ export class ModActionService {
           eq(warns.guildId, guildId),
           eq(warns.userId, userId),
           eq(warns.revoked, false),
-          sql`(warns.expires_at IS NULL OR warns.expires_at > ${Date.now()})`,
+          sql`(warns.expires_at IS NULL OR warns.expires_at > ${this.getNow()})`,
         ),
       );
     return result[0]?.count ?? 0;
+  }
+
+  async getWarnHistory(guildId: string, userId: string): Promise<WarnHistory> {
+    const now = this.getNow();
+    const totalRows = await this.database
+      .select({ count: count() })
+      .from(warns)
+      .where(and(eq(warns.guildId, guildId), eq(warns.userId, userId)));
+    const expiredRows = await this.database
+      .select({ count: count() })
+      .from(warns)
+      .where(
+        and(
+          eq(warns.guildId, guildId),
+          eq(warns.userId, userId),
+          eq(warns.revoked, false),
+          sql`warns.expires_at IS NOT NULL AND warns.expires_at <= ${now}`,
+        ),
+      );
+    const recent = await this.database
+      .select({
+        id: warns.id,
+        reason: modCases.reason,
+        expiresAt: warns.expiresAt,
+      })
+      .from(warns)
+      .innerJoin(
+        modCases,
+        and(eq(warns.caseId, modCases.id), eq(warns.guildId, modCases.guildId)),
+      )
+      .where(
+        and(
+          eq(warns.guildId, guildId),
+          eq(warns.userId, userId),
+          eq(warns.revoked, false),
+          sql`(warns.expires_at IS NULL OR warns.expires_at > ${now})`,
+        ),
+      )
+      .orderBy(desc(warns.createdAt))
+      .limit(3);
+
+    return {
+      active: await this.getActiveWarnCount(guildId, userId),
+      expired: expiredRows[0]?.count ?? 0,
+      total: totalRows[0]?.count ?? 0,
+      recent: recent.map((r) => ({
+        id: r.id,
+        reason: r.reason,
+        expiresAt: r.expiresAt,
+      })),
+    };
   }
 
   async warn(
@@ -2206,9 +2262,7 @@ export class ModActionService {
     );
 
     for (let i = 0; i < amount; i++) {
-      const expiresAt = expiryDays
-        ? Date.now() + (i + 1) * expiryMs
-        : null;
+      const expiresAt = expiryDays ? Date.now() + (i + 1) * expiryMs : null;
       await db.insert(warns).values({
         caseId: caseEntry.id,
         guildId: guild.id,

@@ -13,6 +13,7 @@ import { modActionService } from "../../lib/moderation/actions.js";
 import { Colors } from "../../lib/colors.js";
 import EmbedUtils from "../../utilities/embedUtils.js";
 import { buildQuickActionRow } from "../../lib/moderation/quickActionRow.js";
+import { userMention } from "../../lib/helpers/stringUtils.js";
 
 export class KickCommand extends CommandUtils.ModCommand {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -67,7 +68,9 @@ export class KickCommand extends CommandUtils.ModCommand {
     );
   }
 
-  public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+  public override async chatInputRun(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
     const user = interaction.options.getUser("user", true);
     const reason = interaction.options.getString("reason");
 
@@ -82,7 +85,11 @@ export class KickCommand extends CommandUtils.ModCommand {
     await this.execute(message, user.id, reason);
   }
 
-  private async execute(target: Command.ChatInputCommandInteraction | Message, userId: string, reason: string | null) {
+  private async execute(
+    target: Command.ChatInputCommandInteraction | Message,
+    userId: string,
+    reason: string | null,
+  ) {
     const t = await fetchT(target);
     const guild = target.guild;
     if (!guild) return;
@@ -92,20 +99,36 @@ export class KickCommand extends CommandUtils.ModCommand {
       const t2 = await fetchT(target);
       const embed2 = new EmbedUtils.EmbedConstructor()
         .setColor(Colors.Error)
-        .setDescription(t2(LanguageKeys.Commands.Moderation.Errors.targetNotInGuild));
-      return this.reply(target, { embeds: [embed2] }, { type: PomeloReplyType.Error });
+        .setDescription(
+          t2(LanguageKeys.Commands.Moderation.Errors.targetNotInGuild),
+        );
+      return this.reply(
+        target,
+        { embeds: [embed2] },
+        { type: PomeloReplyType.Error },
+      );
     }
 
-    const moderator = target.member instanceof Message ? null : (target.member as import("discord.js").GuildMember);
+    const moderator =
+      target.member instanceof Message
+        ? null
+        : (target.member as import("discord.js").GuildMember);
 
     if (!moderator) return;
 
-    const result = await modActionService.kick(guild, moderator, member, reason ?? undefined);
+    const result = await modActionService.kick(
+      guild,
+      moderator,
+      member,
+      reason ?? undefined,
+    );
 
     if (!result.success) {
       const embed = new EmbedUtils.EmbedConstructor()
         .setColor(Colors.Error)
-        .setDescription(t(LanguageKeys.Commands.Moderation.Errors.hierarchyTooLow));
+        .setDescription(
+          t(LanguageKeys.Commands.Moderation.Errors.hierarchyTooLow),
+        );
 
       return this.reply(
         target,
@@ -114,34 +137,56 @@ export class KickCommand extends CommandUtils.ModCommand {
       );
     }
 
-    const mainText = reason
-      ? t(LanguageKeys.Commands.Moderation.Kick.descWithReason, { user: member.user.tag, reason })
-      : t(LanguageKeys.Commands.Moderation.Kick.desc, { user: member.user.tag });
-    const dmText = result.dmSent
-      ? t(LanguageKeys.Commands.Moderation.Kick.dmSent)
-      : t(LanguageKeys.Commands.Moderation.Kick.dmNotSent);
+    const desc = t(LanguageKeys.Commands.Moderation.Kick.desc, {
+      user: userMention(member.user),
+    });
 
     const embed = new EmbedUtils.EmbedConstructor()
       .setColor(Colors.Success)
-      .setDescription(mainText + "\n\n" + dmText);
+      .setTitle(t(LanguageKeys.Commands.Moderation.Kick.title))
+      .setDescription(desc)
+      .addFields(
+        ...(reason
+          ? [
+              {
+                name: t(LanguageKeys.Commands.Moderation.Fields.reason),
+                value: reason,
+                inline: false,
+              },
+            ]
+          : []),
+        {
+          name: t(LanguageKeys.Commands.Moderation.Fields.dm),
+          value: result.dmSent
+            ? t(LanguageKeys.Commands.Moderation.Kick.dmSent)
+            : t(LanguageKeys.Commands.Moderation.Kick.dmNotSent),
+          inline: true,
+        },
+      );
 
     const guildId = target.guildId ?? target.guild.id;
-    const moderatorId = target instanceof Message ? target.author.id : target.user.id;
+    const moderatorId =
+      target instanceof Message ? target.author.id : target.user.id;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     const channelId = target.channelId ?? target.channel?.id;
-    const quickActions = guildId && channelId
-      ? await buildQuickActionRow({
-          guildId,
-          moderatorId,
-          targetId: member.id,
-          channelId,
-          executedAction: "kick",
-          t,
-        })
-      : { row: null };
+    const quickActions =
+      guildId && channelId
+        ? await buildQuickActionRow({
+            guildId,
+            moderatorId,
+            targetId: member.id,
+            channelId,
+            executedAction: "kick",
+            t,
+          })
+        : { row: null };
 
     return this.reply(
       target,
-      { embeds: [embed], ...(quickActions.row ? { components: [quickActions.row] } : {}) },
+      {
+        embeds: [embed],
+        ...(quickActions.row ? { components: [quickActions.row] } : {}),
+      },
       { type: PomeloReplyType.Success },
     );
   }

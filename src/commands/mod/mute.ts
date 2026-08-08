@@ -15,12 +15,16 @@ import { getOptionLocalizations } from "../../lib/i18n/utils.js";
 import { modActionService } from "../../lib/moderation/actions.js";
 import { Colors } from "../../lib/colors.js";
 import ms from "../../lib/helpers/ms.js";
+import { userMention } from "../../lib/helpers/stringUtils.js";
 import { buildQuickActionRow } from "../../lib/moderation/quickActionRow.js";
 
 const MAX_MUTE_DURATION = 28 * 86400000; // 28 days
 
 export class MuteCommand extends CommandUtils.PomeloSubcommand {
-  public constructor(context: Subcommand.LoaderContext, options: Subcommand.Options) {
+  public constructor(
+    context: Subcommand.LoaderContext,
+    options: Subcommand.Options,
+  ) {
     super(context, {
       ...options,
       description: "Mute or unmute a user.",
@@ -114,7 +118,9 @@ export class MuteCommand extends CommandUtils.PomeloSubcommand {
     });
   }
 
-  public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+  public override async chatInputRun(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const subcommand = interaction.options.getSubcommand();
@@ -129,9 +135,15 @@ export class MuteCommand extends CommandUtils.PomeloSubcommand {
         const t = await fetchT(interaction);
         const embed = new EmbedUtils.EmbedConstructor()
           .setColor(Colors.Error)
-          .setDescription(t(LanguageKeys.Commands.Moderation.Errors.durationTooLong));
+          .setDescription(
+            t(LanguageKeys.Commands.Moderation.Errors.durationTooLong),
+          );
 
-        await this.reply(interaction, { embeds: [embed] }, { type: PomeloReplyType.Error });
+        await this.reply(
+          interaction,
+          { embeds: [embed] },
+          { type: PomeloReplyType.Error },
+        );
         return;
       }
 
@@ -139,9 +151,15 @@ export class MuteCommand extends CommandUtils.PomeloSubcommand {
         const t = await fetchT(interaction);
         const embed = new EmbedUtils.EmbedConstructor()
           .setColor(Colors.Error)
-          .setDescription(t(LanguageKeys.Commands.Moderation.Errors.durationTooLong));
+          .setDescription(
+            t(LanguageKeys.Commands.Moderation.Errors.durationTooLong),
+          );
 
-        await this.reply(interaction, { embeds: [embed] }, { type: PomeloReplyType.Error });
+        await this.reply(
+          interaction,
+          { embeds: [embed] },
+          { type: PomeloReplyType.Error },
+        );
         return;
       }
 
@@ -150,13 +168,24 @@ export class MuteCommand extends CommandUtils.PomeloSubcommand {
         const t = await fetchT(interaction);
         const embed = new EmbedUtils.EmbedConstructor()
           .setColor(Colors.Error)
-          .setDescription(t(LanguageKeys.Commands.Moderation.Errors.targetNotInGuild));
+          .setDescription(
+            t(LanguageKeys.Commands.Moderation.Errors.targetNotInGuild),
+          );
 
-        await this.reply(interaction, { embeds: [embed] }, { type: PomeloReplyType.Error });
+        await this.reply(
+          interaction,
+          { embeds: [embed] },
+          { type: PomeloReplyType.Error },
+        );
         return;
       }
 
-      await this.executeMute(interaction, member, durationMs, reason ?? undefined);
+      await this.executeMute(
+        interaction,
+        member,
+        durationMs,
+        reason ?? undefined,
+      );
     } else if (subcommand === "unmute") {
       const user = interaction.options.getUser("user", true);
       const reason = interaction.options.getString("reason");
@@ -166,9 +195,15 @@ export class MuteCommand extends CommandUtils.PomeloSubcommand {
         const t = await fetchT(interaction);
         const embed = new EmbedUtils.EmbedConstructor()
           .setColor(Colors.Error)
-          .setDescription(t(LanguageKeys.Commands.Moderation.Errors.targetNotInGuild));
+          .setDescription(
+            t(LanguageKeys.Commands.Moderation.Errors.targetNotInGuild),
+          );
 
-        await this.reply(interaction, { embeds: [embed] }, { type: PomeloReplyType.Error });
+        await this.reply(
+          interaction,
+          { embeds: [embed] },
+          { type: PomeloReplyType.Error },
+        );
         return;
       }
 
@@ -177,6 +212,7 @@ export class MuteCommand extends CommandUtils.PomeloSubcommand {
   }
 
   public override async messageRun(message: Message, args: Args) {
+    const t = await fetchT(message);
     const sub = await args.pick("string").catch(() => "mute");
 
     if (sub === "unmute") {
@@ -184,7 +220,9 @@ export class MuteCommand extends CommandUtils.PomeloSubcommand {
       const reason = await args.rest("string").catch(() => null);
       const member = message.guild?.members.cache.get(user.id);
       if (!member) {
-        await message.reply("I couldn't find that user in this server.");
+        await message.reply(
+          t(LanguageKeys.Commands.Moderation.Errors.targetNotInGuild),
+        );
         return;
       }
       await this.executeUnmute(message, member, reason ?? undefined);
@@ -194,14 +232,22 @@ export class MuteCommand extends CommandUtils.PomeloSubcommand {
       const reason = await args.rest("string").catch(() => null);
 
       const durationMs = ms(durationStr);
-      if (typeof durationMs !== "number" || isNaN(durationMs) || durationMs > MAX_MUTE_DURATION) {
-        await message.reply("That duration is too long. The maximum is 28 days.");
+      if (
+        typeof durationMs !== "number" ||
+        isNaN(durationMs) ||
+        durationMs > MAX_MUTE_DURATION
+      ) {
+        await message.reply(
+          t(LanguageKeys.Commands.Moderation.Errors.durationTooLong),
+        );
         return;
       }
 
       const member = message.guild?.members.cache.get(user.id);
       if (!member) {
-        await message.reply("I couldn't find that user in this server.");
+        await message.reply(
+          t(LanguageKeys.Commands.Moderation.Errors.targetNotInGuild),
+        );
         return;
       }
 
@@ -219,50 +265,89 @@ export class MuteCommand extends CommandUtils.PomeloSubcommand {
     const guild = target.guild;
     if (!guild) return;
 
-    const moderator = target.member instanceof GuildMember ? target.member : null;
+    const moderator =
+      target.member instanceof GuildMember ? target.member : null;
     if (!moderator) return;
 
-    const result = await modActionService.mute(guild, moderator, member, duration, reason);
+    const result = await modActionService.mute(
+      guild,
+      moderator,
+      member,
+      duration,
+      reason,
+    );
 
     if (!result.success) {
       const embed = new EmbedUtils.EmbedConstructor()
         .setColor(Colors.Error)
-        .setDescription(t(LanguageKeys.Commands.Moderation.Errors.hierarchyTooLow));
+        .setDescription(
+          t(LanguageKeys.Commands.Moderation.Errors.hierarchyTooLow),
+        );
 
-      await this.reply(target, { embeds: [embed] }, { type: PomeloReplyType.Error });
+      await this.reply(
+        target,
+        { embeds: [embed] },
+        { type: PomeloReplyType.Error },
+      );
       return;
     }
 
     const durationDisplay = this.formatMs(duration);
-    const desc = reason
-      ? t(LanguageKeys.Commands.Moderation.Mute.descWithReason, { user: member.user.tag, duration: durationDisplay, reason })
-      : t(LanguageKeys.Commands.Moderation.Mute.desc, { user: member.user.tag, duration: durationDisplay });
-
-    const dmLine = result.dmSent
-      ? t(LanguageKeys.Commands.Moderation.Mute.dmSent)
-      : t(LanguageKeys.Commands.Moderation.Mute.dmNotSent);
-
     const embed = new EmbedUtils.EmbedConstructor()
       .setColor(Colors.Success)
-      .setDescription(`${desc}\n${dmLine}`);
+      .setTitle(t(LanguageKeys.Commands.Moderation.Mute.title))
+      .setDescription(
+        t(LanguageKeys.Commands.Moderation.Mute.desc, {
+          user: userMention(member.user),
+        }),
+      )
+      .addFields(
+        {
+          name: t(LanguageKeys.Commands.Moderation.Fields.duration),
+          value: durationDisplay,
+          inline: true,
+        },
+        ...(reason
+          ? [
+              {
+                name: t(LanguageKeys.Commands.Moderation.Fields.reason),
+                value: reason,
+                inline: false,
+              },
+            ]
+          : []),
+        {
+          name: t(LanguageKeys.Commands.Moderation.Fields.dm),
+          value: result.dmSent
+            ? t(LanguageKeys.Commands.Moderation.Mute.dmSent)
+            : t(LanguageKeys.Commands.Moderation.Mute.dmNotSent),
+          inline: true,
+        },
+      );
 
     const guildId = target.guildId ?? target.guild.id;
-    const moderatorId = target instanceof Message ? target.author.id : target.user.id;
+    const moderatorId =
+      target instanceof Message ? target.author.id : target.user.id;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     const channelId = target.channelId ?? target.channel?.id;
-    const quickActions = guildId && channelId
-      ? await buildQuickActionRow({
-          guildId,
-          moderatorId,
-          targetId: member.id,
-          channelId,
-          executedAction: "mute",
-          t,
-        })
-      : { row: null };
+    const quickActions =
+      guildId && channelId
+        ? await buildQuickActionRow({
+            guildId,
+            moderatorId,
+            targetId: member.id,
+            channelId,
+            executedAction: "mute",
+            t,
+          })
+        : { row: null };
 
     await this.reply(
       target,
-      { embeds: [embed], ...(quickActions.row ? { components: [quickActions.row] } : {}) },
+      {
+        embeds: [embed],
+        ...(quickActions.row ? { components: [quickActions.row] } : {}),
+      },
       { type: PomeloReplyType.Success },
     );
   }
@@ -276,35 +361,63 @@ export class MuteCommand extends CommandUtils.PomeloSubcommand {
     const guild = target.guild;
     if (!guild) return;
 
-    const moderator = target.member instanceof GuildMember ? target.member : null;
+    const moderator =
+      target.member instanceof GuildMember ? target.member : null;
     if (!moderator) return;
 
-    const result = await modActionService.unmute(guild, moderator, member, reason);
+    const result = await modActionService.unmute(
+      guild,
+      moderator,
+      member,
+      reason,
+    );
 
     if (!result.success) {
       const embed = new EmbedUtils.EmbedConstructor()
         .setColor(Colors.Error)
-        .setDescription(t(LanguageKeys.Commands.Moderation.Errors.hierarchyTooLow));
+        .setDescription(
+          t(LanguageKeys.Commands.Moderation.Errors.hierarchyTooLow),
+        );
 
-      await this.reply(target, { embeds: [embed] }, { type: PomeloReplyType.Error });
+      await this.reply(
+        target,
+        { embeds: [embed] },
+        { type: PomeloReplyType.Error },
+      );
       return;
     }
 
-    const desc = reason
-      ? t(LanguageKeys.Commands.Moderation.Unmute.descWithReason, { user: member.user.tag, reason })
-      : t(LanguageKeys.Commands.Moderation.Unmute.desc, { user: member.user.tag });
-
     const embed = new EmbedUtils.EmbedConstructor()
       .setColor(Colors.Success)
-      .setDescription(desc);
+      .setTitle(t(LanguageKeys.Commands.Moderation.Unmute.title))
+      .setDescription(
+        t(LanguageKeys.Commands.Moderation.Unmute.desc, {
+          user: userMention(member.user),
+        }),
+      )
+      .addFields(
+        ...(reason
+          ? [
+              {
+                name: t(LanguageKeys.Commands.Moderation.Fields.reason),
+                value: reason,
+                inline: false,
+              },
+            ]
+          : []),
+      );
 
-    await this.reply(target, { embeds: [embed] }, { type: PomeloReplyType.Success });
+    await this.reply(
+      target,
+      { embeds: [embed] },
+      { type: PomeloReplyType.Success },
+    );
   }
 
   private formatMs(ms: number): string {
     const days = Math.floor(ms / 86400000);
     const hours = Math.floor((ms % 86400000) / 3600000);
-    if (days > 0) return `${days}d ${hours}h`;
-    return `${hours}h`;
+    if (days > 0) return `${days.toString()}d ${hours.toString()}h`;
+    return `${hours.toString()}h`;
   }
 }
