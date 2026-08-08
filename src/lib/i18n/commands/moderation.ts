@@ -71,9 +71,7 @@ export default {
       "commands/moderation:mute.reasonFieldDescription",
     ),
     title: T("commands/moderation:mute.title"),
-    desc: FT<{ user: string; duration: string }>(
-      "commands/moderation:mute.desc",
-    ),
+    desc: FT<{ user: string }>("commands/moderation:mute.desc"),
     dmSent: T("commands/moderation:mute.dmSent"),
     dmNotSent: T("commands/moderation:mute.dmNotSent"),
   },
