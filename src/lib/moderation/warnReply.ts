@@ -20,7 +20,13 @@ import {
   PomeloReplyType,
   type PomeloReplyOptions,
 } from "../../utilities/commandUtils.js";
+import { userMention } from "../helpers/stringUtils.js";
 import { modActionService } from "./actions.js";
+import {
+  punishmentLabel,
+  warnCountDescKey,
+  warnHistoryFieldValue,
+} from "./actionEmbed.js";
 import { buildQuickActionRow } from "./quickActionRow.js";
 import type { WarnActionResult, WarnLevel } from "./types.js";
 import {
@@ -31,7 +37,6 @@ import {
 import {
   WARN_LEVEL_FEATURE,
   WARN_LEVEL_SESSION_TTL_SECONDS,
-  punishmentResultLine,
   type WarnLevelSessionData,
 } from "./levelConfirm.js";
 
@@ -67,56 +72,152 @@ export async function handleWarnResult(
     const embed = new EmbedUtils.EmbedConstructor()
       .setColor(Colors.Error)
       .setDescription(t(errorKey));
-    await host.reply(target, { embeds: [embed] }, { type: PomeloReplyType.Error });
+    await host.reply(
+      target,
+      { embeds: [embed] },
+      { type: PomeloReplyType.Error },
+    );
     return;
   }
 
-  const activeCount = await modActionService.getActiveWarnCount(target.guildId!, member.id);
-  const lines: string[] = [
-    t(LanguageKeys.Commands.Moderation.Warn.desc, {
-      user: member.user.tag,
-      amount: String(result.warnCount),
-    }),
-    t(LanguageKeys.Commands.Moderation.Warn.warnedCount, { count: activeCount }),
-  ];
+  const user = userMention(member.user);
+  const desc = t(warnCountDescKey(result.warnCount), {
+    user,
+    count: result.warnCount,
+  });
 
+  const fields: Array<{
+    name: string;
+    value: string;
+    inline: boolean;
+  }> = [];
+
+  if (result.case?.reason) {
+    fields.push({
+      name: t(LanguageKeys.Commands.Moderation.Fields.reason),
+      value: result.case.reason,
+      inline: false,
+    });
+  }
+
+  let punishmentCount = 0;
   if (result.thresholdActions?.length) {
     for (const ta of result.thresholdActions) {
+      const levelNote = ` (${t(
+        LanguageKeys.Commands.Moderation.Warn.punishmentAtLevel,
+        { level: ta.level.warnCount },
+      )})`;
       if (ta.autoExecuted && ta.results) {
         for (const pr of ta.results) {
-          lines.push("Level " + String(ta.level.warnCount) + ": " + punishmentResultLine(pr, t));
+          punishmentCount++;
+          const label = punishmentLabel(pr.punishment, t);
+          fields.push({
+            name:
+              punishmentCount === 1
+                ? t(LanguageKeys.Commands.Moderation.Warn.punishment)
+                : t(LanguageKeys.Commands.Moderation.Warn.punishmentN, {
+                    n: punishmentCount,
+                  }),
+            value: pr.success
+              ? `${label} ✅${levelNote}`
+              : `${label} ❌${levelNote}`,
+            inline: false,
+          });
         }
       } else if (ta.error) {
-        lines.push("❌ Level " + String(ta.level.warnCount) + ": " + ta.error);
+        for (const p of ta.level.punishments) {
+          punishmentCount++;
+          fields.push({
+            name:
+              punishmentCount === 1
+                ? t(LanguageKeys.Commands.Moderation.Warn.punishment)
+                : t(LanguageKeys.Commands.Moderation.Warn.punishmentN, {
+                    n: punishmentCount,
+                  }),
+            value: `${punishmentLabel(p, t)} ❌${levelNote}`,
+            inline: false,
+          });
+        }
       } else {
-        const requested = await requestLevelConfirmation(target, ta.level, member, t);
-        if (requested)
-          lines.push("Level " + String(ta.level.warnCount) + ": ⏳ " + t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.confirmLevelPending));
+        const requested = await requestLevelConfirmation(
+          target,
+          ta.level,
+          member,
+          t,
+        );
+        punishmentCount++;
+        fields.push({
+          name:
+            punishmentCount === 1
+              ? t(LanguageKeys.Commands.Moderation.Warn.punishment)
+              : t(LanguageKeys.Commands.Moderation.Warn.punishmentN, {
+                  n: punishmentCount,
+                }),
+          value: requested
+            ? `${ta.level.punishments
+                .map((p) => punishmentLabel(p, t))
+                .join(", ")} ⏳ ${t(
+                LanguageKeys.Commands.Moderation.Warn.punishmentWaiting,
+              )}${levelNote}`
+            : `${ta.level.punishments
+                .map((p) => punishmentLabel(p, t))
+                .join(", ")} ❌${levelNote}`,
+          inline: false,
+        });
       }
     }
   }
 
+  fields.push({
+    name: t(LanguageKeys.Commands.Moderation.Fields.dm),
+    value: result.dmSent
+      ? t(LanguageKeys.Commands.Moderation.Kick.dmSent)
+      : t(LanguageKeys.Commands.Moderation.Kick.dmNotSent),
+    inline: true,
+  });
+
+  const historyGuildId = target.guildId ?? target.guild?.id;
+  if (historyGuildId) {
+    const history = await modActionService.getWarnHistory(
+      historyGuildId,
+      member.id,
+    );
+    fields.push({
+      name: t(LanguageKeys.Commands.Moderation.Warn.historyField),
+      value: warnHistoryFieldValue(history, t),
+      inline: false,
+    });
+  }
+
   const embed = new EmbedUtils.EmbedConstructor()
     .setColor(Colors.Success)
-    .setDescription(lines.join("\n"));
+    .setTitle(t(LanguageKeys.Commands.Moderation.Warn.title))
+    .setDescription(desc)
+    .addFields(fields);
 
   const guildId = target.guildId ?? target.guild?.id;
-  const moderatorId = target instanceof Message ? target.author.id : target.user.id;
+  const moderatorId =
+    target instanceof Message ? target.author.id : target.user.id;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- pre-existing conditional on partially-typed target union
   const channelId = target.channelId ?? target.channel?.id;
-  const quickActions = guildId && channelId
-    ? await buildQuickActionRow({
-        guildId,
-        moderatorId,
-        targetId: member.id,
-        channelId,
-        executedAction: "warn",
-        t,
-      })
-    : { row: null };
+  const quickActions =
+    guildId && channelId
+      ? await buildQuickActionRow({
+          guildId,
+          moderatorId,
+          targetId: member.id,
+          channelId,
+          executedAction: "warn",
+          t,
+        })
+      : { row: null };
 
   await host.reply(
     target,
-    { embeds: [embed], ...(quickActions.row ? { components: [quickActions.row] } : {}) },
+    {
+      embeds: [embed],
+      ...(quickActions.row ? { components: [quickActions.row] } : {}),
+    },
     { type: PomeloReplyType.Success },
   );
 }
@@ -142,13 +243,29 @@ async function requestLevelConfirmation(
 
   const punishmentsSummary = level.punishments
     .map((p) => {
-      if (p.type === "mute") return t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.punishmentMute);
+      if (p.type === "mute")
+        return t(
+          LanguageKeys.Commands.Moderation.WarnSettings.Quickstart
+            .punishmentMute,
+        );
       if (p.type === "ban")
         return p.duration
-          ? t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.punishmentBan)
-          : t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.punishmentBanPerm);
-      if (p.type === "kick") return t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.punishmentKick);
-      return t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.punishmentRole);
+          ? t(
+              LanguageKeys.Commands.Moderation.WarnSettings.Quickstart
+                .punishmentBan,
+            )
+          : t(
+              LanguageKeys.Commands.Moderation.WarnSettings.Quickstart
+                .punishmentBanPerm,
+            );
+      if (p.type === "kick")
+        return t(
+          LanguageKeys.Commands.Moderation.WarnSettings.Quickstart
+            .punishmentKick,
+        );
+      return t(
+        LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.punishmentRole,
+      );
     })
     .join(", ");
 
@@ -172,17 +289,38 @@ async function requestLevelConfirmation(
     .setAccentColor(Colors.Warning)
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        "### " + t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.confirmLevelTitle, { level: level.warnCount }) + "\n" + t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.confirmLevelDesc, { punishments: punishmentsSummary }),
+        "### " +
+          t(
+            LanguageKeys.Commands.Moderation.WarnSettings.Quickstart
+              .confirmLevelTitle,
+            { level: level.warnCount },
+          ) +
+          "\n" +
+          t(
+            LanguageKeys.Commands.Moderation.WarnSettings.Quickstart
+              .confirmLevelDesc,
+            { punishments: punishmentsSummary },
+          ),
       ),
     );
   const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(createComponentId(WARN_LEVEL_FEATURE, sessionId, "confirm"))
-      .setLabel(t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.confirmLevelConfirm))
+      .setLabel(
+        t(
+          LanguageKeys.Commands.Moderation.WarnSettings.Quickstart
+            .confirmLevelConfirm,
+        ),
+      )
       .setStyle(ButtonStyle.Success),
     new ButtonBuilder()
       .setCustomId(createComponentId(WARN_LEVEL_FEATURE, sessionId, "cancel"))
-      .setLabel(t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.confirmLevelCancel))
+      .setLabel(
+        t(
+          LanguageKeys.Commands.Moderation.WarnSettings.Quickstart
+            .confirmLevelCancel,
+        ),
+      )
       .setStyle(ButtonStyle.Secondary),
   );
 
