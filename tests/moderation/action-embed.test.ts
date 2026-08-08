@@ -8,8 +8,21 @@ import {
   warnHistoryFieldValue,
 } from "../../src/lib/moderation/actionEmbed.js";
 import type { WarnHistory } from "../../src/lib/moderation/types.js";
+import moderation from "../../src/languages/en-US/commands/moderation.json" with { type: "json" };
 
-const fakeT = ((key: string) => key) as unknown as TFunction;
+const fakeT = ((key: string, options?: Record<string, unknown>) => {
+  const path = key.replace("commands/moderation:", "").split(".");
+  let value: unknown = moderation;
+  for (const part of path) {
+    if (value && typeof value === "object" && part in value)
+      value = (value as Record<string, unknown>)[part];
+    else return key;
+  }
+  if (typeof value !== "string") return key;
+  return value.replace(/\{\{(\w+)\}\}/g, (_, name: string) =>
+    String(options?.[name] ?? ""),
+  );
+}) as unknown as TFunction;
 
 test("userMention returns a mention with the username in parentheses", () => {
   expect(userMention({ id: "695228246966534255", username: "kdv_" })).toBe(
@@ -35,20 +48,14 @@ test("warnCountDescKey maps 1/2/3 to once/twice/thrice and 4+ to times", () => {
 
 test("punishmentLabel resolves the right key per punishment type", () => {
   expect(punishmentLabel({ type: "mute", duration: 3_600_000 }, fakeT)).toBe(
-    "commands/moderation:warn.punishmentMuteFor",
+    "Mute for 1h",
   );
-  expect(punishmentLabel({ type: "kick" }, fakeT)).toBe(
-    "commands/moderation:warnSettings.quickstart.punishmentKick",
-  );
+  expect(punishmentLabel({ type: "kick" }, fakeT)).toBe("Kick");
   expect(punishmentLabel({ type: "ban", duration: 604_800_000 }, fakeT)).toBe(
-    "commands/moderation:warn.punishmentBanFor",
+    "Ban for 7d",
   );
-  expect(punishmentLabel({ type: "ban" }, fakeT)).toBe(
-    "commands/moderation:warnSettings.quickstart.punishmentBanPerm",
-  );
-  expect(punishmentLabel({ type: "role", roleId: "1" }, fakeT)).toBe(
-    "commands/moderation:warnSettings.quickstart.punishmentRole",
-  );
+  expect(punishmentLabel({ type: "ban" }, fakeT)).toBe("Permanent ban");
+  expect(punishmentLabel({ type: "role", roleId: "1" }, fakeT)).toBe("Role");
 });
 
 test("warnHistoryFieldValue renders counts plus one line per recent warn", () => {
@@ -62,13 +69,8 @@ test("warnHistoryFieldValue renders counts plus one line per recent warn", () =>
     ],
   };
   const lines = warnHistoryFieldValue(history, fakeT).split("\n");
-  expect(lines[0]).toBe(LanguageKeys.Commands.Moderation.Warn.historyCounts);
+  expect(lines[0]).toBe("**2** active · **1** expired · **3** total");
   expect(lines).toHaveLength(3);
-  expect(lines[1]).toContain(
-    LanguageKeys.Commands.Moderation.Warn.historyEntry,
-  );
-  expect(lines[2]).toContain(
-    LanguageKeys.Commands.Moderation.Warn.historyEntryNoExpiry,
-  );
-  expect(lines[2]).toContain(LanguageKeys.Commands.Moderation.Fields.noReason);
+  expect(lines[1]).toContain("#12 — spam (expires <t:1700000100:R>)");
+  expect(lines[2]).toContain("#8 — No reason");
 });

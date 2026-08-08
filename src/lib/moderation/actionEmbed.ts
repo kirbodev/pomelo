@@ -2,6 +2,7 @@ import type { TFunction } from "@sapphire/plugin-i18next";
 import { LanguageKeys } from "../i18n/languageKeys.js";
 import type { WarnHistory, WarnPunishment } from "./types.js";
 import ms from "../helpers/ms.js";
+import { convertToDiscordTimestamp } from "../helpers/timestamp.js";
 
 export type WarnCountDescKey =
   | typeof LanguageKeys.Commands.Moderation.Warn.desc
@@ -66,7 +67,7 @@ export function warnHistoryFieldValue(
       total: history.total,
     }),
   ];
-  for (const entry of history.recent) {
+  for (const entry of history.recent.slice(0, 3)) {
     const reason =
       entry.reason || t(LanguageKeys.Commands.Moderation.Fields.noReason);
     lines.push(
@@ -74,7 +75,7 @@ export function warnHistoryFieldValue(
         ? t(LanguageKeys.Commands.Moderation.Warn.historyEntry, {
             id: String(entry.id),
             reason,
-            expiry: `<t:${Math.floor(entry.expiresAt / 1000)}:R>`,
+            expiry: convertToDiscordTimestamp(entry.expiresAt, "R"),
           })
         : t(LanguageKeys.Commands.Moderation.Warn.historyEntryNoExpiry, {
             id: String(entry.id),
