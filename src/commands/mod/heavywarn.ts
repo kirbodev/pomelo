@@ -10,6 +10,7 @@ import { LanguageKeys } from "../../lib/i18n/languageKeys.js";
 import CommandUtils, { PomeloReplyType } from "../../utilities/commandUtils.js";
 import { getOptionLocalizations } from "../../lib/i18n/utils.js";
 import { modActionService } from "../../lib/moderation/actions.js";
+import { handleWarnResult } from "../../lib/moderation/warnReply.js";
 import EmbedUtils from "../../utilities/embedUtils.js";
 import { Colors } from "../../lib/colors.js";
 
@@ -62,7 +63,9 @@ export class HeavywarnCommand extends CommandUtils.ModCommand {
     );
   }
 
-  public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+  public override async chatInputRun(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
     const user = interaction.options.getUser("user", true);
     const reason = interaction.options.getString("reason");
 
@@ -74,31 +77,30 @@ export class HeavywarnCommand extends CommandUtils.ModCommand {
     const member = guild.members.cache.get(user.id);
     if (!member) {
       const t = await fetchT(interaction);
-      const embed = new EmbedUtils.EmbedConstructor().setColor(Colors.Error).setDescription(t(LanguageKeys.Commands.Moderation.Errors.targetNotInGuild));
-      return this.reply(interaction, { embeds: [embed] }, { type: PomeloReplyType.Error });
+      const embed = new EmbedUtils.EmbedConstructor()
+        .setColor(Colors.Error)
+        .setDescription(
+          t(LanguageKeys.Commands.Moderation.Errors.targetNotInGuild),
+        );
+      return this.reply(
+        interaction,
+        { embeds: [embed] },
+        { type: PomeloReplyType.Error },
+      );
     }
 
-    const moderator = interaction.member instanceof GuildMember ? interaction.member : null;
+    const moderator =
+      interaction.member instanceof GuildMember ? interaction.member : null;
     if (!moderator) return;
 
-    const result = await modActionService.warn(guild, moderator, member, reason ?? undefined, 2);
+    const result = await modActionService.warn(
+      guild,
+      moderator,
+      member,
+      reason ?? undefined,
+      2,
+    );
 
-    if (!result.success) {
-      const t = await fetchT(interaction);
-      const embed = new EmbedUtils.EmbedConstructor().setColor(Colors.Error).setDescription(t(LanguageKeys.Commands.Moderation.Errors.hierarchyTooLow));
-      return this.reply(interaction, { embeds: [embed] }, { type: PomeloReplyType.Error });
-    }
-
-    const t = await fetchT(interaction);
-    const activeCount = await modActionService.getActiveWarnCount(guild.id, member.id);
-    const countText = `User now has ${activeCount} active warn(s).`;
-
-    const embed = new EmbedUtils.EmbedConstructor()
-      .setColor(Colors.Success)
-      .setDescription(
-        t(LanguageKeys.Commands.Moderation.Warn.desc, { user: user.tag, amount: "2" }) + "\n" + countText,
-      );
-
-    return this.reply(interaction, { embeds: [embed] }, { type: PomeloReplyType.Success });
+    await handleWarnResult(this, interaction, result, member);
   }
 }
