@@ -234,14 +234,6 @@ export class BanCommand extends CommandUtils.PomeloSubcommand {
     const fetched = guild.members.cache.get(user.id);
     if (fetched) targetMember = fetched;
 
-    const deleteMessageDays: 0 | 86400 | 259200 | 604800 | undefined =
-      deleteMessageSeconds === 0 ||
-      deleteMessageSeconds === 86400 ||
-      deleteMessageSeconds === 259200 ||
-      deleteMessageSeconds === 604800
-        ? deleteMessageSeconds
-        : undefined;
-
     const result = await modActionService.ban(
       guild,
       moderator,
@@ -249,7 +241,9 @@ export class BanCommand extends CommandUtils.PomeloSubcommand {
       reason,
       {
         duration,
-        ...(deleteMessageDays !== undefined ? { deleteMessageDays } : {}),
+        ...(deleteMessageSeconds !== undefined && deleteMessageSeconds > 0
+          ? { deleteMessageDays: deleteMessageSeconds }
+          : {}),
       },
     );
 

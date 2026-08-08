@@ -106,7 +106,7 @@ export type WarnActionResult = ModActionResult & {
 export type ModActionOptions = {
   reason?: string;
   duration?: number;
-  deleteMessageDays?: 0 | 86400 | 259200 | 604800;
+  deleteMessageDays?: 0 | 3600 | 21600 | 86400 | 259200 | 604800;
 };
 
 // Quick Actions (POM-57)
