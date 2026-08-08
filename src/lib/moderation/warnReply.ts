@@ -134,7 +134,9 @@ export async function handleWarnResult(
                 : t(LanguageKeys.Commands.Moderation.Warn.punishmentN, {
                     n: punishmentCount,
                   }),
-            value: `${punishmentLabel(p, t)} ❌${levelNote}`,
+            value: `${punishmentLabel(p, t)} ❌${levelNote}${
+              ta.error ? ` (${ta.error})` : ""
+            }`,
             inline: false,
           });
         }

@@ -1921,7 +1921,7 @@ export class ModActionService {
     duration?: number,
   ): Promise<ModCase> {
     const now = Date.now();
-    const [counter] = await db
+    const [counter] = await this.database
       .insert(caseCounters)
       .values({
         guildId,
@@ -1939,7 +1939,7 @@ export class ModActionService {
         caseNumber: sql<number>`${caseCounters.nextCaseNumber} - 1`,
       });
 
-    const [caseEntry] = await db
+    const [caseEntry] = await this.database
       .insert(modCases)
       .values({
         guildId,
