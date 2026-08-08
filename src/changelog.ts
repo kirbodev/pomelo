@@ -1,5 +1,10 @@
 export default [
   {
+    version: "1.2.0",
+    changes: ["Restyled moderation action result embeds for a consistent look"],
+    date: "2026-08-08",
+  },
+  {
     version: "1.1.0",
     changes: ["Added /feedback to report bugs or suggest features"],
     date: "2026-06-26",
