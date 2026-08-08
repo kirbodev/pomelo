@@ -1,5 +1,5 @@
 import chokidar from "chokidar";
-import { kill, restart, start } from "./retrystart.js";
+import { restart, start, stop } from "./retrystart.js";
 import "dotenv/config";
 
 const watcher = chokidar.watch("src/**/*", {
@@ -19,17 +19,18 @@ await fetch(`http://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`).catch(
   }
 );
 
+let restartTimer;
 watcher.once("ready", () => {
+  start();
   watcher.on("all", () => {
-    restart();
+    clearTimeout(restartTimer);
+    restartTimer = setTimeout(() => restart(), 100);
   });
 });
 
-["SIGINT", "SIGTERM", "SIGHUP", "SIGQUIT", "SIGBREAK", "SIGKILL"].forEach(
-  (signal) => {
-    process.on(signal, () => {
-      kill();
-      process.exit();
-    });
-  }
-);
+["SIGINT", "SIGTERM", "SIGHUP", "SIGQUIT", "SIGBREAK"].forEach((signal) => {
+  process.on(signal, () => {
+    stop();
+    process.exit(0);
+  });
+});

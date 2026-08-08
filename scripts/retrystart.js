@@ -1,42 +1,69 @@
 import cp from "child_process";
-import EventEmitter from "events";
+import { execSync } from "child_process";
 
-const restartEvent = new EventEmitter();
+const script = process.argv.find((arg) => arg.startsWith("--script="))?.split("=")[1] ?? "start";
 
-export function start(script) {
-  script ||= "start:full";
+let child = null;
+let restarting = false;
+
+function build() {
+  console.log("Building");
+  const result = cp.spawnSync("bun", ["run", "build"], { stdio: "inherit" });
+  return result.status === 0;
+}
+
+function launch() {
+  if (!build()) {
+    console.error("Build failed, the last server will be restarted on the next change");
+    return;
+  }
   console.log(`Starting ${script}`);
-  const ch = cp.spawn("bun", ["run", script], {
-    stdio: "inherit",
-  });
-  // on error, restart
-  ch.once("exit", (_, signal) => {
+  const spawned = cp.spawn("bun", ["run", script], { stdio: "inherit" });
+  child = spawned;
+  spawned.once("exit", (code, signal) => {
+    if (child !== spawned) return;
+    child = null;
     if (signal === "SIGINT") return;
-    restartEvent.emit("restart");
-  });
-  restartEvent.once("restart", () => {
-    restartEvent.removeAllListeners("restart");
-    console.log(`Restarting ${script}`);
-    kill(ch);
-    start(script);
+    console.log(`Server exited with code ${code}, restarting`);
+    restart();
   });
 }
 
-start(process.argv.find((arg) => arg.startsWith("--script="))?.split("=")[1]);
+export function start() {
+  if (child || restarting) return;
+  launch();
+}
 
 export function restart() {
-  restartEvent.emit("restart");
+  if (restarting) return;
+  restarting = true;
+  try {
+    kill();
+    launch();
+  } finally {
+    restarting = false;
+  }
 }
 
-/**
- *
- * @param {cp.ChildProcess} child
- */
-export function kill(child) {
-  if (child) {
-    child.kill("SIGINT");
-    console.log(
-      child.killed ? "Killed child process" : "Failed to kill child process"
-    );
+export function stop() {
+  kill();
+}
+
+export function kill() {
+  if (!child) return;
+  const spawned = child;
+  child = null;
+  if (process.platform === "win32") {
+    try {
+      execSync(`taskkill /pid ${spawned.pid} /T /F`, { stdio: "ignore" });
+      console.log("Killed child process tree");
+    } catch {
+      console.log("Child process was already gone");
+    }
+  } else {
+    spawned.kill("SIGTERM");
+    setTimeout(() => {
+      if (spawned.exitCode === null) spawned.kill("SIGKILL");
+    }, 3000);
   }
 }
