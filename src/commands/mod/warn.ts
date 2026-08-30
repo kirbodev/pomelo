@@ -1,4 +1,4 @@
-import { Args, Command } from "@sapphire/framework";
+import { Command } from "@sapphire/framework";
 import { applyLocalizedBuilder } from "@sapphire/plugin-i18next";
 import {
   ApplicationIntegrationType,
@@ -52,18 +52,37 @@ export class WarnCommand extends CommandUtils.ModCommand {
         .setDescription(this.description)
         .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
         .addUserOption((option) =>
-          option.setName(userLocs.englishName).setNameLocalizations(userLocs.names).setDescription(userLocs.englishDescription).setDescriptionLocalizations(userLocs.descriptions).setRequired(true),
+          option
+            .setName(userLocs.englishName)
+            .setNameLocalizations(userLocs.names)
+            .setDescription(userLocs.englishDescription)
+            .setDescriptionLocalizations(userLocs.descriptions)
+            .setRequired(true),
         )
         .addStringOption((option) =>
-          option.setName(reasonLocs.englishName).setNameLocalizations(reasonLocs.names).setDescription(reasonLocs.englishDescription).setDescriptionLocalizations(reasonLocs.descriptions).setRequired(false),
+          option
+            .setName(reasonLocs.englishName)
+            .setNameLocalizations(reasonLocs.names)
+            .setDescription(reasonLocs.englishDescription)
+            .setDescriptionLocalizations(reasonLocs.descriptions)
+            .setRequired(false),
         )
         .addIntegerOption((option) =>
-          option.setName(amountLocs.englishName).setNameLocalizations(amountLocs.names).setDescription(amountLocs.englishDescription).setDescriptionLocalizations(amountLocs.descriptions).setRequired(false).setMinValue(1).setMaxValue(10),
+          option
+            .setName(amountLocs.englishName)
+            .setNameLocalizations(amountLocs.names)
+            .setDescription(amountLocs.englishDescription)
+            .setDescriptionLocalizations(amountLocs.descriptions)
+            .setRequired(false)
+            .setMinValue(1)
+            .setMaxValue(10),
         ),
     );
   }
 
-  public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+  public override async chatInputRun(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const user = interaction.options.getUser("user", true);
@@ -73,17 +92,32 @@ export class WarnCommand extends CommandUtils.ModCommand {
 
     if (!member) {
       const t = await fetchT(interaction);
-      const embed = new EmbedUtils.EmbedConstructor().setColor(Colors.Error).setDescription(t(LanguageKeys.Commands.Moderation.Errors.targetNotInGuild));
-      await this.reply(interaction, { embeds: [embed] }, { type: PomeloReplyType.Error });
+      const embed = new EmbedUtils.EmbedConstructor()
+        .setColor(Colors.Error)
+        .setDescription(
+          t(LanguageKeys.Commands.Moderation.Errors.targetNotInGuild),
+        );
+      await this.reply(
+        interaction,
+        { embeds: [embed] },
+        { type: PomeloReplyType.Error },
+      );
     }
 
-    const moderator = interaction.member instanceof GuildMember ? interaction.member : null;
+    const moderator =
+      interaction.member instanceof GuildMember ? interaction.member : null;
     if (!moderator || !interaction.guild || !member) return;
-    const result = await modActionService.warn(interaction.guild, moderator, member, reason ?? undefined, amount);
+    const result = await modActionService.warn(
+      interaction.guild,
+      moderator,
+      member,
+      reason ?? undefined,
+      amount,
+    );
     await handleWarnResult(this, interaction, result, member);
   }
 
-  public override async messageRun(message: Message, _args: Args) {
+  public override async messageRun(message: Message) {
     await message.reply("Use the slash command /warn.");
   }
 }

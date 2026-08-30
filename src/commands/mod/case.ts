@@ -15,7 +15,7 @@ import EmbedUtils from "../../utilities/embedUtils.js";
 import ComponentUtils from "../../utilities/componentUtils.js";
 import { db } from "../../db/index.js";
 import { caseNotes } from "../../db/schema.js";
-import { eq, count } from "drizzle-orm";
+import { and, eq, count } from "drizzle-orm";
 import type { ActionType } from "../../lib/moderation/types.js";
 import { userMention } from "../../lib/helpers/stringUtils.js";
 
@@ -141,7 +141,9 @@ export class CaseCommand extends CommandUtils.ModCommand {
         const [result] = await db
           .select({ c: count() })
           .from(caseNotes)
-          .where(eq(caseNotes.caseId, c.id));
+          .where(
+            and(eq(caseNotes.caseId, c.id), eq(caseNotes.guildId, guildId)),
+          );
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         noteCounts.set(c.id, result.c ?? 0);
       }

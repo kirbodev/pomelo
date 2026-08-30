@@ -25,7 +25,6 @@ import {
   createComponentId,
   parseComponentId,
   getComponentSession,
-  saveComponentSession,
   deleteComponentSession,
   replyInteractionExpired,
   replyWrongTarget,
@@ -38,11 +37,21 @@ import EmbedUtils from "../utilities/embedUtils.js";
 
 const QA_WIZARD_FEATURE = "qa-wiz";
 const QA_TRIGGERS_FEATURE = "qa-triggers";
-const WIZARD_TTL = 900;
-const TRIGGERS_TTL = 300;
 const MAX_SUBACTIONS = 5;
-const SINGLE_USE_TYPES = new Set<SubActionType>(["mute", "sendDm", "kick", "ban"]);
-const ALL_SUB_TYPES: SubActionType[] = ["warn", "mute", "addRole", "sendDm", "kick", "ban"];
+const SINGLE_USE_TYPES = new Set<SubActionType>([
+  "mute",
+  "sendDm",
+  "kick",
+  "ban",
+]);
+const ALL_SUB_TYPES: SubActionType[] = [
+  "warn",
+  "mute",
+  "addRole",
+  "sendDm",
+  "kick",
+  "ban",
+];
 
 const TriggersDraftSchema = z.object({
   userId: z.string(),
@@ -86,31 +95,51 @@ const SUBACTION_TYPE_KEYS: Record<string, string> = {
 function availableSubTypes(subactions: SubAction[]): SubActionType[] {
   if (subactions.length >= MAX_SUBACTIONS) return [];
   const last = subactions[subactions.length - 1];
-  if (last && (last.type === "kick" || last.type === "ban")) return [];
+  if (subactions.length > 0 && (last.type === "kick" || last.type === "ban"))
+    return [];
   const existing = new Set(subactions.map((s) => s.type));
-  return ALL_SUB_TYPES.filter((t) => !SINGLE_USE_TYPES.has(t) || !existing.has(t));
+  return ALL_SUB_TYPES.filter(
+    (t) => !SINGLE_USE_TYPES.has(t) || !existing.has(t),
+  );
 }
 
 function subactionLine(sub: SubAction, t: (key: string) => string): string {
   const label = t(SUBACTION_TYPE_KEYS[sub.type] ?? sub.type);
   switch (sub.type) {
-    case "warn": return `${label} (${sub.warnAmount ?? 1}x${sub.warnReason ? `, ${sub.warnReason}` : ""})`;
+    case "warn":
+      return `${label} (${String(sub.warnAmount ?? 1)}x${sub.warnReason ? `, ${sub.warnReason}` : ""})`;
     case "mute": {
       if (!sub.muteDuration) return label;
       const mins = Math.round(sub.muteDuration / 60000);
-      const dur = mins >= 1440 ? `${Math.round(mins / 1440)}d` : mins >= 60 ? `${Math.round(mins / 60)}h` : `${mins}m`;
+      const dur =
+        mins >= 1440
+          ? `${String(Math.round(mins / 1440))}d`
+          : mins >= 60
+            ? `${String(Math.round(mins / 60))}h`
+            : `${String(mins)}m`;
       return `${label} (${dur})`;
     }
-    case "addRole": return `${label} (<@&${sub.roleId}>)`;
-    case "sendDm": return label;
-    case "kick": return `${label}${sub.kickReason ? ` (${sub.kickReason})` : ""}`;
+    case "addRole":
+      return sub.roleId ? `${label} (<@&${sub.roleId}>)` : label;
+    case "sendDm":
+      return label;
+    case "kick":
+      return `${label}${sub.kickReason ? ` (${sub.kickReason})` : ""}`;
     case "ban": {
       const dur = sub.banDuration
-        ? (() => { const m = Math.round(sub.banDuration / 60000); return m >= 1440 ? `${Math.round(m / 1440)}d` : m >= 60 ? `${Math.round(m / 60)}h` : `${m}m`; })()
+        ? (() => {
+            const m = Math.round(sub.banDuration / 60000);
+            return m >= 1440
+              ? `${String(Math.round(m / 1440))}d`
+              : m >= 60
+                ? `${String(Math.round(m / 60))}h`
+                : `${String(m)}m`;
+          })()
         : "permanent";
       return `${label} (${dur})`;
     }
-    default: return label;
+    default:
+      return label;
   }
 }
 
@@ -133,8 +162,18 @@ export class QuickActionsAddFlowHandler extends InteractionHandler {
 
     parts = parseComponentId(QA_TRIGGERS_FEATURE, interaction.customId);
     if (parts && parts.length === 2) {
-      if (parts[1] === "continue") return this.some({ route: "triggersContinue", userId: parts[0], sessionId: "" });
-      if (parts[1] === "cancel") return this.some({ route: "triggersCancel", userId: parts[0], sessionId: "" });
+      if (parts[1] === "continue")
+        return this.some({
+          route: "triggersContinue",
+          userId: parts[0],
+          sessionId: "",
+        });
+      if (parts[1] === "cancel")
+        return this.some({
+          route: "triggersCancel",
+          userId: parts[0],
+          sessionId: "",
+        });
     }
 
     parts = parseComponentId(QA_WIZARD_FEATURE, interaction.customId);
@@ -153,13 +192,20 @@ export class QuickActionsAddFlowHandler extends InteractionHandler {
     parsed: { route: string; userId: string; sessionId: string },
   ): Promise<void> {
     switch (parsed.route) {
-      case "start": return this.handleStart(interaction, parsed.userId);
-      case "triggersContinue": return this.handleTriggersContinue(interaction, parsed.userId);
-      case "triggersCancel": return this.handleTriggersCancel(interaction, parsed.userId);
-      case "addSub": return this.handleAddSub(interaction, parsed.sessionId);
-      case "back": return this.handleBack(interaction, parsed.sessionId);
-      case "done": return this.handleDone(interaction, parsed.sessionId);
-      case "cancel": return this.handleCancel(interaction, parsed.sessionId);
+      case "start":
+        return this.handleStart(interaction, parsed.userId);
+      case "triggersContinue":
+        return this.handleTriggersContinue(interaction, parsed.userId);
+      case "triggersCancel":
+        return this.handleTriggersCancel(interaction, parsed.userId);
+      case "addSub":
+        return this.handleAddSub(interaction, parsed.sessionId);
+      case "back":
+        return this.handleBack(interaction, parsed.sessionId);
+      case "done":
+        return this.handleDone(interaction, parsed.sessionId);
+      case "cancel":
+        return this.handleCancel(interaction, parsed.sessionId);
     }
   }
 
@@ -176,10 +222,18 @@ export class QuickActionsAddFlowHandler extends InteractionHandler {
       .setCustomId(createComponentId(QA_TRIGGERS_FEATURE, userId, "select"))
       .setMinValues(1)
       .setMaxValues(2)
-      .setPlaceholder(t(LanguageKeys.Commands.Moderation.QuickActions.triggersPlaceholder))
+      .setPlaceholder(
+        t(LanguageKeys.Commands.Moderation.QuickActions.triggersPlaceholder),
+      )
       .addOptions([
-        { label: t(LanguageKeys.Commands.Moderation.QuickActions.mute), value: "mute" },
-        { label: t(LanguageKeys.Commands.Moderation.QuickActions.warn), value: "warn" },
+        {
+          label: t(LanguageKeys.Commands.Moderation.QuickActions.mute),
+          value: "mute",
+        },
+        {
+          label: t(LanguageKeys.Commands.Moderation.QuickActions.warn),
+          value: "warn",
+        },
       ]);
 
     const continueBtn = new ButtonBuilder()
@@ -204,24 +258,39 @@ export class QuickActionsAddFlowHandler extends InteractionHandler {
       components: [
         ctr,
         new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select),
-        new ActionRowBuilder<ButtonBuilder>().addComponents(continueBtn, cancelBtn),
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          continueBtn,
+          cancelBtn,
+        ),
       ],
       flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
     });
   }
 
-  private async handleTriggersContinue(interaction: ButtonInteraction, userId: string) {
+  private async handleTriggersContinue(
+    interaction: ButtonInteraction,
+    userId: string,
+  ) {
     if (interaction.user.id !== userId) return replyWrongTarget(interaction);
     const guildId = interaction.guildId;
     if (!guildId) return replyInteractionExpired(interaction);
 
-    const triggersDraft = await getComponentSession(QA_TRIGGERS_FEATURE, userId, TriggersDraftSchema);
+    const triggersDraft = await getComponentSession(
+      QA_TRIGGERS_FEATURE,
+      userId,
+      TriggersDraftSchema,
+    );
     if (!triggersDraft || triggersDraft.guildId !== guildId) {
       const t = await fetchT(interaction);
       const embed = new EmbedUtils.EmbedConstructor()
         .setColor(Colors.Warning)
-        .setDescription(t(LanguageKeys.Commands.Moderation.QuickActions.selectTriggersFirst));
-      await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+        .setDescription(
+          t(LanguageKeys.Commands.Moderation.QuickActions.selectTriggersFirst),
+        );
+      await interaction.reply({
+        embeds: [embed],
+        flags: MessageFlags.Ephemeral,
+      });
       return;
     }
 
@@ -229,14 +298,25 @@ export class QuickActionsAddFlowHandler extends InteractionHandler {
 
     const t = await fetchT(interaction);
     const modal = new ModalBuilder()
-      .setCustomId(`qa-name-modal:${userId}:${triggersDraft.triggers.join(",")}`)
-      .setTitle(t(LanguageKeys.Commands.Moderation.QuickActions.wizardNameTitle))
+      .setCustomId(
+        `qa-name-modal:${userId}:${triggersDraft.triggers.join(",")}`,
+      )
+      .setTitle(
+        t(LanguageKeys.Commands.Moderation.QuickActions.wizardNameTitle),
+      )
       .addComponents(
         new ActionRowBuilder<TextInputBuilder>().addComponents(
           new TextInputBuilder()
             .setCustomId("label")
-            .setLabel(t(LanguageKeys.Commands.Moderation.QuickActions.actionLabelLabel))
-            .setPlaceholder(t(LanguageKeys.Commands.Moderation.QuickActions.customActionNamePlaceholder))
+            .setLabel(
+              t(LanguageKeys.Commands.Moderation.QuickActions.actionLabelLabel),
+            )
+            .setPlaceholder(
+              t(
+                LanguageKeys.Commands.Moderation.QuickActions
+                  .customActionNamePlaceholder,
+              ),
+            )
             .setStyle(TextInputStyle.Short)
             .setMinLength(1)
             .setMaxLength(80)
@@ -247,22 +327,35 @@ export class QuickActionsAddFlowHandler extends InteractionHandler {
     await interaction.showModal(modal);
   }
 
-  private async handleTriggersCancel(interaction: ButtonInteraction, userId: string) {
+  private async handleTriggersCancel(
+    interaction: ButtonInteraction,
+    userId: string,
+  ) {
     if (interaction.user.id !== userId) return replyWrongTarget(interaction);
     await deleteComponentSession(QA_TRIGGERS_FEATURE, userId);
     const t = await fetchT(interaction);
     const ctr = new ContainerBuilder()
       .setAccentColor(Colors.Warning)
       .addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(t(LanguageKeys.Commands.Moderation.QuickActions.wizardCancelled)),
+        new TextDisplayBuilder().setContent(
+          t(LanguageKeys.Commands.Moderation.QuickActions.wizardCancelled),
+        ),
       );
     await interaction.update({ components: [ctr] });
   }
 
-  private async handleAddSub(interaction: ButtonInteraction, sessionId: string) {
-    const session = await getComponentSession(QA_WIZARD_FEATURE, sessionId, WizardSessionSchema);
+  private async handleAddSub(
+    interaction: ButtonInteraction,
+    sessionId: string,
+  ) {
+    const session = await getComponentSession(
+      QA_WIZARD_FEATURE,
+      sessionId,
+      WizardSessionSchema,
+    );
     if (!session) return replyInteractionExpired(interaction);
-    if (interaction.user.id !== session.userId) return replyWrongTarget(interaction);
+    if (interaction.user.id !== session.userId)
+      return replyWrongTarget(interaction);
 
     const t = await fetchT(interaction);
     const available = availableSubTypes(session.draft.subactions);
@@ -270,7 +363,9 @@ export class QuickActionsAddFlowHandler extends InteractionHandler {
 
     const select = new StringSelectMenuBuilder()
       .setCustomId(createComponentId(QA_WIZARD_FEATURE, sessionId, "selectSub"))
-      .setPlaceholder(t(LanguageKeys.Commands.Moderation.QuickActions.selectSubactionType))
+      .setPlaceholder(
+        t(LanguageKeys.Commands.Moderation.QuickActions.selectSubactionType),
+      )
       .setMinValues(1)
       .setMaxValues(1)
       .addOptions(
@@ -303,17 +398,27 @@ export class QuickActionsAddFlowHandler extends InteractionHandler {
   }
 
   private async handleBack(interaction: ButtonInteraction, sessionId: string) {
-    const session = await getComponentSession(QA_WIZARD_FEATURE, sessionId, WizardSessionSchema);
+    const session = await getComponentSession(
+      QA_WIZARD_FEATURE,
+      sessionId,
+      WizardSessionSchema,
+    );
     if (!session) return replyInteractionExpired(interaction);
-    if (interaction.user.id !== session.userId) return replyWrongTarget(interaction);
+    if (interaction.user.id !== session.userId)
+      return replyWrongTarget(interaction);
 
     await this.showBuildStep(interaction, session, sessionId);
   }
 
   private async handleDone(interaction: ButtonInteraction, sessionId: string) {
-    const session = await getComponentSession(QA_WIZARD_FEATURE, sessionId, WizardSessionSchema);
+    const session = await getComponentSession(
+      QA_WIZARD_FEATURE,
+      sessionId,
+      WizardSessionSchema,
+    );
     if (!session) return replyInteractionExpired(interaction);
-    if (interaction.user.id !== session.userId) return replyWrongTarget(interaction);
+    if (interaction.user.id !== session.userId)
+      return replyWrongTarget(interaction);
     const guildId = interaction.guildId;
     if (!guildId) return replyInteractionExpired(interaction);
 
@@ -325,7 +430,10 @@ export class QuickActionsAddFlowHandler extends InteractionHandler {
         .setAccentColor(Colors.Error)
         .addTextDisplayComponents(
           new TextDisplayBuilder().setContent(
-            t(LanguageKeys.Commands.Moderation.QuickActions.needAtLeastOneSubaction),
+            t(
+              LanguageKeys.Commands.Moderation.QuickActions
+                .needAtLeastOneSubaction,
+            ),
           ),
         );
       await interaction.reply({
@@ -377,13 +485,18 @@ export class QuickActionsAddFlowHandler extends InteractionHandler {
     await interaction.update({ components: [ctr] });
   }
 
-  private async handleCancel(interaction: ButtonInteraction, sessionId: string) {
+  private async handleCancel(
+    interaction: ButtonInteraction,
+    sessionId: string,
+  ) {
     await deleteComponentSession(QA_WIZARD_FEATURE, sessionId);
     const t = await fetchT(interaction);
     const ctr = new ContainerBuilder()
       .setAccentColor(Colors.Warning)
       .addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(t(LanguageKeys.Commands.Moderation.QuickActions.wizardCancelled)),
+        new TextDisplayBuilder().setContent(
+          t(LanguageKeys.Commands.Moderation.QuickActions.wizardCancelled),
+        ),
       );
     await interaction.update({ components: [ctr] });
   }
@@ -396,12 +509,21 @@ export class QuickActionsAddFlowHandler extends InteractionHandler {
     const t = await fetchT(interaction);
     const { draft } = session;
 
-    const subLines = draft.subactions.length > 0
-      ? draft.subactions.map((s, i) => `${i + 1}. ${subactionLine(s as SubAction, t)}`).join("\n")
-      : t(LanguageKeys.Commands.Moderation.QuickActions.noSubactionsYet);
+    const subLines =
+      draft.subactions.length > 0
+        ? draft.subactions
+            .map(
+              (s, i) => `${String(i + 1)}. ${subactionLine(s as SubAction, t)}`,
+            )
+            .join("\n")
+        : t(LanguageKeys.Commands.Moderation.QuickActions.noSubactionsYet);
 
     const triggersStr = draft.triggers
-      .map((tr) => tr === "mute" ? t(LanguageKeys.Commands.Moderation.QuickActions.mute) : t(LanguageKeys.Commands.Moderation.QuickActions.warn))
+      .map((tr) =>
+        tr === "mute"
+          ? t(LanguageKeys.Commands.Moderation.QuickActions.mute)
+          : t(LanguageKeys.Commands.Moderation.QuickActions.warn),
+      )
       .join(", ");
 
     const ctr = new ContainerBuilder()
@@ -426,8 +548,12 @@ export class QuickActionsAddFlowHandler extends InteractionHandler {
     if (available.length > 0) {
       buttons.push(
         new ButtonBuilder()
-          .setCustomId(createComponentId(QA_WIZARD_FEATURE, sessionId, "addSub"))
-          .setLabel(t(LanguageKeys.Commands.Moderation.QuickActions.addSubaction))
+          .setCustomId(
+            createComponentId(QA_WIZARD_FEATURE, sessionId, "addSub"),
+          )
+          .setLabel(
+            t(LanguageKeys.Commands.Moderation.QuickActions.addSubaction),
+          )
           .setStyle(ButtonStyle.Primary),
       );
     }

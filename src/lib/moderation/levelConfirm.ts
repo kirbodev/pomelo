@@ -15,6 +15,7 @@ export const WarnLevelSession = z.object({
   messageId: z.string(),
   moderatorId: z.string(),
   targetId: z.string(),
+  caseId: z.number(),
   reason: z.string().optional(),
   level: z.object({
     warnCount: z.number(),

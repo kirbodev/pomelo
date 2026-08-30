@@ -919,6 +919,9 @@ export default {
     warnSettingsNotConfigured: T(
       "commands/moderation:errors.warnSettingsNotConfigured",
     ),
+    warnLimitExceeded: FT<{ maxWarns: number }>(
+      "commands/moderation:errors.warnLimitExceeded",
+    ),
     caseNotFound: T("commands/moderation:errors.caseNotFound"),
     warnAlreadyRevoked: T("commands/moderation:errors.warnAlreadyRevoked"),
     cannotActionSelf: T("commands/moderation:errors.cannotActionSelf"),

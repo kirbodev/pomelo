@@ -683,7 +683,7 @@ export class SettingsCommand extends CommandUtils.PomeloSubcommand {
           setting.selectType === ComponentType.ChannelSelect
         )
           updatedValue = updatedValue
-            ? this.makeIdReadable(updatedValue.toString(), "channel")
+            ? this.makeIdReadable(String(updatedValue), "channel")
             : updatedValue;
         const embed = this.createSettingEmbed(
           setting.name,
@@ -763,7 +763,7 @@ export class SettingsCommand extends CommandUtils.PomeloSubcommand {
         field.cb(value as boolean);
       } else if (field.type === "text" || field.type === "select") {
         if (value === undefined) return null;
-        field.cb(value.toString());
+        field.cb(String(value));
       }
     }
 

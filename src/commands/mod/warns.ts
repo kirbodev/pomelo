@@ -303,11 +303,17 @@ export class WarnsCommand extends CommandUtils.PomeloSubcommand {
       );
     } else if (subcommand === "remove") {
       const caseId = interaction.options.getInteger("case-id", true);
+      const guildId = interaction.guildId;
+      if (!guildId) return;
       const moderator =
         interaction.member instanceof GuildMember ? interaction.member : null;
       if (!moderator) return;
       const t = await fetchT(interaction);
-      const result = await modActionService.unwarn(caseId, moderator.id);
+      const result = await modActionService.unwarn(
+        caseId,
+        guildId,
+        moderator.id,
+      );
 
       if (!result.success) {
         const errText =

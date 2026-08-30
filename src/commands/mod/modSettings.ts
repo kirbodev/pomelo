@@ -33,9 +33,14 @@ const formatDurationHours = (ms: number): string => {
   return days > 0 ? `${String(days)}d` : `${String(hours)}h`;
 };
 
-const PRESET_KEYS = ["lemomeme", "recommended", "progressive", "strictStrike"] as const;
+const PRESET_KEYS = [
+  "lemomeme",
+  "recommended",
+  "progressive",
+  "strictStrike",
+] as const;
 
-function presetOption(key: typeof PRESET_KEYS[number], t: TFunction) {
+function presetOption(key: (typeof PRESET_KEYS)[number], t: TFunction) {
   const base = LanguageKeys.Commands.Moderation.WarnSettings;
   const labelKey =
     key === "lemomeme"
@@ -330,9 +335,12 @@ export class ModSettingsCommand extends CommandUtils.PomeloSubcommand {
     const guildId = interaction.guildId;
     if (!guildId) return;
 
-    const settings = await this.container.redis.jsonGet(guildId, "GuildSettings");
+    const settings = await this.container.redis.jsonGet(
+      guildId,
+      "GuildSettings",
+    );
     const qa = settings?.quickActions ?? { actions: [] };
-    const actions = qa.actions ?? [];
+    const actions = qa.actions;
 
     const subactionTypeLabel = (type: string): string => {
       const keyMap: Record<string, string> = {
@@ -346,48 +354,93 @@ export class ModSettingsCommand extends CommandUtils.PomeloSubcommand {
       return t(keyMap[type] ?? type);
     };
 
-    const subactionDetail = (sub: { type: string; warnAmount?: number; muteDuration?: number; roleId?: string; dmMessage?: string; kickReason?: string; banReason?: string; banDuration?: number }): string => {
+    const subactionDetail = (sub: {
+      type: string;
+      warnAmount?: number;
+      muteDuration?: number;
+      roleId?: string;
+      dmMessage?: string;
+      kickReason?: string;
+      banReason?: string;
+      banDuration?: number;
+    }): string => {
       switch (sub.type) {
-        case "warn": return ` (${sub.warnAmount ?? 1}x)`;
+        case "warn":
+          return ` (${String(sub.warnAmount ?? 1)}x)`;
         case "mute": {
           if (!sub.muteDuration) return "";
           const mins = Math.round(sub.muteDuration / 60000);
-          if (mins >= 1440) return ` (${Math.round(mins / 1440)}d)`;
-          if (mins >= 60) return ` (${Math.round(mins / 60)}h)`;
-          return ` (${mins}m)`;
+          if (mins >= 1440) return ` (${String(Math.round(mins / 1440))}d)`;
+          if (mins >= 60) return ` (${String(Math.round(mins / 60))}h)`;
+          return ` (${String(mins)}m)`;
         }
-        case "addRole": return sub.roleId ? ` (<@&${sub.roleId}>)` : "";
-        case "sendDm": return "";
-        case "kick": return sub.kickReason ? ` (${sub.kickReason})` : "";
+        case "addRole":
+          return sub.roleId ? ` (<@&${sub.roleId}>)` : "";
+        case "sendDm":
+          return "";
+        case "kick":
+          return sub.kickReason ? ` (${sub.kickReason})` : "";
         case "ban": {
           const parts: string[] = [];
           if (sub.banDuration) {
             const mins = Math.round(sub.banDuration / 60000);
-            if (mins >= 1440) parts.push(`${Math.round(mins / 1440)}d`);
-            else if (mins >= 60) parts.push(`${Math.round(mins / 60)}h`);
-            else parts.push(`${mins}m`);
+            if (mins >= 1440) parts.push(`${String(Math.round(mins / 1440))}d`);
+            else if (mins >= 60)
+              parts.push(`${String(Math.round(mins / 60))}h`);
+            else parts.push(`${String(mins)}m`);
           } else {
             parts.push("perm");
           }
           return ` (${parts.join(", ")})`;
         }
-        default: return "";
+        default:
+          return "";
       }
     };
 
     const triggerLabel = (triggers: string[]): string =>
-      triggers.map((tr) => {
-        if (tr === "mute") return t(LanguageKeys.Commands.Moderation.QuickActions.mute);
-        if (tr === "warn") return t(LanguageKeys.Commands.Moderation.QuickActions.warn);
-        return tr;
-      }).join(", ");
+      triggers
+        .map((tr) => {
+          if (tr === "mute")
+            return t(LanguageKeys.Commands.Moderation.QuickActions.mute);
+          if (tr === "warn")
+            return t(LanguageKeys.Commands.Moderation.QuickActions.warn);
+          return tr;
+        })
+        .join(", ");
 
-    const actionLines = actions.length > 0
-      ? actions.map((qa: { id: string; label: string; triggers: string[]; subactions: { type: string; warnAmount?: number; muteDuration?: number; roleId?: string; dmMessage?: string; kickReason?: string; banReason?: string; banDuration?: number }[] }, i: number) => {
-          const subs = qa.subactions.map((s) => `${subactionTypeLabel(s.type)}${subactionDetail(s)}`).join(" → ");
-          return `${i + 1}. **${qa.label}** — ${triggerLabel(qa.triggers)}\n   ${subs}`;
-        }).join("\n\n")
-      : t(LanguageKeys.Commands.Moderation.QuickActions.noActions);
+    const actionLines =
+      actions.length > 0
+        ? actions
+            .map(
+              (
+                qa: {
+                  id: string;
+                  label: string;
+                  triggers: string[];
+                  subactions: {
+                    type: string;
+                    warnAmount?: number;
+                    muteDuration?: number;
+                    roleId?: string;
+                    dmMessage?: string;
+                    kickReason?: string;
+                    banReason?: string;
+                    banDuration?: number;
+                  }[];
+                },
+                i: number,
+              ) => {
+                const subs = qa.subactions
+                  .map(
+                    (s) => `${subactionTypeLabel(s.type)}${subactionDetail(s)}`,
+                  )
+                  .join(" → ");
+                return `${String(i + 1)}. **${qa.label}** — ${triggerLabel(qa.triggers)}\n   ${subs}`;
+              },
+            )
+            .join("\n\n")
+        : t(LanguageKeys.Commands.Moderation.QuickActions.noActions);
 
     const textContent = [
       `# ${t(LanguageKeys.Commands.Moderation.QuickActions.configTitle)}`,
@@ -396,7 +449,9 @@ export class ModSettingsCommand extends CommandUtils.PomeloSubcommand {
 
     const container = new ContainerBuilder()
       .setAccentColor(Colors.Info)
-      .addTextDisplayComponents(new TextDisplayBuilder().setContent(textContent));
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(textContent),
+      );
 
     const components: (
       | ContainerBuilder
@@ -421,7 +476,9 @@ export class ModSettingsCommand extends CommandUtils.PomeloSubcommand {
           })),
         );
       components.push(
-        new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(removeSelect),
+        new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+          removeSelect,
+        ),
       );
     }
 

@@ -1,14 +1,26 @@
-import { InteractionHandler, InteractionHandlerTypes } from "@sapphire/framework";
+import {
+  InteractionHandler,
+  InteractionHandlerTypes,
+} from "@sapphire/framework";
 import {
   PermissionFlagsBits,
+  type APIActionRowComponent,
+  type APIComponentInMessageActionRow,
   type Interaction,
 } from "discord.js";
-import { parseComponentId, replyInteractionExpired, replyWrongTarget } from "../lib/helpers/componentSessions.js";
+import {
+  parseComponentId,
+  replyInteractionExpired,
+  replyWrongTarget,
+} from "../lib/helpers/componentSessions.js";
 
 export const QR_SCAN_FEATURE = "qrscan";
 
 export class QrScanActionHandler extends InteractionHandler {
-  public constructor(context: InteractionHandler.LoaderContext, options: InteractionHandler.Options) {
+  public constructor(
+    context: InteractionHandler.LoaderContext,
+    options: InteractionHandler.Options,
+  ) {
     super(context, {
       ...options,
       interactionHandlerType: InteractionHandlerTypes.MessageComponent,
@@ -22,37 +34,47 @@ export class QrScanActionHandler extends InteractionHandler {
     return this.some({ targetMessageId: parts[1] });
   }
 
-  public override async run(interaction: Interaction, parsed: { targetMessageId: string }): Promise<void> {
+  public override async run(
+    interaction: Interaction,
+    parsed: { targetMessageId: string },
+  ): Promise<void> {
     if (!interaction.isMessageComponent()) return;
     if (!interaction.guildId) return replyInteractionExpired(interaction);
-    if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageMessages)) return replyWrongTarget(interaction);
+    if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageMessages))
+      return replyWrongTarget(interaction);
 
     try {
       const channel = interaction.channel;
-      if (!channel || !("messages" in channel)) return replyInteractionExpired(interaction);
+      if (!channel) return replyInteractionExpired(interaction);
 
-      const targetMessage = await (channel as any).messages.fetch(parsed.targetMessageId).catch(() => null);
+      const targetMessage = await channel.messages
+        .fetch(parsed.targetMessageId)
+        .catch(() => null);
       if (targetMessage) {
         await targetMessage.delete();
       }
 
-      const button = interaction.message.components
-        .flatMap((row) => (row as any).components ?? [])
-        .find((c: any) => c.customId === interaction.customId);
-
-      const disabledRow = {
-        components: (interaction.message.components ?? []).map((row: any) => ({
-          type: row.type,
-          components: (row.components ?? []).map((c: any) =>
-            c.customId === interaction.customId ? { ...c.toJSON(), disabled: true } : c.toJSON(),
+      const disabledRows = interaction.message.components.map((row) => {
+        const rowData =
+          row.toJSON() as APIActionRowComponent<APIComponentInMessageActionRow>;
+        return {
+          ...rowData,
+          components: rowData.components.map((component) =>
+            "custom_id" in component &&
+            component.custom_id === interaction.customId
+              ? { ...component, disabled: true }
+              : component,
           ),
-        })),
-      };
+        };
+      });
 
-      await interaction.update(disabledRow);
+      await interaction.update({ components: disabledRows });
     } catch (error) {
-      this.container.logger.error("[QRScanner] Failed to delete message via button: %s", error);
-      replyInteractionExpired(interaction);
+      this.container.logger.error(
+        "[QRScanner] Failed to delete message via button: %s",
+        error,
+      );
+      await replyInteractionExpired(interaction);
     }
   }
 }

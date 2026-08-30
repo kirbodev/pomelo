@@ -8,6 +8,9 @@ import {
   TextDisplayBuilder,
   type Interaction,
 } from "discord.js";
+import { and, eq, sql } from "drizzle-orm";
+import { db } from "../db/index.js";
+import { warns } from "../db/schema.js";
 import { Colors } from "../lib/colors.js";
 import {
   claimComponentSession,
@@ -114,6 +117,22 @@ export class WarnLevelConfirmHandler extends InteractionHandler {
       .catch(() => null);
     if (!moderator || !target) return replyInteractionExpired(interaction);
 
+    // The warn that triggered this level may have expired or been revoked
+    // while the confirmation sat in the channel; never punish a stale warn.
+    const warnRows = await db
+      .select({ id: warns.id })
+      .from(warns)
+      .where(
+        and(
+          eq(warns.caseId, session.caseId),
+          eq(warns.guildId, guild.id),
+          eq(warns.revoked, false),
+          sql`(warns.expires_at IS NULL OR warns.expires_at > ${Date.now()})`,
+        ),
+      )
+      .limit(1);
+    if (!warnRows.at(0)) return replyInteractionExpired(interaction);
+
     const claimed = await claimComponentSession(
       WARN_LEVEL_FEATURE,
       parsed.sessionId,
@@ -130,9 +149,7 @@ export class WarnLevelConfirmHandler extends InteractionHandler {
       claimed.reason,
     );
 
-    const lines = exec.results.map((result) =>
-      punishmentResultLine(result, t),
-    );
+    const lines = exec.results.map((result) => punishmentResultLine(result, t));
     await interaction
       .editReply({
         components: [

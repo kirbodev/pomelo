@@ -1,4 +1,8 @@
-import { container, InteractionHandler, InteractionHandlerTypes } from "@sapphire/framework";
+import {
+  container,
+  InteractionHandler,
+  InteractionHandlerTypes,
+} from "@sapphire/framework";
 import { fetchT } from "@sapphire/plugin-i18next";
 import type { TFunction } from "@sapphire/plugin-i18next";
 import {
@@ -13,10 +17,13 @@ import {
   type Interaction,
 } from "discord.js";
 import { Colors } from "../lib/colors.js";
-import { parseComponentId, replyInteractionExpired, replyWrongTarget } from "../lib/helpers/componentSessions.js";
+import {
+  parseComponentId,
+  replyInteractionExpired,
+  replyWrongTarget,
+} from "../lib/helpers/componentSessions.js";
 import { LanguageKeys } from "../lib/i18n/languageKeys.js";
 import { QrScanner, type QrScannerSettings } from "../db/redis/schema.js";
-import EmbedUtils from "../utilities/embedUtils.js";
 
 export const QR_QUICKSTART_FEATURE = "qrqs";
 
@@ -29,7 +36,14 @@ export interface QrQuickstartState {
   settings: QrScannerSettings;
 }
 
-export function createQrQuickstartState(overrides: Partial<QrQuickstartState> & { id: string; ownerId: string; guildId: string; messageId: string }): QrQuickstartState {
+export function createQrQuickstartState(
+  overrides: Partial<QrQuickstartState> & {
+    id: string;
+    ownerId: string;
+    guildId: string;
+    messageId: string;
+  },
+): QrQuickstartState {
   return {
     step: 0,
     settings: QrScanner.parse({
@@ -44,12 +58,21 @@ const stateKey = (id: string) => `qr-quickstart:${id}`;
 
 class QrQuickstartRepository {
   async save(state: QrQuickstartState): Promise<void> {
-    await container.redis.set(stateKey(state.id), JSON.stringify(state), "EX", 600);
+    await container.redis.set(
+      stateKey(state.id),
+      JSON.stringify(state),
+      "EX",
+      600,
+    );
   }
   async get(id: string): Promise<QrQuickstartState | null> {
     const raw = await container.redis.get(stateKey(id));
     if (!raw) return null;
-    try { return JSON.parse(raw) as QrQuickstartState; } catch { return null; }
+    try {
+      return JSON.parse(raw) as QrQuickstartState;
+    } catch {
+      return null;
+    }
   }
   async del(id: string): Promise<void> {
     await container.redis.del(stateKey(id));
@@ -70,7 +93,10 @@ function modeLabel(mode: string, t: TFunction): string {
   return t(sk.qrModeOff);
 }
 
-export function renderQrQuickstart(state: QrQuickstartState, t: TFunction): (ContainerBuilder | ActionRowBuilder<ButtonBuilder>)[] {
+export function renderQrQuickstart(
+  state: QrQuickstartState,
+  t: TFunction,
+): (ContainerBuilder | ActionRowBuilder<ButtonBuilder>)[] {
   const sk = LanguageKeys.Commands.Moderation.SecuritySettings;
   const components: (ContainerBuilder | ActionRowBuilder<ButtonBuilder>)[] = [];
   const container_ = new ContainerBuilder().setAccentColor(Colors.Info);
@@ -112,8 +138,14 @@ export function renderQrQuickstart(state: QrQuickstartState, t: TFunction): (Con
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId(`pm:${QR_QUICKSTART_FEATURE}:1:${state.id}:toggle-delete`)
-        .setLabel(`${t(sk.qrDeleteOnUnsafe)}: ${boolLabel(state.settings.unsafeAction.deleteMessage, t)}`)
-        .setStyle(state.settings.unsafeAction.deleteMessage ? ButtonStyle.Success : ButtonStyle.Secondary),
+        .setLabel(
+          `${t(sk.qrDeleteOnUnsafe)}: ${boolLabel(state.settings.unsafeAction.deleteMessage, t)}`,
+        )
+        .setStyle(
+          state.settings.unsafeAction.deleteMessage
+            ? ButtonStyle.Success
+            : ButtonStyle.Secondary,
+        ),
       new ButtonBuilder()
         .setCustomId(`pm:${QR_QUICKSTART_FEATURE}:1:${state.id}:next`)
         .setLabel(String(t(sk.qrQuickstartNext)))
@@ -159,24 +191,47 @@ export function renderQrQuickstart(state: QrQuickstartState, t: TFunction): (Con
   return components;
 }
 
-function renderModeStep(state: QrQuickstartState, t: TFunction): (ContainerBuilder | ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>)[] {
+function renderModeStep(
+  state: QrQuickstartState,
+  t: TFunction,
+): (
+  | ContainerBuilder
+  | ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>
+)[] {
   const sk = LanguageKeys.Commands.Moderation.SecuritySettings;
-  const components: (ContainerBuilder | ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>)[] = [];
+  const components: (
+    | ContainerBuilder
+    | ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>
+  )[] = [];
   const container_ = new ContainerBuilder().setAccentColor(Colors.Info);
   container_.addTextDisplayComponents(
     new TextDisplayBuilder().setContent(`# ${t(sk.qrQuickstepMode)}`),
   );
   container_.addTextDisplayComponents(
-    new TextDisplayBuilder().setContent(`**${t(sk.qrMode)}:** ${modeLabel(state.settings.mode, t)}`),
+    new TextDisplayBuilder().setContent(
+      `**${t(sk.qrMode)}:** ${modeLabel(state.settings.mode, t)}`,
+    ),
   );
 
   const modeSelect = new StringSelectMenuBuilder()
     .setCustomId(`pm:${QR_QUICKSTART_FEATURE}:1:${state.id}:set-mode`)
     .setPlaceholder(String(t(sk.qrChangeMode)))
     .addOptions([
-      { label: String(t(sk.qrModeAllowlist)), value: "allowlist", default: state.settings.mode === "allowlist" },
-      { label: String(t(sk.qrModeBlocklist)), value: "blocklist", default: state.settings.mode === "blocklist" },
-      { label: String(t(sk.qrModeOff)), value: "off", default: state.settings.mode === "off" },
+      {
+        label: String(t(sk.qrModeAllowlist)),
+        value: "allowlist",
+        default: state.settings.mode === "allowlist",
+      },
+      {
+        label: String(t(sk.qrModeBlocklist)),
+        value: "blocklist",
+        default: state.settings.mode === "blocklist",
+      },
+      {
+        label: String(t(sk.qrModeOff)),
+        value: "off",
+        default: state.settings.mode === "off",
+      },
     ]);
 
   const navRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -190,13 +245,17 @@ function renderModeStep(state: QrQuickstartState, t: TFunction): (ContainerBuild
       .setStyle(ButtonStyle.Primary),
   );
 
-  const selectRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(modeSelect);
+  const selectRow =
+    new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(modeSelect);
   components.push(container_, selectRow, navRow);
   return components;
 }
 
 export class QrQuickstartHandler extends InteractionHandler {
-  public constructor(context: InteractionHandler.LoaderContext, options: InteractionHandler.Options) {
+  public constructor(
+    context: InteractionHandler.LoaderContext,
+    options: InteractionHandler.Options,
+  ) {
     super(context, {
       ...options,
       interactionHandlerType: InteractionHandlerTypes.MessageComponent,
@@ -210,15 +269,20 @@ export class QrQuickstartHandler extends InteractionHandler {
     return this.some({ stateId: parts[0], action: parts.slice(1).join(":") });
   }
 
-  public override async run(interaction: Interaction, parsed: { stateId: string; action: string }): Promise<void> {
+  public override async run(
+    interaction: Interaction,
+    parsed: { stateId: string; action: string },
+  ): Promise<void> {
     if (!interaction.isMessageComponent()) return;
     const guildId = interaction.guildId;
     if (!guildId) return replyInteractionExpired(interaction);
-    if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) return replyWrongTarget(interaction);
+    if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild))
+      return replyWrongTarget(interaction);
 
     const state = await qrQuickstartRepository.get(parsed.stateId);
     if (!state) return replyInteractionExpired(interaction);
-    if (state.ownerId !== interaction.user.id) return replyWrongTarget(interaction);
+    if (state.ownerId !== interaction.user.id)
+      return replyWrongTarget(interaction);
 
     const t = await fetchT(interaction);
     const { action } = parsed;
@@ -230,7 +294,10 @@ export class QrQuickstartHandler extends InteractionHandler {
       await container.redis.jsonSet(guildId, "QrScanner", state.settings);
       state.step = 3;
       await qrQuickstartRepository.del(parsed.stateId);
-      void interaction.update({ components: renderQrQuickstart(state, t), flags: MessageFlags.IsComponentsV2 });
+      void interaction.update({
+        components: renderQrQuickstart(state, t),
+        flags: MessageFlags.IsComponentsV2,
+      });
       return;
     }
 
@@ -238,30 +305,46 @@ export class QrQuickstartHandler extends InteractionHandler {
       state.step = Math.max(0, state.step - 1);
       await qrQuickstartRepository.save(state);
       if (state.step === 0) {
-        void interaction.update({ components: renderModeStep(state, t), flags: MessageFlags.IsComponentsV2 });
+        void interaction.update({
+          components: renderModeStep(state, t),
+          flags: MessageFlags.IsComponentsV2,
+        });
       } else {
-        void interaction.update({ components: renderQrQuickstart(state, t), flags: MessageFlags.IsComponentsV2 });
+        void interaction.update({
+          components: renderQrQuickstart(state, t),
+          flags: MessageFlags.IsComponentsV2,
+        });
       }
       return;
     }
 
     if (action === "next") {
       if (state.step === 0) {
-        void interaction.update({ components: renderModeStep(state, t), flags: MessageFlags.IsComponentsV2 });
+        void interaction.update({
+          components: renderModeStep(state, t),
+          flags: MessageFlags.IsComponentsV2,
+        });
         return;
       }
       if (state.step === 1) {
         state.step = 2;
         await qrQuickstartRepository.save(state);
-        void interaction.update({ components: renderQrQuickstart(state, t), flags: MessageFlags.IsComponentsV2 });
+        void interaction.update({
+          components: renderQrQuickstart(state, t),
+          flags: MessageFlags.IsComponentsV2,
+        });
         return;
       }
     }
 
     if (action === "toggle-delete") {
-      state.settings.unsafeAction.deleteMessage = !state.settings.unsafeAction.deleteMessage;
+      state.settings.unsafeAction.deleteMessage =
+        !state.settings.unsafeAction.deleteMessage;
       await qrQuickstartRepository.save(state);
-      void interaction.update({ components: renderQrQuickstart(state, t), flags: MessageFlags.IsComponentsV2 });
+      void interaction.update({
+        components: renderQrQuickstart(state, t),
+        flags: MessageFlags.IsComponentsV2,
+      });
       return;
     }
 
@@ -271,7 +354,10 @@ export class QrQuickstartHandler extends InteractionHandler {
         state.settings.mode = mode;
         state.step = 1;
         await qrQuickstartRepository.save(state);
-        void interaction.update({ components: renderQrQuickstart(state, t), flags: MessageFlags.IsComponentsV2 });
+        void interaction.update({
+          components: renderQrQuickstart(state, t),
+          flags: MessageFlags.IsComponentsV2,
+        });
       }
       return;
     }
@@ -281,7 +367,10 @@ export class QrQuickstartHandler extends InteractionHandler {
       await container.redis.jsonSet(guildId, "QrScanner", state.settings);
       state.step = 3;
       await qrQuickstartRepository.del(parsed.stateId);
-      void interaction.update({ components: renderQrQuickstart(state, t), flags: MessageFlags.IsComponentsV2 });
+      void interaction.update({
+        components: renderQrQuickstart(state, t),
+        flags: MessageFlags.IsComponentsV2,
+      });
       return;
     }
 

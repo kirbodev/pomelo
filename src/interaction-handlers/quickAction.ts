@@ -1,4 +1,8 @@
-import { InteractionHandler, InteractionHandlerTypes, container } from "@sapphire/framework";
+import {
+  InteractionHandler,
+  InteractionHandlerTypes,
+  container,
+} from "@sapphire/framework";
 import type { ButtonInteraction } from "discord.js";
 import { MessageFlags } from "discord.js";
 import type { TFunction } from "@sapphire/plugin-i18next";
@@ -9,6 +13,7 @@ import {
   replyWrongTarget,
 } from "../lib/helpers/componentSessions.js";
 import { modActionService } from "../lib/moderation/actions.js";
+import type { ModActionResult } from "../lib/moderation/types.js";
 import { fetchT } from "@sapphire/plugin-i18next";
 import { LanguageKeys } from "../lib/i18n/languageKeys.js";
 import { z } from "zod";
@@ -27,7 +32,16 @@ const SubActionSchema = z.object({
   kickReason: z.string().optional(),
   banReason: z.string().optional(),
   banDuration: z.number().positive().optional(),
-  banDeleteMessageDays: z.number().optional(),
+  banDeleteMessageDays: z
+    .union([
+      z.literal(0),
+      z.literal(3600),
+      z.literal(21600),
+      z.literal(86400),
+      z.literal(259200),
+      z.literal(604800),
+    ])
+    .optional(),
 });
 
 const BuiltinSessionSchema = z.object({
@@ -53,8 +67,6 @@ const QuickActionSessionSchema = z.discriminatedUnion("kind", [
   BuiltinSessionSchema,
   CustomSessionSchema,
 ]);
-
-const BUILTIN_ACTIONS = new Set(["mute", "kick", "ban", "warn"]);
 
 const ACTION_LABEL_KEYS: Record<string, string> = {
   mute: LanguageKeys.Commands.Moderation.QuickActions.mute,
@@ -139,42 +151,105 @@ export class QuickActionHandler extends InteractionHandler {
     moderator: import("discord.js").GuildMember,
     t: TFunction,
   ): Promise<void> {
-    const guild = interaction.guild!;
-    const target = await guild.members.fetch(session.targetId).catch(() => null);
+    const guild = interaction.guild;
+    if (!guild) return replyInteractionExpired(interaction);
+    const target = await guild.members
+      .fetch(session.targetId)
+      .catch(() => null);
 
     if (!target) {
       const embed = new EmbedUtils.EmbedConstructor()
-        .setDescription(t(LanguageKeys.Commands.Moderation.QuickActions.actionFailed, { action: actionLabel(session.action, t) }))
+        .setDescription(
+          t(LanguageKeys.Commands.Moderation.QuickActions.actionFailed, {
+            action: actionLabel(session.action, t),
+          }),
+        )
         .setColor(Colors.Error);
-      await interaction.reply({ flags: MessageFlags.Ephemeral, embeds: [embed] });
+      await interaction.reply({
+        flags: MessageFlags.Ephemeral,
+        embeds: [embed],
+      });
       return;
     }
 
     try {
+      let result: ModActionResult;
       switch (session.action) {
         case "mute":
-          await modActionService.mute(guild, moderator, target, 600000, undefined);
+          result = await modActionService.mute(
+            guild,
+            moderator,
+            target,
+            600000,
+            undefined,
+          );
           break;
         case "kick":
-          await modActionService.kick(guild, moderator, target, undefined);
+          result = await modActionService.kick(
+            guild,
+            moderator,
+            target,
+            undefined,
+          );
           break;
         case "ban":
-          await modActionService.ban(guild, moderator, target, undefined, undefined);
+          result = await modActionService.ban(
+            guild,
+            moderator,
+            target,
+            undefined,
+            undefined,
+          );
           break;
         case "warn":
-          await modActionService.warn(guild, moderator, target, undefined, 1);
+          result = await modActionService.warn(
+            guild,
+            moderator,
+            target,
+            undefined,
+            1,
+          );
           break;
       }
 
+      if (!result.success) {
+        const embed = new EmbedUtils.EmbedConstructor()
+          .setDescription(
+            t(LanguageKeys.Commands.Moderation.QuickActions.actionFailed, {
+              action: actionLabel(session.action, t),
+            }),
+          )
+          .setColor(Colors.Error);
+        await interaction.reply({
+          flags: MessageFlags.Ephemeral,
+          embeds: [embed],
+        });
+        return;
+      }
+
       const embed = new EmbedUtils.EmbedConstructor()
-        .setDescription(t(LanguageKeys.Commands.Moderation.QuickActions.actionSuccess, { action: actionLabel(session.action, t) }))
+        .setDescription(
+          t(LanguageKeys.Commands.Moderation.QuickActions.actionSuccess, {
+            action: actionLabel(session.action, t),
+          }),
+        )
         .setColor(Colors.Success);
-      await interaction.reply({ flags: MessageFlags.Ephemeral, embeds: [embed] });
+      await interaction.reply({
+        flags: MessageFlags.Ephemeral,
+        embeds: [embed],
+      });
     } catch {
       const embed = new EmbedUtils.EmbedConstructor()
-        .setDescription(t(LanguageKeys.Commands.Moderation.QuickActions.actionFailed, { action: actionLabel(session.action, t) }))
+        .setDescription(
+          t(LanguageKeys.Commands.Moderation.QuickActions.actionFailed, {
+            action: actionLabel(session.action, t),
+          }),
+        )
         .setColor(Colors.Error);
-      await interaction.reply({ flags: MessageFlags.Ephemeral, embeds: [embed] });
+      await interaction.reply({
+        flags: MessageFlags.Ephemeral,
+        embeds: [embed],
+      });
     }
   }
 
@@ -184,8 +259,11 @@ export class QuickActionHandler extends InteractionHandler {
     moderator: import("discord.js").GuildMember,
     t: TFunction,
   ): Promise<void> {
-    const guild = interaction.guild!;
-    const target = await guild.members.fetch(session.targetId).catch(() => null);
+    const guild = interaction.guild;
+    if (!guild) return replyInteractionExpired(interaction);
+    const target = await guild.members
+      .fetch(session.targetId)
+      .catch(() => null);
     const results: string[] = [];
     let failed = false;
 
@@ -200,53 +278,122 @@ export class QuickActionHandler extends InteractionHandler {
 
       try {
         switch (sub.type) {
-          case "warn":
-            if (!target) { results.push(`✗ ${subactionLabel("warn", t)}`); failed = true; break; }
-            await modActionService.warn(guild, moderator, target, sub.warnReason, sub.warnAmount ?? 1);
-            results.push(`✓ ${subactionLabel("warn", t)}`);
+          case "warn": {
+            if (!target) {
+              results.push(`✗ ${subactionLabel("warn", t)}`);
+              failed = true;
+              break;
+            }
+            const result = await modActionService.warn(
+              guild,
+              moderator,
+              target,
+              sub.warnReason,
+              sub.warnAmount ?? 1,
+            );
+            if (result.success) results.push(`✓ ${subactionLabel("warn", t)}`);
+            else {
+              results.push(`✗ ${subactionLabel("warn", t)}`);
+              failed = true;
+            }
             break;
-          case "mute":
-            if (!target) { results.push(`✗ ${subactionLabel("mute", t)}`); failed = true; break; }
-            if (!sub.muteDuration) { results.push(`✗ ${subactionLabel("mute", t)}`); failed = true; break; }
-            await modActionService.mute(guild, moderator, target, sub.muteDuration, undefined);
-            results.push(`✓ ${subactionLabel("mute", t)}`);
+          }
+          case "mute": {
+            if (!target) {
+              results.push(`✗ ${subactionLabel("mute", t)}`);
+              failed = true;
+              break;
+            }
+            if (!sub.muteDuration) {
+              results.push(`✗ ${subactionLabel("mute", t)}`);
+              failed = true;
+              break;
+            }
+            const result = await modActionService.mute(
+              guild,
+              moderator,
+              target,
+              sub.muteDuration,
+              undefined,
+            );
+            if (result.success) results.push(`✓ ${subactionLabel("mute", t)}`);
+            else {
+              results.push(`✗ ${subactionLabel("mute", t)}`);
+              failed = true;
+            }
             break;
+          }
           case "addRole":
-            if (!target || !sub.roleId) { results.push(`✗ ${subactionLabel("addRole", t)}`); failed = true; break; }
+            if (!target || !sub.roleId) {
+              results.push(`✗ ${subactionLabel("addRole", t)}`);
+              failed = true;
+              break;
+            }
             await target.roles.add(sub.roleId);
             results.push(`✓ ${subactionLabel("addRole", t)}`);
             break;
           case "sendDm":
-            if (!sub.dmMessage) { results.push(`✗ ${subactionLabel("sendDm", t)}`); failed = true; break; }
+            if (!sub.dmMessage) {
+              results.push(`✗ ${subactionLabel("sendDm", t)}`);
+              failed = true;
+              break;
+            }
             try {
-              const user = target ?? await guild.client.users.fetch(session.targetId);
+              const user =
+                target ?? (await guild.client.users.fetch(session.targetId));
               await user.send(sub.dmMessage);
               results.push(`✓ ${subactionLabel("sendDm", t)}`);
             } catch {
               results.push(`✗ ${subactionLabel("sendDm", t)}`);
             }
             break;
-          case "kick":
-            if (!target) { results.push(`✗ ${subactionLabel("kick", t)}`); failed = true; break; }
-            await modActionService.kick(guild, moderator, target, sub.kickReason);
-            results.push(`✓ ${subactionLabel("kick", t)}`);
-            break;
-          case "ban":
+          case "kick": {
             if (!target) {
-              const user = await guild.client.users.fetch(session.targetId).catch(() => null);
-              if (!user) { results.push(`✗ ${subactionLabel("ban", t)}`); failed = true; break; }
-              await modActionService.ban(guild, moderator, user, sub.banReason, {
-                duration: sub.banDuration,
-                deleteMessageDays: sub.banDeleteMessageDays,
-              });
-            } else {
-              await modActionService.ban(guild, moderator, target, sub.banReason, {
-                duration: sub.banDuration,
-                deleteMessageDays: sub.banDeleteMessageDays,
-              });
+              results.push(`✗ ${subactionLabel("kick", t)}`);
+              failed = true;
+              break;
             }
-            results.push(`✓ ${subactionLabel("ban", t)}`);
+            const result = await modActionService.kick(
+              guild,
+              moderator,
+              target,
+              sub.kickReason,
+            );
+            if (result.success) results.push(`✓ ${subactionLabel("kick", t)}`);
+            else {
+              results.push(`✗ ${subactionLabel("kick", t)}`);
+              failed = true;
+            }
             break;
+          }
+          case "ban": {
+            const banTarget =
+              target ??
+              (await guild.client.users
+                .fetch(session.targetId)
+                .catch(() => null));
+            if (!banTarget) {
+              results.push(`✗ ${subactionLabel("ban", t)}`);
+              failed = true;
+              break;
+            }
+            const result = await modActionService.ban(
+              guild,
+              moderator,
+              banTarget,
+              sub.banReason,
+              {
+                duration: sub.banDuration,
+                deleteMessageDays: sub.banDeleteMessageDays,
+              },
+            );
+            if (result.success) results.push(`✓ ${subactionLabel("ban", t)}`);
+            else {
+              results.push(`✗ ${subactionLabel("ban", t)}`);
+              failed = true;
+            }
+            break;
+          }
         }
       } catch {
         results.push(`✗ ${subactionLabel(sub.type, t)}`);
@@ -257,11 +404,12 @@ export class QuickActionHandler extends InteractionHandler {
       if (sub.type === "kick" || sub.type === "ban") break;
     }
 
-    const color = failed && results.every((r) => r.startsWith("✗"))
-      ? Colors.Error
-      : failed
-        ? Colors.Warning
-        : Colors.Success;
+    const color =
+      failed && results.every((r) => r.startsWith("✗"))
+        ? Colors.Error
+        : failed
+          ? Colors.Warning
+          : Colors.Success;
 
     const embed = new EmbedUtils.EmbedConstructor()
       .setDescription(`**${session.label}**\n${results.join("\n")}`)

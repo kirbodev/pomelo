@@ -16,8 +16,12 @@ import {
   type APIInteractionGuildMember,
   Guild,
   type InteractionReplyOptions,
+  type InteractionEditReplyOptions,
+  type InteractionUpdateOptions,
   type MessageReplyOptions,
   MessageFlags,
+  MessageFlagsBitField,
+  type MessageFlagsResolvable,
   InteractionResponse,
 } from "discord.js";
 import { db } from "../db/index.js";
@@ -293,15 +297,40 @@ export default class CommandUtils extends Utility {
       pomeloOptions.type === PomeloReplyType.Sensitive;
     const replyOptions = {
       ...options,
-      flags: useEphemeral ? (options.flags ?? 0) | MessageFlags.Ephemeral : options.flags,
+      flags: useEphemeral
+        ? Number(options.flags ?? 0) | MessageFlags.Ephemeral
+        : options.flags,
     } as InteractionReplyOptions;
 
     //NOTE - Announcements should be injected here
 
-    if (interaction.deferred || interaction.replied)
-      return (await interaction.editReply(replyOptions)) as T extends Message ? Message : never;
-    if (interaction.isMessageComponent())
-      return (await interaction.update(replyOptions)) as T extends Message ? never : InteractionResponse;
+    if (interaction.deferred || interaction.replied) {
+      const editReplyOptions: InteractionEditReplyOptions = {
+        ...replyOptions,
+        flags:
+          replyOptions.flags === undefined
+            ? undefined
+            : ((MessageFlagsBitField.resolve(
+                replyOptions.flags as MessageFlagsResolvable,
+              ) &
+                (MessageFlags.SuppressEmbeds | MessageFlags.IsComponentsV2)) as
+                | MessageFlags.SuppressEmbeds
+                | MessageFlags.IsComponentsV2),
+      };
+      return (await interaction.editReply(
+        editReplyOptions,
+      )) as T extends Message ? Message : never;
+    }
+
+    if (interaction.isMessageComponent()) {
+      const updateOptions: InteractionUpdateOptions = {
+        ...replyOptions,
+        flags: undefined,
+      };
+      return (await interaction.update(updateOptions)) as T extends Message
+        ? never
+        : InteractionResponse;
+    }
 
     return (await interaction.reply(replyOptions)) as T extends Message
       ? never

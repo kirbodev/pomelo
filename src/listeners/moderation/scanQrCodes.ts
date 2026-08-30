@@ -25,7 +25,10 @@ import { Colors } from "../../lib/colors.js";
 import { LanguageKeys } from "../../lib/i18n/languageKeys.js";
 
 export class ScanQrCodesListener extends Listener {
-  public constructor(context: Listener.LoaderContext, options: Listener.Options) {
+  public constructor(
+    context: Listener.LoaderContext,
+    options: Listener.Options,
+  ) {
     super(context, {
       ...options,
       event: Events.MessageCreate,
@@ -37,17 +40,17 @@ export class ScanQrCodesListener extends Listener {
     if (!message.guild) return;
     if (!message.attachments.size) return;
 
-    const imageAttachments = message.attachments.filter((a) =>
-      a.contentType?.startsWith("image/") ?? false,
+    const imageAttachments = message.attachments.filter(
+      (a) => a.contentType?.startsWith("image/") ?? false,
     );
     if (!imageAttachments.size) return;
 
     let settings: QrScannerSettings | null;
     try {
-      settings = (await this.container.redis.jsonGet(
-        message.guildId!,
+      settings = await this.container.redis.jsonGet(
+        message.guild.id,
         "QrScanner",
-      ));
+      );
     } catch (error) {
       this.container.logger.error(
         "[QRScanner] Failed to fetch settings for guild %s: %s",
@@ -78,8 +81,6 @@ export class ScanQrCodesListener extends Listener {
     settings: QrScannerSettings,
     t: TFunction,
   ): Promise<void> {
-    if (!attachment) return;
-
     let buffer: Buffer | null;
     try {
       buffer = await downloadAttachment(attachment.url);
@@ -106,7 +107,10 @@ export class ScanQrCodesListener extends Listener {
     }
     if (!results.length) return;
 
-    const evaluations: Array<{ parsed: ParsedQrData; safety: "safe" | "unsafe" }> = [];
+    const evaluations: Array<{
+      parsed: ParsedQrData;
+      safety: "safe" | "unsafe";
+    }> = [];
     for (const result of results) {
       try {
         const parsed = parseQrData(result.raw, result.contentType);
@@ -129,7 +133,8 @@ export class ScanQrCodesListener extends Listener {
     const hasUnsafe = evaluations.some((e) => e.safety === "unsafe");
 
     if (hasUnsafe) {
-      const firstUnsafe = evaluations.find((e) => e.safety === "unsafe")!;
+      const firstUnsafe = evaluations.find((e) => e.safety === "unsafe");
+      if (!firstUnsafe) return;
       await this.handleUnsafe(firstUnsafe.parsed, message, settings, t);
     } else {
       const firstSafe = evaluations.find((e) => e.safety === "safe");
@@ -153,7 +158,8 @@ export class ScanQrCodesListener extends Listener {
         const channel = message.client.channels.cache.get(alertChannelId);
         if (channel && "send" in channel) {
           const sk = LanguageKeys.Commands.Moderation.SecuritySettings;
-          const truncated = data.raw.length > 1000 ? `${data.raw.slice(0, 1000)}…` : data.raw;
+          const truncated =
+            data.raw.length > 1000 ? `${data.raw.slice(0, 1000)}…` : data.raw;
 
           const container = new ContainerBuilder()
             .setAccentColor(Colors.Error)
@@ -162,8 +168,8 @@ export class ScanQrCodesListener extends Listener {
                 [
                   `## ⚠️ ${t(sk.qrUnsafeAlertTitle)}`,
                   "",
-                  `**${t(sk.qrUnsafeAlertAuthor)}:** ${message.author}`,
-                  `**${t(sk.qrUnsafeAlertChannel)}:** ${message.channel}`,
+                  `**${t(sk.qrUnsafeAlertAuthor)}:** ${message.author.toString()}`,
+                  `**${t(sk.qrUnsafeAlertChannel)}:** ${message.channel.toString()}`,
                   `**${t(sk.qrUnsafeAlertContentType)}:** ${data.contentType}`,
                   "",
                   "```",
@@ -173,17 +179,22 @@ export class ScanQrCodesListener extends Listener {
               ),
             );
 
-          const components: (ContainerBuilder | ActionRowBuilder<ButtonBuilder>)[] = [container];
+          const components: (
+            | ContainerBuilder
+            | ActionRowBuilder<ButtonBuilder>
+          )[] = [container];
 
           if (!settings.unsafeAction.deleteMessage) {
             const deleteBtn = new ButtonBuilder()
               .setCustomId(`pm:qrscan:1:delete:${message.id}`)
               .setLabel(String(t(sk.qrDeleteMessage)))
               .setStyle(ButtonStyle.Danger);
-            components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(deleteBtn));
+            components.push(
+              new ActionRowBuilder<ButtonBuilder>().addComponents(deleteBtn),
+            );
           }
 
-          await (channel as any).send({
+          await channel.send({
             components,
             flags: MessageFlags.IsComponentsV2,
           });
@@ -198,17 +209,25 @@ export class ScanQrCodesListener extends Listener {
 
     if (settings.unsafeAction.deleteMessage) {
       try {
-        if (message.guild?.members.me?.permissionsIn(message.channelId).has(PermissionFlagsBits.ManageMessages)) {
+        if (
+          message.guild?.members.me
+            ?.permissionsIn(message.channelId)
+            .has(PermissionFlagsBits.ManageMessages)
+        ) {
           const sk = LanguageKeys.Commands.Moderation.SecuritySettings;
           await message.delete();
 
           try {
-            const sendableChannel = message.channel as { send: (options: any) => Promise<any> };
-            const notice = await sendableChannel.send({
-              content: t(sk.qrAutoDeletedNotice, { user: message.author.toString() }),
+            if (!message.channel.isSendable()) return;
+            const notice = await message.channel.send({
+              content: t(sk.qrAutoDeletedNotice, {
+                user: message.author.toString(),
+              }),
               flags: MessageFlags.SuppressNotifications,
             });
-            setTimeout(() => { void notice.delete(); }, 8000).unref();
+            setTimeout(() => {
+              void notice.delete();
+            }, 8000).unref();
           } catch (error) {
             this.container.logger.error(
               "[QRScanner] Failed to send auto-delete notice: %s",
@@ -235,11 +254,14 @@ export class ScanQrCodesListener extends Listener {
     if (!settings.safeAction.channelId) return;
 
     try {
-      const channel = message.client.channels.cache.get(settings.safeAction.channelId);
+      const channel = message.client.channels.cache.get(
+        settings.safeAction.channelId,
+      );
       if (!channel || !("send" in channel)) return;
 
       const sk = LanguageKeys.Commands.Moderation.SecuritySettings;
-      const truncated = data.raw.length > 1000 ? `${data.raw.slice(0, 1000)}…` : data.raw;
+      const truncated =
+        data.raw.length > 1000 ? `${data.raw.slice(0, 1000)}…` : data.raw;
 
       const container = new ContainerBuilder()
         .setAccentColor(Colors.Success)
@@ -248,8 +270,8 @@ export class ScanQrCodesListener extends Listener {
             [
               `## ✅ ${t(sk.qrSafeAlertTitle)}`,
               "",
-              `**${t(sk.qrSafeAlertAuthor)}:** ${message.author}`,
-              `**${t(sk.qrSafeAlertChannel)}:** ${message.channel}`,
+              `**${t(sk.qrSafeAlertAuthor)}:** ${message.author.toString()}`,
+              `**${t(sk.qrSafeAlertChannel)}:** ${message.channel.toString()}`,
               `**${t(sk.qrSafeAlertContentType)}:** ${data.contentType}`,
               "",
               "```",
@@ -259,7 +281,7 @@ export class ScanQrCodesListener extends Listener {
           ),
         );
 
-      await (channel as any).send({
+      await channel.send({
         components: [container],
         flags: MessageFlags.IsComponentsV2,
       });

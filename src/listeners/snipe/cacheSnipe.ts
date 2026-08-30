@@ -14,11 +14,10 @@ export class CacheSnipeListener extends Listener {
   }
 
   public run(message: Message) {
-    if (message.partial) return;
     if (!message.guild) return;
     if (message.author.bot) return;
     if (message.system) return;
-    if (!message.content && message.attachments.size === 0) return;
+    if (message.content.length === 0 && message.attachments.size === 0) return;
 
     const entry: SnipeEntry = {
       content: message.content,

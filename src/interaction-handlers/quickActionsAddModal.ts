@@ -1,7 +1,6 @@
 import {
   InteractionHandler,
   InteractionHandlerTypes,
-  container,
 } from "@sapphire/framework";
 import { fetchT } from "@sapphire/plugin-i18next";
 import { z } from "zod";
@@ -39,18 +38,20 @@ const WizardSessionSchema = z.object({
   draft: z.object({
     triggers: z.array(z.string()).min(1),
     label: z.string().min(1).max(80),
-    subactions: z.array(z.object({
-      type: z.enum(["warn", "mute", "addRole", "sendDm", "kick", "ban"]),
-      warnAmount: z.number().optional(),
-      warnReason: z.string().optional(),
-      muteDuration: z.number().optional(),
-      roleId: z.string().optional(),
-      dmMessage: z.string().optional(),
-      kickReason: z.string().optional(),
-      banReason: z.string().optional(),
-      banDuration: z.number().optional(),
-      banDeleteMessageDays: z.number().optional(),
-    })),
+    subactions: z.array(
+      z.object({
+        type: z.enum(["warn", "mute", "addRole", "sendDm", "kick", "ban"]),
+        warnAmount: z.number().optional(),
+        warnReason: z.string().optional(),
+        muteDuration: z.number().optional(),
+        roleId: z.string().optional(),
+        dmMessage: z.string().optional(),
+        kickReason: z.string().optional(),
+        banReason: z.string().optional(),
+        banDuration: z.number().optional(),
+        banDeleteMessageDays: z.number().optional(),
+      }),
+    ),
   }),
 });
 
@@ -66,23 +67,40 @@ const SUBACTION_TYPE_KEYS: Record<string, string> = {
 function subactionLine(sub: SubAction, t: (key: string) => string): string {
   const label = t(SUBACTION_TYPE_KEYS[sub.type] ?? sub.type);
   switch (sub.type) {
-    case "warn": return `${label} (${sub.warnAmount ?? 1}x${sub.warnReason ? `, ${sub.warnReason}` : ""})`;
+    case "warn":
+      return `${label} (${String(sub.warnAmount ?? 1)}x${sub.warnReason ? `, ${sub.warnReason}` : ""})`;
     case "mute": {
       if (!sub.muteDuration) return label;
       const mins = Math.round(sub.muteDuration / 60000);
-      const dur = mins >= 1440 ? `${Math.round(mins / 1440)}d` : mins >= 60 ? `${Math.round(mins / 60)}h` : `${mins}m`;
+      const dur =
+        mins >= 1440
+          ? `${String(Math.round(mins / 1440))}d`
+          : mins >= 60
+            ? `${String(Math.round(mins / 60))}h`
+            : `${String(mins)}m`;
       return `${label} (${dur})`;
     }
-    case "addRole": return `${label} (<@&${sub.roleId}>)`;
-    case "sendDm": return label;
-    case "kick": return `${label}${sub.kickReason ? ` (${sub.kickReason})` : ""}`;
+    case "addRole":
+      return sub.roleId ? `${label} (<@&${sub.roleId}>)` : label;
+    case "sendDm":
+      return label;
+    case "kick":
+      return `${label}${sub.kickReason ? ` (${sub.kickReason})` : ""}`;
     case "ban": {
       const dur = sub.banDuration
-        ? (() => { const m = Math.round(sub.banDuration / 60000); return m >= 1440 ? `${Math.round(m / 1440)}d` : m >= 60 ? `${Math.round(m / 60)}h` : `${m}m`; })()
+        ? (() => {
+            const m = Math.round(sub.banDuration / 60000);
+            return m >= 1440
+              ? `${String(Math.round(m / 1440))}d`
+              : m >= 60
+                ? `${String(Math.round(m / 60))}h`
+                : `${String(m)}m`;
+          })()
         : "permanent";
       return `${label} (${dur})`;
     }
-    default: return label;
+    default:
+      return label;
   }
 }
 
@@ -123,14 +141,32 @@ export class QuickActionsAddModalHandler extends InteractionHandler {
 
   public override async run(
     interaction: Interaction,
-    parsed: { route: string; userId?: string; triggersStr?: string; sessionId?: string; subType?: string },
+    parsed: {
+      route: string;
+      userId?: string;
+      triggersStr?: string;
+      sessionId?: string;
+      subType?: string;
+    },
   ): Promise<void> {
     if (!interaction.isModalSubmit()) return;
 
     if (parsed.route === "name") {
-      await this.handleNameModal(interaction, parsed.userId!, parsed.triggersStr!);
+      if (!parsed.userId || !parsed.triggersStr)
+        return replyInteractionExpired(interaction);
+      await this.handleNameModal(
+        interaction,
+        parsed.userId,
+        parsed.triggersStr,
+      );
     } else if (parsed.route === "config") {
-      await this.handleConfigModal(interaction, parsed.sessionId!, parsed.subType! as SubActionType);
+      if (!parsed.sessionId || !parsed.subType)
+        return replyInteractionExpired(interaction);
+      await this.handleConfigModal(
+        interaction,
+        parsed.sessionId,
+        parsed.subType as SubActionType,
+      );
     }
   }
 
@@ -150,13 +186,20 @@ export class QuickActionsAddModalHandler extends InteractionHandler {
       const ctr = new ContainerBuilder()
         .setAccentColor(Colors.Error)
         .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(t(LanguageKeys.Commands.Moderation.QuickActions.invalidName)),
+          new TextDisplayBuilder().setContent(
+            t(LanguageKeys.Commands.Moderation.QuickActions.invalidName),
+          ),
         );
-      await interaction.reply({ components: [ctr], flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral });
+      await interaction.reply({
+        components: [ctr],
+        flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+      });
       return;
     }
 
-    const triggers = triggersStr.split(",").filter((t) => t === "mute" || t === "warn");
+    const triggers = triggersStr
+      .split(",")
+      .filter((t) => t === "mute" || t === "warn");
     if (triggers.length === 0) return replyInteractionExpired(interaction);
 
     const sessionId = nanoid();
@@ -171,7 +214,12 @@ export class QuickActionsAddModalHandler extends InteractionHandler {
       },
     };
 
-    await saveComponentSession(QA_WIZARD_FEATURE, sessionId, session, WIZARD_TTL);
+    await saveComponentSession(
+      QA_WIZARD_FEATURE,
+      sessionId,
+      session,
+      WIZARD_TTL,
+    );
     await this.replyBuildStep(interaction, session, sessionId, t);
   }
 
@@ -181,43 +229,65 @@ export class QuickActionsAddModalHandler extends InteractionHandler {
     subType: SubActionType,
   ) {
     if (!interaction.isModalSubmit()) return;
-    const session = await getComponentSession(QA_WIZARD_FEATURE, sessionId, WizardSessionSchema);
+    const session = await getComponentSession(
+      QA_WIZARD_FEATURE,
+      sessionId,
+      WizardSessionSchema,
+    );
     if (!session) return replyInteractionExpired(interaction);
-    if (interaction.user.id !== session.userId) return replyWrongTarget(interaction);
+    if (interaction.user.id !== session.userId)
+      return replyWrongTarget(interaction);
 
     const t = await fetchT(interaction);
 
-    const sub = this.parseSubactionFromModal(interaction, subType, t);
+    const sub = await this.parseSubactionFromModal(interaction, subType, t);
     if (!sub) return;
 
     session.draft.subactions.push(sub);
-    await saveComponentSession(QA_WIZARD_FEATURE, sessionId, session, WIZARD_TTL);
+    await saveComponentSession(
+      QA_WIZARD_FEATURE,
+      sessionId,
+      session,
+      WIZARD_TTL,
+    );
     await this.replyBuildStep(interaction, session, sessionId, t);
   }
 
-  private parseSubactionFromModal(
+  private async parseSubactionFromModal(
     interaction: Interaction,
     type: SubActionType,
     t: (key: string) => string,
-  ): SubAction | null {
+  ): Promise<SubAction | null> {
     if (!interaction.isModalSubmit()) return null;
 
     switch (type) {
       case "warn": {
-        const amountStr = interaction.fields.getTextInputValue("warnAmount").trim() ?? "1";
+        const amountStr = interaction.fields
+          .getTextInputValue("warnAmount")
+          .trim();
         const amount = parseInt(amountStr, 10);
         if (isNaN(amount) || amount < 1 || amount > 10) {
-          this.replyModalError(interaction, t(LanguageKeys.Commands.Moderation.QuickActions.invalidWarnAmount));
+          await this.replyModalError(
+            interaction,
+            t(LanguageKeys.Commands.Moderation.QuickActions.invalidWarnAmount),
+          );
           return null;
         }
-        const reason = interaction.fields.getTextInputValue("warnReason").trim() || undefined;
+        const reason =
+          interaction.fields.getTextInputValue("warnReason").trim() ||
+          undefined;
         return { type: "warn", warnAmount: amount, warnReason: reason };
       }
       case "mute": {
-        const durationStr = interaction.fields.getTextInputValue("muteDuration").trim();
+        const durationStr = interaction.fields
+          .getTextInputValue("muteDuration")
+          .trim();
         const duration = ms(durationStr);
         if (typeof duration !== "number" || isNaN(duration) || duration <= 0) {
-          this.replyModalError(interaction, t(LanguageKeys.Commands.Moderation.QuickActions.invalidDuration));
+          await this.replyModalError(
+            interaction,
+            t(LanguageKeys.Commands.Moderation.QuickActions.invalidDuration),
+          );
           return null;
         }
         return { type: "mute", muteDuration: duration };
@@ -225,26 +295,39 @@ export class QuickActionsAddModalHandler extends InteractionHandler {
       case "addRole": {
         const roleId = interaction.fields.getTextInputValue("roleId").trim();
         if (!roleId || !/^\d{17,20}$/.test(roleId)) {
-          this.replyModalError(interaction, t(LanguageKeys.Commands.Moderation.QuickActions.invalidRoleId));
+          await this.replyModalError(
+            interaction,
+            t(LanguageKeys.Commands.Moderation.QuickActions.invalidRoleId),
+          );
           return null;
         }
         return { type: "addRole", roleId };
       }
       case "sendDm": {
-        const message = interaction.fields.getTextInputValue("dmMessage").trim();
+        const message = interaction.fields
+          .getTextInputValue("dmMessage")
+          .trim();
         if (!message || message.length > 2000) {
-          this.replyModalError(interaction, t(LanguageKeys.Commands.Moderation.QuickActions.invalidDmMessage));
+          await this.replyModalError(
+            interaction,
+            t(LanguageKeys.Commands.Moderation.QuickActions.invalidDmMessage),
+          );
           return null;
         }
         return { type: "sendDm", dmMessage: message };
       }
       case "kick": {
-        const reason = interaction.fields.getTextInputValue("kickReason").trim() || undefined;
+        const reason =
+          interaction.fields.getTextInputValue("kickReason").trim() ||
+          undefined;
         return { type: "kick", kickReason: reason };
       }
       case "ban": {
-        const reason = interaction.fields.getTextInputValue("banReason").trim() || undefined;
-        const durationStr = interaction.fields.getTextInputValue("banDuration").trim();
+        const reason =
+          interaction.fields.getTextInputValue("banReason").trim() || undefined;
+        const durationStr = interaction.fields
+          .getTextInputValue("banDuration")
+          .trim();
         let duration: number | undefined;
         if (durationStr) {
           const parsed = ms(durationStr);
@@ -264,7 +347,10 @@ export class QuickActionsAddModalHandler extends InteractionHandler {
     const ctr = new ContainerBuilder()
       .setAccentColor(Colors.Error)
       .addTextDisplayComponents(new TextDisplayBuilder().setContent(message));
-    await interaction.reply({ components: [ctr], flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral });
+    await interaction.reply({
+      components: [ctr],
+      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+    });
   }
 
   private async replyBuildStep(
@@ -276,24 +362,46 @@ export class QuickActionsAddModalHandler extends InteractionHandler {
     if (!interaction.isModalSubmit()) return;
     const { draft } = session;
 
-    const subLines = draft.subactions.length > 0
-      ? draft.subactions.map((s, i) => `${i + 1}. ${subactionLine(s as SubAction, t)}`).join("\n")
-      : t(LanguageKeys.Commands.Moderation.QuickActions.noSubactionsYet);
+    const subLines =
+      draft.subactions.length > 0
+        ? draft.subactions
+            .map(
+              (s, i) => `${String(i + 1)}. ${subactionLine(s as SubAction, t)}`,
+            )
+            .join("\n")
+        : t(LanguageKeys.Commands.Moderation.QuickActions.noSubactionsYet);
 
     const triggersStr = draft.triggers
-      .map((tr) => tr === "mute" ? t(LanguageKeys.Commands.Moderation.QuickActions.mute) : t(LanguageKeys.Commands.Moderation.QuickActions.warn))
+      .map((tr) =>
+        tr === "mute"
+          ? t(LanguageKeys.Commands.Moderation.QuickActions.mute)
+          : t(LanguageKeys.Commands.Moderation.QuickActions.warn),
+      )
       .join(", ");
 
     const SINGLE_USE = new Set(["mute", "sendDm", "kick", "ban"]);
-    const ALL_TYPES = ["warn", "mute", "addRole", "sendDm", "kick", "ban"] as const;
+    const ALL_TYPES = [
+      "warn",
+      "mute",
+      "addRole",
+      "sendDm",
+      "kick",
+      "ban",
+    ] as const;
     const MAX = 5;
 
     const available = (): string[] => {
       if (draft.subactions.length >= MAX) return [];
       const last = draft.subactions[draft.subactions.length - 1];
-      if (last && (last.type === "kick" || last.type === "ban")) return [];
+      if (
+        draft.subactions.length > 0 &&
+        (last.type === "kick" || last.type === "ban")
+      )
+        return [];
       const existing = new Set(draft.subactions.map((s) => s.type));
-      return ALL_TYPES.filter((t) => !SINGLE_USE.has(t) || !existing.has(t)) as unknown as string[];
+      return ALL_TYPES.filter(
+        (t) => !SINGLE_USE.has(t) || !existing.has(t),
+      ) as unknown as string[];
     };
 
     const ctr = new ContainerBuilder()
@@ -316,8 +424,12 @@ export class QuickActionsAddModalHandler extends InteractionHandler {
     if (available().length > 0) {
       buttons.push(
         new ButtonBuilder()
-          .setCustomId(createComponentId(QA_WIZARD_FEATURE, sessionId, "addSub"))
-          .setLabel(t(LanguageKeys.Commands.Moderation.QuickActions.addSubaction))
+          .setCustomId(
+            createComponentId(QA_WIZARD_FEATURE, sessionId, "addSub"),
+          )
+          .setLabel(
+            t(LanguageKeys.Commands.Moderation.QuickActions.addSubaction),
+          )
           .setStyle(ButtonStyle.Primary),
       );
     }

@@ -68,10 +68,16 @@ export async function handleWarnResult(
     const errorKey =
       result.error === "botHierarchyTooLow"
         ? LanguageKeys.Commands.Moderation.Errors.botHierarchyTooLow
-        : LanguageKeys.Commands.Moderation.Errors.hierarchyTooLow;
+        : result.error === "warnSettingsNotConfigured"
+          ? LanguageKeys.Commands.Moderation.Errors.warnSettingsNotConfigured
+          : result.error === "warnLimitExceeded"
+            ? LanguageKeys.Commands.Moderation.Errors.warnLimitExceeded
+            : result.error === "invalidWarnAmount"
+              ? LanguageKeys.Commands.Moderation.Errors.invalidAmount
+              : LanguageKeys.Commands.Moderation.Errors.hierarchyTooLow;
     const embed = new EmbedUtils.EmbedConstructor()
       .setColor(Colors.Error)
-      .setDescription(t(errorKey));
+      .setDescription(t(errorKey, result.errorContext));
     await host.reply(
       target,
       { embeds: [embed] },
@@ -141,12 +147,15 @@ export async function handleWarnResult(
           });
         }
       } else {
-        const requested = await requestLevelConfirmation(
-          target,
-          ta.level,
-          member,
-          t,
-        );
+        const requested = result.case?.id
+          ? await requestLevelConfirmation(
+              target,
+              ta.level,
+              member,
+              t,
+              result.case.id,
+            )
+          : false;
         punishmentCount++;
         fields.push({
           name:
@@ -235,6 +244,7 @@ async function requestLevelConfirmation(
   level: WarnLevel,
   member: GuildMember,
   t: TFunction,
+  caseId: number,
 ): Promise<boolean> {
   const channel = target.channel;
   const guild = target.guild;
@@ -278,6 +288,7 @@ async function requestLevelConfirmation(
     messageId: "pending",
     moderatorId,
     targetId: member.id,
+    caseId,
     level,
   };
   await saveComponentSession(

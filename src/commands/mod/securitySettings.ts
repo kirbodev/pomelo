@@ -1,5 +1,9 @@
 import { UserError, type Command } from "@sapphire/framework";
-import { applyLocalizedBuilder, fetchT, type TFunction } from "@sapphire/plugin-i18next";
+import {
+  applyLocalizedBuilder,
+  fetchT,
+  type TFunction,
+} from "@sapphire/plugin-i18next";
 import { Subcommand } from "@sapphire/plugin-subcommands";
 import {
   ActionRowBuilder,
@@ -45,9 +49,7 @@ import type {
   PaginatedMessageActionContext,
   PaginatedMessageActionStringMenu,
 } from "@sapphire/discord.js-utilities";
-import type {
-  InteractionButtonComponentData,
-} from "discord.js";
+import type { InteractionButtonComponentData } from "discord.js";
 
 type QrSettingData =
   | {
@@ -109,14 +111,17 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
           applyLocalizedBuilder(
             sub,
             LanguageKeys.Commands.Moderation.SecuritySettings.subcommandQrName,
-            LanguageKeys.Commands.Moderation.SecuritySettings.subcommandQrDescription,
+            LanguageKeys.Commands.Moderation.SecuritySettings
+              .subcommandQrDescription,
           ).setName("qr"),
         )
         .addSubcommand((sub) =>
           applyLocalizedBuilder(
             sub,
-            LanguageKeys.Commands.Moderation.SecuritySettings.subcommandQuickstartName,
-            LanguageKeys.Commands.Moderation.SecuritySettings.subcommandQuickstartDescription,
+            LanguageKeys.Commands.Moderation.SecuritySettings
+              .subcommandQuickstartName,
+            LanguageKeys.Commands.Moderation.SecuritySettings
+              .subcommandQuickstartDescription,
           ).setName("quickstart"),
         ),
     );
@@ -142,10 +147,14 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
   private async executeQuickstart(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    const { createQrQuickstartState, renderQrQuickstart, qrQuickstartRepository } =
-      await import("../../interaction-handlers/qrQuickstart.js");
+    const {
+      createQrQuickstartState,
+      renderQrQuickstart,
+      qrQuickstartRepository,
+    } = await import("../../interaction-handlers/qrQuickstart.js");
 
-    const guildId = interaction.guildId!;
+    const guildId = interaction.guildId;
+    if (!guildId) return;
     const t = await fetchT(interaction);
 
     const state = createQrQuickstartState({
@@ -173,7 +182,8 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
   private async executeQrSettings(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    const guildId = interaction.guildId!;
+    const guildId = interaction.guildId;
+    if (!guildId) return;
     const t = await fetchT(interaction);
 
     let settings = await this.container.redis.jsonGet(guildId, "QrScanner");
@@ -192,19 +202,30 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
 
     const sk = LanguageKeys.Commands.Moderation.SecuritySettings;
 
-    const validFields = new Map<string, QrSettingData>()
-      .set("mode", {
-        name: t(sk.qrMode),
-        description: t(sk.qrDescMode),
-        type: "select",
-        selectType: ComponentType.StringSelect,
-        options: [
-          { label: t(sk.qrModeAllowlist), value: "allowlist", default: settings.mode === "allowlist" },
-          { label: t(sk.qrModeBlocklist), value: "blocklist", default: settings.mode === "blocklist" },
-          { label: t(sk.qrModeOff), value: "off", default: settings.mode === "off" },
-        ],
-        currentValue: settings.mode,
-      });
+    const validFields = new Map<string, QrSettingData>().set("mode", {
+      name: t(sk.qrMode),
+      description: t(sk.qrDescMode),
+      type: "select",
+      selectType: ComponentType.StringSelect,
+      options: [
+        {
+          label: t(sk.qrModeAllowlist),
+          value: "allowlist",
+          default: settings.mode === "allowlist",
+        },
+        {
+          label: t(sk.qrModeBlocklist),
+          value: "blocklist",
+          default: settings.mode === "blocklist",
+        },
+        {
+          label: t(sk.qrModeOff),
+          value: "off",
+          default: settings.mode === "off",
+        },
+      ],
+      currentValue: settings.mode,
+    });
 
     if (settings.mode === "blocklist") {
       validFields.set("defaultBlocklistEnabled", {
@@ -304,12 +325,18 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
             guildId,
             menu,
             setting.currentValue
-              ? { id: setting.currentValue, type: SelectMenuDefaultValueType.Channel }
+              ? {
+                  id: setting.currentValue,
+                  type: SelectMenuDefaultValueType.Channel,
+                }
               : undefined,
             setting,
           );
         } else {
-          const stringSetting = setting as Extract<QrSettingData, { type: "select"; selectType?: ComponentType.StringSelect }>;
+          const stringSetting = setting as Extract<
+            QrSettingData,
+            { type: "select"; selectType?: ComponentType.StringSelect }
+          >;
           action = this.createStringSelectMenu(
             settingKey,
             guildId,
@@ -330,11 +357,20 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
       }
 
       menu.addAsyncPageEmbed(async () => {
-        const updated = await this.container.redis.jsonGet(guildId, "QrScanner");
-        if (!updated) return this.createSettingEmbed(setting.name, setting.description, t);
+        const updated = await this.container.redis.jsonGet(
+          guildId,
+          "QrScanner",
+        );
+        if (!updated)
+          return this.createSettingEmbed(setting.name, setting.description, t);
         let updatedValue = this.getNestedValue(updated, settingKey);
-        if (setting.type === "select" && setting.selectType === ComponentType.ChannelSelect) {
-          updatedValue = updatedValue ? this.makeIdReadable(updatedValue as string, "channel") : updatedValue;
+        if (
+          setting.type === "select" &&
+          setting.selectType === ComponentType.ChannelSelect
+        ) {
+          updatedValue = updatedValue
+            ? this.makeIdReadable(updatedValue as string, "channel")
+            : updatedValue;
         }
         return this.createSettingEmbed(
           setting.name,
@@ -346,9 +382,11 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
       menu.addPageAction(action, menu.pages.length - 1);
     }
 
-    if (settings.mode === "blocklist") {
+    const settings = await this.container.redis.jsonGet(guildId, "QrScanner");
+
+    if (settings?.mode === "blocklist") {
       this.addCustomListPage(menu, guildId, t, "blocklist");
-    } else if (settings.mode === "allowlist") {
+    } else if (settings?.mode === "allowlist") {
       this.addCustomListPage(menu, guildId, t, "allowlist");
     }
 
@@ -365,14 +403,17 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
     const isBlocklist = mode === "blocklist";
     const listKey = isBlocklist ? "customBlocklist" : "customAllowlist";
     const labelKey = isBlocklist ? sk.qrCustomBlocklist : sk.qrCustomAllowlist;
-    const descKey = isBlocklist ? sk.qrDescCustomBlocklist : sk.qrDescCustomAllowlist;
+    const descKey = isBlocklist
+      ? sk.qrDescCustomBlocklist
+      : sk.qrDescCustomAllowlist;
 
     menu.addAsyncPageEmbed(async () => {
       const settings = await this.container.redis.jsonGet(guildId, "QrScanner");
       const list = settings?.[listKey] ?? [];
-      const entriesList = list.length > 0
-        ? list.map((d, i) => `${i + 1}. \`${d}\``).join("\n")
-        : t(sk.qrNoEntries);
+      const entriesList =
+        list.length > 0
+          ? list.map((d, i) => `${String(i + 1)}. \`${d}\``).join("\n")
+          : t(sk.qrNoEntries);
       const count = t(sk.qrEntryCount, { count: list.length });
 
       return new EmbedUtils.EmbedConstructor()
@@ -389,7 +430,9 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
         const { interaction } = context;
         if (!interaction.isButton()) return null;
 
-        const modalTitle = isBlocklist ? t(sk.qrAddDomainModalTitleBlocklist) : t(sk.qrAddDomainModalTitleAllowlist);
+        const modalTitle = isBlocklist
+          ? t(sk.qrAddDomainModalTitleBlocklist)
+          : t(sk.qrAddDomainModalTitleAllowlist);
         const modal = new ModalBuilder()
           .setCustomId(`qr-add-domain-${mode}-${nanoid()}`)
           .setTitle(String(modalTitle))
@@ -407,10 +450,12 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
           );
 
         await interaction.showModal(modal);
-        const modalResult = await interaction.awaitModalSubmit({
-          time: 600_000,
-          filter: (i) => i.user.id === interaction.user.id,
-        }).catch(() => null);
+        const modalResult = await interaction
+          .awaitModalSubmit({
+            time: 600_000,
+            filter: (i) => i.user.id === interaction.user.id,
+          })
+          .catch(() => null);
 
         if (!modalResult) return null;
 
@@ -418,21 +463,33 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
         const normalized = this.normalizeDomainInput(rawDomain);
 
         if (!normalized) {
-          await modalResult.reply({ content: t(sk.qrInvalidDomain), flags: MessageFlags.Ephemeral });
+          await modalResult.reply({
+            content: t(sk.qrInvalidDomain),
+            flags: MessageFlags.Ephemeral,
+          });
           return null;
         }
 
-        const settings = await this.container.redis.jsonGet(guildId, "QrScanner");
+        const settings = await this.container.redis.jsonGet(
+          guildId,
+          "QrScanner",
+        );
         if (!settings) return null;
 
         const list = settings[listKey];
         if (list.length >= 25) {
-          await modalResult.reply({ content: t(sk.qrMaxEntriesReached), flags: MessageFlags.Ephemeral });
+          await modalResult.reply({
+            content: t(sk.qrMaxEntriesReached),
+            flags: MessageFlags.Ephemeral,
+          });
           return null;
         }
 
         if (list.includes(normalized)) {
-          await modalResult.reply({ content: t(sk.qrDuplicateDomain), flags: MessageFlags.Ephemeral });
+          await modalResult.reply({
+            content: t(sk.qrDuplicateDomain),
+            flags: MessageFlags.Ephemeral,
+          });
           return null;
         }
 
@@ -440,7 +497,7 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
         await this.container.redis.jsonSet(guildId, "QrScanner", settings);
         await modalResult.deferUpdate();
 
-        return null as any;
+        return null;
       },
     };
     menu.addPageAction(addButton, menu.pages.length - 1);
@@ -454,7 +511,10 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
         const { interaction } = context;
         if (!interaction.isButton()) return null;
 
-        const settings = await this.container.redis.jsonGet(guildId, "QrScanner");
+        const settings = await this.container.redis.jsonGet(
+          guildId,
+          "QrScanner",
+        );
         if (!settings) return null;
 
         const list = settings[listKey];
@@ -465,28 +525,36 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
           value: String(i),
         }));
 
-        const selectRow = new ActionRowBuilder<StringSelectMenuBuilder>().setComponents(
-          new StringSelectMenuBuilder()
-            .setCustomId(`${this.menuId}-qr-remove-select-${mode}`)
-            .setPlaceholder(String(t(sk.qrSelectEntryToRemove)))
-            .addOptions(options),
-        );
+        const selectRow =
+          new ActionRowBuilder<StringSelectMenuBuilder>().setComponents(
+            new StringSelectMenuBuilder()
+              .setCustomId(`${this.menuId}-qr-remove-select-${mode}`)
+              .setPlaceholder(String(t(sk.qrSelectEntryToRemove)))
+              .addOptions(options),
+          );
 
-        await interaction.update({ components: [...interaction.message.components, selectRow] });
+        await interaction.update({
+          components: [...interaction.message.components, selectRow],
+        });
 
-        const selectInteraction = await interaction.channel?.awaitMessageComponent({
-          filter: (i) => i.customId === `${this.menuId}-qr-remove-select-${mode}` && i.user.id === interaction.user.id,
-          time: 60_000,
-        }).catch(() => null);
+        const selectInteraction = await interaction.channel
+          ?.awaitMessageComponent({
+            filter: (i) =>
+              i.customId === `${this.menuId}-qr-remove-select-${mode}` &&
+              i.user.id === interaction.user.id,
+            time: 60_000,
+          })
+          .catch(() => null);
 
-        if (!selectInteraction || !selectInteraction.isStringSelectMenu()) return null;
+        if (!selectInteraction || !selectInteraction.isStringSelectMenu())
+          return null;
 
         const index = parseInt(selectInteraction.values[0], 10);
         list.splice(index, 1);
         await this.container.redis.jsonSet(guildId, "QrScanner", settings);
         await selectInteraction.deferUpdate();
 
-        return null as any;
+        return null;
       },
     };
     menu.addPageAction(removeButton, menu.pages.length - 1);
@@ -516,7 +584,11 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
 
     if (domain.startsWith("www.")) domain = domain.slice(4);
 
-    if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/.test(domain)) {
+    if (
+      !/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/.test(
+        domain,
+      )
+    ) {
       return null;
     }
 
@@ -545,7 +617,9 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
     const updated = { ...settings };
     let current: Record<string, unknown> = updated;
     for (let i = 0; i < parts.length - 1; i++) {
-      current[parts[i]] = { ...(current[parts[i]] as Record<string, unknown> ?? {}) };
+      const nested = current[parts[i]];
+      current[parts[i]] =
+        typeof nested === "object" && nested !== null ? { ...nested } : {};
       current = current[parts[i]] as Record<string, unknown>;
     }
     current[parts[parts.length - 1]] = value;
@@ -573,7 +647,10 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
       run: async (context: PaginatedMessageActionContext) => {
         const { interaction } = context;
         if (!interaction.isStringSelectMenu())
-          throw new UserError({ identifier: "genericError", message: "Incorrect menu type" });
+          throw new UserError({
+            identifier: "genericError",
+            message: "Incorrect menu type",
+          });
         const optionValue = interaction.values[0];
         await this.setNestedValue(guildId, name, optionValue);
 
@@ -588,7 +665,10 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
               this.createStringSelectMenu(
                 name,
                 guildId,
-                options.map((o) => ({ ...o, default: o.value === optionValue })),
+                options.map((o) => ({
+                  ...o,
+                  default: o.value === optionValue,
+                })),
                 menu,
                 field,
               ),
@@ -597,13 +677,17 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
         );
 
         menu.setPageActions(
-          newComponents.map((c) => c.toJSON().components).flat().map((c) => {
-            if (!("custom_id" in c)) return null;
-            const action = menu.pageActions.at(menu.index)?.get(c.custom_id);
-            if (action?.type !== ComponentType.StringSelect) return null;
-            action.options = c.options;
-            return action;
-          }).filter((a) => a !== null),
+          newComponents
+            .map((c) => c.toJSON().components)
+            .flat()
+            .map((c) => {
+              if (!("custom_id" in c)) return null;
+              const action = menu.pageActions.at(menu.index)?.get(c.custom_id);
+              if (action?.type !== ComponentType.StringSelect) return null;
+              action.options = c.options;
+              return action;
+            })
+            .filter((a) => a !== null),
           menu.index,
         );
 
@@ -638,29 +722,49 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
       run: async (context: PaginatedMessageActionContext) => {
         const { interaction } = context;
         if (!interaction.isButton())
-          throw new UserError({ identifier: "genericError", message: "Incorrect menu type" });
+          throw new UserError({
+            identifier: "genericError",
+            message: "Incorrect menu type",
+          });
         await interaction.deferUpdate();
         const optionValue = interaction.component.style !== ButtonStyle.Success;
         await this.setNestedValue(guildId, name, optionValue);
 
         const newComponents = interaction.message.components as (
           | ActionRow<ButtonComponent | StringSelectMenuComponent>
-          | JSONEncodable<APIActionRowComponent<APIButtonComponentWithCustomId | APIStringSelectComponent>>
+          | JSONEncodable<
+              APIActionRowComponent<
+                APIButtonComponentWithCustomId | APIStringSelectComponent
+              >
+            >
         )[];
         newComponents.pop();
         newComponents.push(
           new ActionRowBuilder<ButtonBuilder>().setComponents(
             new ButtonBuilder(
-              this.createBooleanButton(name, guildId, menu, optionValue, data, field),
+              this.createBooleanButton(
+                name,
+                guildId,
+                menu,
+                optionValue,
+                data,
+                field,
+              ),
             ),
-          ) as JSONEncodable<APIActionRowComponent<APIButtonComponentWithCustomId>>,
+          ) as JSONEncodable<
+            APIActionRowComponent<APIButtonComponentWithCustomId>
+          >,
         );
 
         menu.setPageActions(
-          newComponents.map((c) => c.toJSON().components).flat().map((c) => {
-            if (!("custom_id" in c)) return null;
-            return menu.pageActions.at(menu.index)?.get(c.custom_id) ?? null;
-          }).filter((a) => a !== null),
+          newComponents
+            .map((c) => c.toJSON().components)
+            .flat()
+            .map((c) => {
+              if (!("custom_id" in c)) return null;
+              return menu.pageActions.at(menu.index)?.get(c.custom_id) ?? null;
+            })
+            .filter((a) => a !== null),
           menu.index,
         );
 
@@ -691,14 +795,21 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
       run: async (context: PaginatedMessageActionContext) => {
         const { interaction } = context;
         if (!interaction.isChannelSelectMenu())
-          throw new UserError({ identifier: "genericError", message: "Incorrect menu type" });
+          throw new UserError({
+            identifier: "genericError",
+            message: "Incorrect menu type",
+          });
         await interaction.deferUpdate();
         const optionValue = interaction.values[0];
         await this.setNestedValue(guildId, name, optionValue);
 
         const newComponents = interaction.message.components as (
           | ActionRow<ChannelSelectMenuComponent | StringSelectMenuComponent>
-          | JSONEncodable<APIActionRowComponent<APIChannelSelectComponent | APIStringSelectComponent>>
+          | JSONEncodable<
+              APIActionRowComponent<
+                APIChannelSelectComponent | APIStringSelectComponent
+              >
+            >
         )[];
         newComponents.pop();
         newComponents.push(
@@ -716,26 +827,38 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
         );
 
         menu.setPageActions(
-          newComponents.map((c) => c.toJSON().components).flat().map((c) => {
-            const action = menu.pageActions.at(menu.index)?.get(c.custom_id);
-            if (action?.type !== ComponentType.StringSelect && action?.type !== ComponentType.ChannelSelect)
-              return null;
-            if (action.type === ComponentType.ChannelSelect) {
-              c = c as APIChannelSelectComponent;
-              action.channelTypes = c.channel_types;
-              action.defaultValues = c.default_values;
-            }
-            action.disabled = c.disabled;
-            action.placeholder = c.placeholder;
-            action.minValues = c.min_values;
-            action.maxValues = c.max_values;
-            return action;
-          }).filter((a) => a !== null),
+          newComponents
+            .map((c) => c.toJSON().components)
+            .flat()
+            .map((c) => {
+              const action = menu.pageActions.at(menu.index)?.get(c.custom_id);
+              if (
+                action?.type !== ComponentType.StringSelect &&
+                action?.type !== ComponentType.ChannelSelect
+              )
+                return null;
+              if (action.type === ComponentType.ChannelSelect) {
+                c = c as APIChannelSelectComponent;
+                action.channelTypes = c.channel_types;
+                action.defaultValues = c.default_values;
+              }
+              action.disabled = c.disabled;
+              action.placeholder = c.placeholder;
+              action.minValues = c.min_values;
+              action.maxValues = c.max_values;
+              return action;
+            })
+            .filter((a) => a !== null),
           menu.index,
         );
 
         return {
-          embeds: [this.confirmSettingChange(interaction, this.makeIdReadable(optionValue, "channel"))],
+          embeds: [
+            this.confirmSettingChange(
+              interaction,
+              this.makeIdReadable(optionValue, "channel"),
+            ),
+          ],
           components: newComponents,
           ephemeral: true,
           edit: true,
@@ -745,7 +868,10 @@ export class SecuritySettingsCommand extends CommandUtils.PomeloSubcommand {
   }
 
   private confirmSettingChange(
-    interaction: ButtonInteraction | StringSelectMenuInteraction | ChannelSelectMenuInteraction,
+    interaction:
+      | ButtonInteraction
+      | StringSelectMenuInteraction
+      | ChannelSelectMenuInteraction,
     value: string,
   ) {
     const embedData = interaction.message.embeds[0]?.toJSON() as EmbedData;

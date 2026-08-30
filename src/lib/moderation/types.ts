@@ -95,6 +95,7 @@ export type LevelExecResult = {
 
 export type WarnActionResult = ModActionResult & {
   warnCount: number;
+  errorContext?: Record<string, unknown>;
   thresholdActions?: Array<{
     level: WarnLevel;
     autoExecuted: boolean;

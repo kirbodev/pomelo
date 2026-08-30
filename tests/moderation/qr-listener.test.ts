@@ -1,21 +1,43 @@
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import type { QrScannerSettings } from "../../src/db/redis/schema.js";
+import type { QRContentType, ParsedQrData, QrSafetySettings } from "../../src/lib/moderation/qr-scanner.js";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 // We mock the heavy external dependencies so the listener logic can be tested
 // in isolation from Discord.js, sharp, zxing-wasm, and network calls.
 
+// Evaluate the real module BEFORE mocking it: bun's module mocks are
+// process-global, and qr-scanner.test.ts shares the process, so the mock must
+// expose every real export (spread) and only override the heavy/forceable
+// functions. Their default implementations delegate to the real module, and
+// afterEach restores that state after this file's tests run. The namespace is
+// snapshotted into a plain object because bun swaps module bindings when a
+// mock is registered, which would otherwise make the delegates recurse.
+const realQrScanner = await import("../../src/lib/moderation/qr-scanner.js");
+const realQrScannerExports = { ...realQrScanner };
+
 const mockDownloadAttachment = mock(() => Promise.resolve(null as Buffer | null));
 const mockScanImage = mock(() => Promise.resolve([] as Array<{ raw: string; format: string; contentType: string }>));
-const mockEvaluateQrSafety = mock((_data: any, _settings: any) => "safe" as "safe" | "unsafe" | "no_match");
-const mockParseQrData = mock((raw: string, contentType: string) => ({ raw, contentType }));
+const mockEvaluateQrSafety = mock((data: unknown, settings: unknown) =>
+  realQrScannerExports.evaluateQrSafety(
+    data as ParsedQrData,
+    settings as QrSafetySettings,
+  ),
+);
+const mockParseQrData = mock((raw: string, contentType: string) =>
+  realQrScannerExports.parseQrData(raw, contentType as QRContentType) as {
+    raw: string;
+    contentType: string;
+  },
+);
 
 mock.module("../../src/lib/helpers/qrImageDownload.js", () => ({
   downloadAttachment: mockDownloadAttachment,
 }));
 
 mock.module("../../src/lib/moderation/qr-scanner.js", () => ({
+  ...realQrScannerExports,
   scanImage: mockScanImage,
   evaluateQrSafety: mockEvaluateQrSafety,
   parseQrData: mockParseQrData,
@@ -23,6 +45,16 @@ mock.module("../../src/lib/moderation/qr-scanner.js", () => ({
 
 // Now import the listener after mocks are set up
 const { ScanQrCodesListener } = await import("../../src/listeners/moderation/scanQrCodes.js");
+
+// The i18next plugin only initializes `container.i18n` through the client's
+// plugin hooks, which never run in tests. `fetchT()` inside the listener reads
+// the module-level `container` singleton, so stub it to return the key path.
+const { container } = await import("@sapphire/framework");
+container.i18n = {
+  getT: () => (key: string) => key,
+  fetchLanguage: () => "en-US",
+  options: { defaultName: "en-US" },
+} as unknown as typeof container.i18n;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -123,6 +155,20 @@ beforeEach(() => {
   mockScanImage.mockImplementation(() => Promise.resolve([]));
   mockEvaluateQrSafety.mockImplementation(() => "safe");
   mockParseQrData.mockImplementation((raw: string, contentType: string) => ({ raw, contentType }));
+});
+
+// Leave the real implementations in place for other test files that share
+// this process (qr-scanner.test.ts imports the same module).
+afterEach(() => {
+  mockEvaluateQrSafety.mockImplementation((data: unknown, settings: unknown) =>
+    realQrScannerExports.evaluateQrSafety(
+      data as ParsedQrData,
+      settings as QrSafetySettings,
+    ),
+  );
+  mockParseQrData.mockImplementation((raw: string, contentType: string) =>
+    realQrScannerExports.parseQrData(raw, contentType as QRContentType),
+  );
 });
 
 describe("ScanQrCodesListener – early returns", () => {

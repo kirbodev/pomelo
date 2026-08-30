@@ -198,7 +198,9 @@ export class BanCommand extends CommandUtils.PomeloSubcommand {
     } else {
       const user = await args.pick("user");
       const reason = await args.rest("string").catch(() => null);
-      const member = message.guild?.members.cache.get(user.id);
+      const member = await message.guild?.members
+        .fetch(user.id)
+        .catch(() => null);
       if (!member) {
         await message.reply(
           t(LanguageKeys.Commands.Moderation.Errors.targetNotInGuild),
@@ -231,7 +233,7 @@ export class BanCommand extends CommandUtils.PomeloSubcommand {
     if (!moderator) return;
 
     let targetMember: GuildMember | User = user;
-    const fetched = guild.members.cache.get(user.id);
+    const fetched = await guild.members.fetch(user.id).catch(() => null);
     if (fetched) targetMember = fetched;
 
     const result = await modActionService.ban(

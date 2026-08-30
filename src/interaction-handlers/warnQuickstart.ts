@@ -54,7 +54,7 @@ const MAX_PUNISHMENTS_PER_LEVEL = 4;
 function formatDurationShort(ms: number): string {
   const hours = Math.floor(ms / 3600000);
   const days = Math.floor(hours / 24);
-  return days > 0 ? `${days}d` : `${hours}h`;
+  return days > 0 ? `${String(days)}d` : `${String(hours)}h`;
 }
 
 function presetOptions(t: TFunction) {
@@ -120,11 +120,7 @@ function formatLevelSummary(
     return String(t(key.none));
   }
   const parts = level.punishments.map((p) => punishmentLabel(p, t, guild));
-  parts.push(
-    level.autoConfirm
-      ? `⚡ ${t(key.auto)}`
-      : `⚠️ ${t(key.manual)}`,
-  );
+  parts.push(level.autoConfirm ? `⚡ ${t(key.auto)}` : `⚠️ ${t(key.manual)}`);
   return parts.join(", ");
 }
 
@@ -176,6 +172,8 @@ export class WarnQuickstartHandler extends InteractionHandler {
     if (!interaction.isMessageComponent()) return;
     const guildId = interaction.guildId;
     if (!guildId) return;
+    if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild))
+      return this.replyUnavailable(interaction);
     const state = await warnWorkflowRepository.loadForInteraction({
       sessionId: parsed.sessionId,
       guildId,
@@ -222,7 +220,9 @@ export class WarnQuickstartHandler extends InteractionHandler {
     if (!stored) return this.replyUnavailable(interaction);
     if (parsed.action === "save") await this.saveSettings(stored);
     const t = await fetchT(interaction);
-    await interaction.update({ components: renderWarnQuickstart(stored, t, interaction.guild) });
+    await interaction.update({
+      components: renderWarnQuickstart(stored, t, interaction.guild),
+    });
   }
 
   private async handleEditPunishmentModal(
@@ -235,8 +235,8 @@ export class WarnQuickstartHandler extends InteractionHandler {
     if (idx === undefined || idx >= state.config.levels.length) return;
     if (!Number.isFinite(pIdx) || pIdx < 0) return;
     const level = state.config.levels[idx];
+    if (pIdx >= level.punishments.length) return;
     const punishment = level.punishments[pIdx];
-    if (!punishment) return;
     const t = await fetchT(interaction);
     const key = LanguageKeys.Commands.Moderation.WarnSettings.Quickstart;
 
@@ -253,7 +253,9 @@ export class WarnQuickstartHandler extends InteractionHandler {
       const next = { ...state, config: { ...state.config, levels: newLevels } };
       const stored = await warnWorkflowRepository.advance(next);
       if (!stored) return this.replyUnavailable(interaction);
-      await interaction.update({ components: renderWarnQuickstart(stored, t, interaction.guild) });
+      await interaction.update({
+        components: renderWarnQuickstart(stored, t, interaction.guild),
+      });
       return;
     }
 
@@ -296,7 +298,11 @@ export class WarnQuickstartHandler extends InteractionHandler {
             .setPlaceholder("7d")
             .setStyle(TextInputStyle.Short)
             .setRequired(false)
-            .setValue(punishment.duration ? formatDurationShort(punishment.duration) : ""),
+            .setValue(
+              punishment.duration
+                ? formatDurationShort(punishment.duration)
+                : "",
+            ),
         ),
       );
     }
@@ -357,7 +363,11 @@ export class WarnQuickstartHandler extends InteractionHandler {
     // revision bump — the message keeps its controls while the modal is open.
     const modal = new ModalBuilder()
       .setCustomId(
-        createQuickstartModalCustomId(state.id, state.revision, "reset-settings"),
+        createQuickstartModalCustomId(
+          state.id,
+          state.revision,
+          "reset-settings",
+        ),
       )
       .setTitle(String(t(key.resetModalTitle)))
       .addComponents(
@@ -449,32 +459,52 @@ export class WarnQuickstartHandler extends InteractionHandler {
 
     if (parsed.action === "start-add-punishment") {
       if (level.punishments.length >= MAX_PUNISHMENTS_PER_LEVEL) {
-        await interaction.reply({ content: String(t(key.maxPunishments)), flags: MessageFlags.Ephemeral });
+        await interaction.reply({
+          content: String(t(key.maxPunishments)),
+          flags: MessageFlags.Ephemeral,
+        });
         return;
       }
       const next = { ...state, addPunishmentStep: "type" as const };
       const stored = await warnWorkflowRepository.advance(next);
       if (!stored) return this.replyUnavailable(interaction);
-      await interaction.update({ components: renderWarnQuickstart(stored, t, interaction.guild) });
+      await interaction.update({
+        components: renderWarnQuickstart(stored, t, interaction.guild),
+      });
       return;
     }
 
     if (parsed.action === "cancel-add-punishment") {
-      const next = { ...state, addPunishmentStep: undefined, addPunishmentType: undefined, addPunishmentDraft: undefined };
+      const next = {
+        ...state,
+        addPunishmentStep: undefined,
+        addPunishmentType: undefined,
+        addPunishmentDraft: undefined,
+      };
       const stored = await warnWorkflowRepository.advance(next);
       if (!stored) return this.replyUnavailable(interaction);
-      await interaction.update({ components: renderWarnQuickstart(stored, t, interaction.guild) });
+      await interaction.update({
+        components: renderWarnQuickstart(stored, t, interaction.guild),
+      });
       return;
     }
 
-    if (parsed.action === "choose-add-punishment-type" && interaction.isStringSelectMenu()) {
+    if (
+      parsed.action === "choose-add-punishment-type" &&
+      interaction.isStringSelectMenu()
+    ) {
       const type = interaction.values[0] as WarnPunishmentType;
       if (level.punishments.length >= MAX_PUNISHMENTS_PER_LEVEL) {
-        await interaction.reply({ content: String(t(key.maxPunishments)), flags: MessageFlags.Ephemeral });
+        await interaction.reply({
+          content: String(t(key.maxPunishments)),
+          flags: MessageFlags.Ephemeral,
+        });
         return;
       }
       const hasExclusive = level.punishments.some(
-        (p) => p.type === type && (p.type === "mute" || p.type === "kick" || p.type === "ban"),
+        (p) =>
+          p.type === type &&
+          (p.type === "mute" || p.type === "kick" || p.type === "ban"),
       );
       if (hasExclusive) {
         const typeLabels: Record<WarnPunishmentType, string> = {
@@ -483,14 +513,22 @@ export class WarnQuickstartHandler extends InteractionHandler {
           ban: String(t(key.actionBan)),
           role: String(t(key.actionRole)),
         };
-        await interaction.reply({ content: String(t(key.alreadyHasPunishment, { type: typeLabels[type] })), flags: MessageFlags.Ephemeral });
+        await interaction.reply({
+          content: String(
+            t(key.alreadyHasPunishment, { type: typeLabels[type] }),
+          ),
+          flags: MessageFlags.Ephemeral,
+        });
         return;
       }
 
       if (type === "kick") {
         const newPunishment: WarnPunishment = { type: "kick" };
         const newLevels = [...state.config.levels];
-        newLevels[idx] = { ...level, punishments: [...level.punishments, newPunishment] };
+        newLevels[idx] = {
+          ...level,
+          punishments: [...level.punishments, newPunishment],
+        };
         const next = {
           ...state,
           addPunishmentStep: undefined,
@@ -500,17 +538,25 @@ export class WarnQuickstartHandler extends InteractionHandler {
         };
         const stored = await warnWorkflowRepository.advance(next);
         if (!stored) return this.replyUnavailable(interaction);
-        await interaction.update({ components: renderWarnQuickstart(stored, t, interaction.guild) });
+        await interaction.update({
+          components: renderWarnQuickstart(stored, t, interaction.guild),
+        });
         return;
       }
 
       if (type === "role") {
         // Roles are picked with a role select menu on the message — pings
         // don't work in modals and role IDs are easy to get wrong.
-        const next = { ...state, addPunishmentStep: "role" as const, addPunishmentType: type };
+        const next = {
+          ...state,
+          addPunishmentStep: "role" as const,
+          addPunishmentType: type,
+        };
         const stored = await warnWorkflowRepository.advance(next);
         if (!stored) return this.replyUnavailable(interaction);
-        await interaction.update({ components: renderWarnQuickstart(stored, t, interaction.guild) });
+        await interaction.update({
+          components: renderWarnQuickstart(stored, t, interaction.guild),
+        });
         return;
       }
 
@@ -556,17 +602,27 @@ export class WarnQuickstartHandler extends InteractionHandler {
       return;
     }
 
-    if (parsed.action === "confirm-add-punishment" && interaction.isRoleSelectMenu()) {
-      if (state.addPunishmentStep !== "role") return this.replyUnavailable(interaction);
+    if (
+      parsed.action === "confirm-add-punishment" &&
+      interaction.isRoleSelectMenu()
+    ) {
+      if (state.addPunishmentStep !== "role")
+        return this.replyUnavailable(interaction);
       if (level.punishments.length >= MAX_PUNISHMENTS_PER_LEVEL) {
-        await interaction.reply({ content: String(t(key.maxPunishments)), flags: MessageFlags.Ephemeral });
+        await interaction.reply({
+          content: String(t(key.maxPunishments)),
+          flags: MessageFlags.Ephemeral,
+        });
         return;
       }
       const roleId = interaction.values[0];
       if (!roleId) return this.replyUnavailable(interaction);
       const newPunishment: WarnPunishment = { type: "role", roleId };
       const newLevels = [...state.config.levels];
-      newLevels[idx] = { ...level, punishments: [...level.punishments, newPunishment] };
+      newLevels[idx] = {
+        ...level,
+        punishments: [...level.punishments, newPunishment],
+      };
       const next = {
         ...state,
         addPunishmentStep: undefined,
@@ -576,7 +632,9 @@ export class WarnQuickstartHandler extends InteractionHandler {
       };
       const stored = await warnWorkflowRepository.advance(next);
       if (!stored) return this.replyUnavailable(interaction);
-      await interaction.update({ components: renderWarnQuickstart(stored, t, interaction.guild) });
+      await interaction.update({
+        components: renderWarnQuickstart(stored, t, interaction.guild),
+      });
       return;
     }
   }
@@ -603,9 +661,16 @@ export class WarnQuickstartHandler extends InteractionHandler {
         },
       };
     }
-    if (parsed.action === "select-general-setting" && interaction.isStringSelectMenu()) {
+    if (
+      parsed.action === "select-general-setting" &&
+      interaction.isStringSelectMenu()
+    ) {
       const setting = interaction.values[0];
-      if (setting === "expiry" || setting === "dm" || setting === "logChannel") {
+      if (
+        setting === "expiry" ||
+        setting === "dm" ||
+        setting === "logChannel"
+      ) {
         return { ...state, editingGeneralSetting: setting };
       }
       return null;
@@ -639,11 +704,14 @@ export class WarnQuickstartHandler extends InteractionHandler {
     if (parsed.action === "reset") {
       // Only offered while editing a server that actually has saved settings.
       if (state.step !== 3 || !state.hadExistingSettings) return null;
-      if (
-        !interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)
-      )
+      if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild))
         return null;
-      return { ...state, step: 7, resetStage: "confirm", editingGeneralSetting: undefined };
+      return {
+        ...state,
+        step: 7,
+        resetStage: "confirm",
+        editingGeneralSetting: undefined,
+      };
     }
     if (parsed.action === "cancel-reset") {
       if (state.step !== 7 || state.resetStage !== "confirm") return null;
@@ -653,9 +721,7 @@ export class WarnQuickstartHandler extends InteractionHandler {
       // Only reachable from the post-reset screen — drops back into the
       // fresh setup wizard with a clean draft config.
       if (state.step !== 7 || state.resetStage !== "done") return null;
-      if (
-        !interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)
-      )
+      if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild))
         return null;
       return {
         ...state,
@@ -742,11 +808,19 @@ export class WarnQuickstartHandler extends InteractionHandler {
         config: { ...state.config, levels: newLevels },
       };
     }
-    if (parsed.action === "select-punishment" && interaction.isStringSelectMenu()) {
+    if (
+      parsed.action === "select-punishment" &&
+      interaction.isStringSelectMenu()
+    ) {
       const pIdx = Number(interaction.values[0]);
       const idx = state.editingLevelIndex;
       if (idx === undefined || idx >= state.config.levels.length) return null;
-      if (!Number.isFinite(pIdx) || pIdx < 0 || pIdx >= state.config.levels[idx].punishments.length) return null;
+      if (
+        !Number.isFinite(pIdx) ||
+        pIdx < 0 ||
+        pIdx >= state.config.levels[idx].punishments.length
+      )
+        return null;
       return { ...state, selectedPunishmentIndex: pIdx };
     }
     if (parsed.action === "edit-details") {
@@ -754,7 +828,10 @@ export class WarnQuickstartHandler extends InteractionHandler {
       if (idx === undefined || idx >= state.config.levels.length) return null;
       return { ...state, editingLevelSetting: "menu" };
     }
-    if (parsed.action === "select-level-setting" && interaction.isStringSelectMenu()) {
+    if (
+      parsed.action === "select-level-setting" &&
+      interaction.isStringSelectMenu()
+    ) {
       const setting = interaction.values[0];
       if (setting === "message" || setting === "autoConfirm") {
         return { ...state, editingLevelSetting: setting };
@@ -849,7 +926,10 @@ export class WarnQuickstartHandler extends InteractionHandler {
           .setAccentColor(Colors.Warning)
           .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-              t(LanguageKeys.Commands.Moderation.WarnSettings.Quickstart.interactionExpired),
+              t(
+                LanguageKeys.Commands.Moderation.WarnSettings.Quickstart
+                  .interactionExpired,
+              ),
             ),
           ),
       ],
@@ -918,7 +998,11 @@ ${t(key.welcomeDescription)}`,
     if (state.backupAvailable) {
       rows.push(
         new ActionRowBuilder<ButtonBuilder>().addComponents(
-          button("restore-backup", String(t(key.restoreButton)), ButtonStyle.Success),
+          button(
+            "restore-backup",
+            String(t(key.restoreButton)),
+            ButtonStyle.Success,
+          ),
         ),
       );
     }
@@ -965,7 +1049,11 @@ ${state.hadExistingSettings ? t(key.editExistingDescription) : t(key.generalOpti
             .setCustomId(
               createQuickstartCustomId(state.id, state.revision, "set-expiry"),
             )
-            .setPlaceholder(String(t(key.expiryDays, { days: state.config.defaultExpiryDays })))
+            .setPlaceholder(
+              String(
+                t(key.expiryDays, { days: state.config.defaultExpiryDays }),
+              ),
+            )
             .addOptions(
               [1, 3, 7, 14, 30, 60, 90, 180, 365].map((days) => ({
                 label: t(key.expiryDays, { days }),
@@ -988,9 +1076,19 @@ ${state.hadExistingSettings ? t(key.editExistingDescription) : t(key.generalOpti
         container,
         new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder()
-            .setCustomId(createQuickstartCustomId(state.id, state.revision, "toggle-dm-from-menu"))
+            .setCustomId(
+              createQuickstartCustomId(
+                state.id,
+                state.revision,
+                "toggle-dm-from-menu",
+              ),
+            )
             .setLabel(dmLabel)
-            .setStyle(state.config.dmOnWarn ? ButtonStyle.Success : ButtonStyle.Secondary)
+            .setStyle(
+              state.config.dmOnWarn
+                ? ButtonStyle.Success
+                : ButtonStyle.Secondary,
+            )
             .setDisabled(state.status !== "active"),
         ),
         new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -1008,12 +1106,28 @@ ${state.hadExistingSettings ? t(key.editExistingDescription) : t(key.generalOpti
       new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
         new StringSelectMenuBuilder()
           .setCustomId(
-            createQuickstartCustomId(state.id, state.revision, "select-general-setting"),
+            createQuickstartCustomId(
+              state.id,
+              state.revision,
+              "select-general-setting",
+            ),
           )
           .setPlaceholder(String(t(key.selectGeneralSettingPlaceholder)))
           .addOptions(
-            { label: String(t(key.defaultExpiry)), description: t(key.expiryDays, { days: state.config.defaultExpiryDays }), value: "expiry" },
-            { label: String(t(key.dmOnWarn)), description: state.config.dmOnWarn ? String(t(key.dmEnabled)) : String(t(key.dmDisabled)), value: "dm" },
+            {
+              label: String(t(key.defaultExpiry)),
+              description: t(key.expiryDays, {
+                days: state.config.defaultExpiryDays,
+              }),
+              value: "expiry",
+            },
+            {
+              label: String(t(key.dmOnWarn)),
+              description: state.config.dmOnWarn
+                ? String(t(key.dmEnabled))
+                : String(t(key.dmDisabled)),
+              value: "dm",
+            },
           ),
       ),
       new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -1059,7 +1173,11 @@ ${t(key.warnLevelsDescription)}`,
         new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
           new StringSelectMenuBuilder()
             .setCustomId(
-              createQuickstartCustomId(state.id, state.revision, "select-level"),
+              createQuickstartCustomId(
+                state.id,
+                state.revision,
+                "select-level",
+              ),
             )
             .setPlaceholder(String(t(key.selectWarnLevel)))
             .addOptions(
@@ -1085,9 +1203,13 @@ ${t(key.warnLevelsDescription)}`,
   if (state.step === 5) {
     const idx = state.editingLevelIndex;
     if (idx === undefined || idx >= state.config.levels.length) {
-      return [container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(String(t(key.interactionExpired))),
-      )];
+      return [
+        container.addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            String(t(key.interactionExpired)),
+          ),
+        ),
+      ];
     }
     const level = state.config.levels[idx];
 
@@ -1117,7 +1239,12 @@ ${t(key.warnLevelsDescription)}`,
           new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(
             new RoleSelectMenuBuilder()
               .setCustomId(
-                createQuickstartCustomId(state.id, state.revision, "edit-punishment", String(state.selectedPunishmentIndex)),
+                createQuickstartCustomId(
+                  state.id,
+                  state.revision,
+                  "edit-punishment",
+                  String(state.selectedPunishmentIndex),
+                ),
               )
               .setPlaceholder(String(t(key.editPunishment)).slice(0, 150))
               .setDisabled(state.status !== "active"),
@@ -1127,7 +1254,12 @@ ${t(key.warnLevelsDescription)}`,
           new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
               .setCustomId(
-                createQuickstartCustomId(state.id, state.revision, "remove-punishment", String(state.selectedPunishmentIndex)),
+                createQuickstartCustomId(
+                  state.id,
+                  state.revision,
+                  "remove-punishment",
+                  String(state.selectedPunishmentIndex),
+                ),
               )
               .setEmoji(Emojis.Trash)
               .setLabel(String(t(key.removePunishment)))
@@ -1143,17 +1275,29 @@ ${t(key.warnLevelsDescription)}`,
         actionRow.addComponents(
           new ButtonBuilder()
             .setCustomId(
-              createQuickstartCustomId(state.id, state.revision, "edit-punishment", String(state.selectedPunishmentIndex)),
+              createQuickstartCustomId(
+                state.id,
+                state.revision,
+                "edit-punishment",
+                String(state.selectedPunishmentIndex),
+              ),
             )
             .setEmoji(Emojis.Edit)
-            .setLabel(`${t(key.editPunishment)}: ${punishmentLabel(selP, t, guild).slice(0, 40)}`)
+            .setLabel(
+              `${t(key.editPunishment)}: ${punishmentLabel(selP, t, guild).slice(0, 40)}`,
+            )
             .setStyle(ButtonStyle.Primary),
         );
       }
       actionRow.addComponents(
         new ButtonBuilder()
           .setCustomId(
-            createQuickstartCustomId(state.id, state.revision, "remove-punishment", String(state.selectedPunishmentIndex)),
+            createQuickstartCustomId(
+              state.id,
+              state.revision,
+              "remove-punishment",
+              String(state.selectedPunishmentIndex),
+            ),
           )
           .setEmoji(Emojis.Trash)
           .setLabel(String(t(key.removePunishment)))
@@ -1185,14 +1329,24 @@ ${level.message ?? `*${t(key.noLevelMessage)}*`}`,
           ),
         );
         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-          button("edit-message", String(t(key.editMessage)), ButtonStyle.Primary),
+          button(
+            "edit-message",
+            String(t(key.editMessage)),
+            ButtonStyle.Primary,
+          ),
         );
         if (level.message) {
           row.addComponents(
-            button("clear-message", String(t(key.clearMessage)), ButtonStyle.Danger),
+            button(
+              "clear-message",
+              String(t(key.clearMessage)),
+              ButtonStyle.Danger,
+            ),
           );
         }
-        row.addComponents(button("back", String(t(key.back)), ButtonStyle.Secondary));
+        row.addComponents(
+          button("back", String(t(key.back)), ButtonStyle.Secondary),
+        );
         return [container, row];
       }
 
@@ -1207,9 +1361,19 @@ ${t(key.autoExecuteDesc)}`,
           container,
           new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
-              .setCustomId(createQuickstartCustomId(state.id, state.revision, "toggle-auto-from-menu"))
-              .setLabel(`${level.autoConfirm ? t(key.auto) : t(key.manual)} — ${t(key.autoExecute)}`)
-              .setStyle(level.autoConfirm ? ButtonStyle.Success : ButtonStyle.Secondary)
+              .setCustomId(
+                createQuickstartCustomId(
+                  state.id,
+                  state.revision,
+                  "toggle-auto-from-menu",
+                ),
+              )
+              .setLabel(
+                `${level.autoConfirm ? t(key.auto) : t(key.manual)} — ${t(key.autoExecute)}`,
+              )
+              .setStyle(
+                level.autoConfirm ? ButtonStyle.Success : ButtonStyle.Secondary,
+              )
               .setDisabled(state.status !== "active"),
           ),
           new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -1229,18 +1393,26 @@ ${t(key.autoExecuteDesc)}`,
         new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
           new StringSelectMenuBuilder()
             .setCustomId(
-              createQuickstartCustomId(state.id, state.revision, "select-level-setting"),
+              createQuickstartCustomId(
+                state.id,
+                state.revision,
+                "select-level-setting",
+              ),
             )
             .setPlaceholder(String(t(key.selectGeneralSettingPlaceholder)))
             .addOptions(
               {
                 label: String(t(key.levelMessage)),
-                description: (level.message ?? String(t(key.noLevelMessage))).slice(0, 100),
+                description: (
+                  level.message ?? String(t(key.noLevelMessage))
+                ).slice(0, 100),
                 value: "message",
               },
               {
                 label: String(t(key.autoExecute)),
-                description: String(level.autoConfirm ? t(key.auto) : t(key.manual)),
+                description: String(
+                  level.autoConfirm ? t(key.auto) : t(key.manual),
+                ),
                 value: "autoConfirm",
               },
             ),
@@ -1261,30 +1433,70 @@ ${t(key.autoExecuteDesc)}`,
 
     if (state.addPunishmentStep === "type") {
       container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(`### ${t(key.punishmentTypeSelect)}`),
+        new TextDisplayBuilder().setContent(
+          `### ${t(key.punishmentTypeSelect)}`,
+        ),
       );
       const hasMute = level.punishments.some((p) => p.type === "mute");
       const hasKick = level.punishments.some((p) => p.type === "kick");
       const hasBan = level.punishments.some((p) => p.type === "ban");
       const typeOptions = [
-        ...(hasMute ? [] : [{ label: String(t(key.actionMute)), description: String(t(key.actionMuteDesc)), value: "mute" }]),
-        ...(hasKick ? [] : [{ label: String(t(key.actionKick)), description: String(t(key.actionKickDesc)), value: "kick" }]),
-        ...(hasBan ? [] : [{ label: String(t(key.actionBan)), description: String(t(key.actionBanDesc)), value: "ban" }]),
-        { label: String(t(key.actionRole)), description: String(t(key.actionRoleDesc)), value: "role" },
+        ...(hasMute
+          ? []
+          : [
+              {
+                label: String(t(key.actionMute)),
+                description: String(t(key.actionMuteDesc)),
+                value: "mute",
+              },
+            ]),
+        ...(hasKick
+          ? []
+          : [
+              {
+                label: String(t(key.actionKick)),
+                description: String(t(key.actionKickDesc)),
+                value: "kick",
+              },
+            ]),
+        ...(hasBan
+          ? []
+          : [
+              {
+                label: String(t(key.actionBan)),
+                description: String(t(key.actionBanDesc)),
+                value: "ban",
+              },
+            ]),
+        {
+          label: String(t(key.actionRole)),
+          description: String(t(key.actionRoleDesc)),
+          value: "role",
+        },
       ];
       return [
         container,
         new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
           new StringSelectMenuBuilder()
             .setCustomId(
-              createQuickstartCustomId(state.id, state.revision, "choose-add-punishment-type"),
+              createQuickstartCustomId(
+                state.id,
+                state.revision,
+                "choose-add-punishment-type",
+              ),
             )
             .setPlaceholder(String(t(key.punishmentTypeSelect)))
             .addOptions(typeOptions),
         ),
         new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder()
-            .setCustomId(createQuickstartCustomId(state.id, state.revision, "cancel-add-punishment"))
+            .setCustomId(
+              createQuickstartCustomId(
+                state.id,
+                state.revision,
+                "cancel-add-punishment",
+              ),
+            )
             .setLabel(String(t(key.cancelAddPunishment)))
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(state.status !== "active"),
@@ -1294,21 +1506,33 @@ ${t(key.autoExecuteDesc)}`,
 
     if (state.addPunishmentStep === "role") {
       container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(`### ${t(key.actionRole)}\n${t(key.actionRoleDesc)}`),
+        new TextDisplayBuilder().setContent(
+          `### ${t(key.actionRole)}\n${t(key.actionRoleDesc)}`,
+        ),
       );
       return [
         container,
         new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(
           new RoleSelectMenuBuilder()
             .setCustomId(
-              createQuickstartCustomId(state.id, state.revision, "confirm-add-punishment"),
+              createQuickstartCustomId(
+                state.id,
+                state.revision,
+                "confirm-add-punishment",
+              ),
             )
             .setPlaceholder(String(t(key.actionRole)))
             .setDisabled(state.status !== "active"),
         ),
         new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder()
-            .setCustomId(createQuickstartCustomId(state.id, state.revision, "cancel-add-punishment"))
+            .setCustomId(
+              createQuickstartCustomId(
+                state.id,
+                state.revision,
+                "cancel-add-punishment",
+              ),
+            )
             .setLabel(String(t(key.cancelAddPunishment)))
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(state.status !== "active"),
@@ -1327,7 +1551,7 @@ ${t(key.autoExecuteDesc)}`,
       for (let i = 0; i < level.punishments.length; i++) {
         container.addTextDisplayComponents(
           new TextDisplayBuilder().setContent(
-            `${i + 1}. ${punishmentLabel(level.punishments[i], t)}`,
+            `${String(i + 1)}. ${punishmentLabel(level.punishments[i], t)}`,
           ),
         );
       }
@@ -1351,7 +1575,11 @@ ${t(key.autoExecuteDesc)}`,
         new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
           new StringSelectMenuBuilder()
             .setCustomId(
-              createQuickstartCustomId(state.id, state.revision, "select-punishment"),
+              createQuickstartCustomId(
+                state.id,
+                state.revision,
+                "select-punishment",
+              ),
             )
             .setPlaceholder(String(t(key.selectPunishmentPlaceholder)))
             .addOptions(
@@ -1369,7 +1597,13 @@ ${t(key.autoExecuteDesc)}`,
       components.push(
         new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder()
-            .setCustomId(createQuickstartCustomId(state.id, state.revision, "start-add-punishment"))
+            .setCustomId(
+              createQuickstartCustomId(
+                state.id,
+                state.revision,
+                "start-add-punishment",
+              ),
+            )
             .setLabel(String(t(key.addPunishmentButton)))
             .setStyle(ButtonStyle.Success)
             .setDisabled(state.status !== "active"),
@@ -1379,7 +1613,11 @@ ${t(key.autoExecuteDesc)}`,
 
     components.push(
       new ActionRowBuilder<ButtonBuilder>().addComponents(
-        button("edit-details", String(t(key.levelDetails)), ButtonStyle.Primary),
+        button(
+          "edit-details",
+          String(t(key.levelDetails)),
+          ButtonStyle.Primary,
+        ),
         button("remove-level", String(t(key.remove)), ButtonStyle.Danger),
         button("back", String(t(key.back)), ButtonStyle.Secondary),
       ),
@@ -1389,19 +1627,25 @@ ${t(key.autoExecuteDesc)}`,
 
   if (state.step === 7) {
     if (state.resetStage === "confirm") {
-      container
-        .setAccentColor(Colors.Error)
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            `# ${t(key.resetConfirmTitle)}
+      container.setAccentColor(Colors.Error).addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `# ${t(key.resetConfirmTitle)}
 ${t(key.resetConfirmDescription)}`,
-          ),
-        );
+        ),
+      );
       return [
         container,
         new ActionRowBuilder<ButtonBuilder>().addComponents(
-          button("confirm-reset", String(t(key.resetConfirmContinue)), ButtonStyle.Danger),
-          button("cancel-reset", String(t(key.resetConfirmCancel)), ButtonStyle.Secondary),
+          button(
+            "confirm-reset",
+            String(t(key.resetConfirmContinue)),
+            ButtonStyle.Danger,
+          ),
+          button(
+            "cancel-reset",
+            String(t(key.resetConfirmCancel)),
+            ButtonStyle.Secondary,
+          ),
         ),
       ];
     }
@@ -1410,31 +1654,35 @@ ${t(key.resetConfirmDescription)}`,
         state.restoreExpiresAt ?? Date.now() + BackupTtlMs,
         "R",
       );
-      container
-        .setAccentColor(Colors.Warning)
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            `# ${t(key.resetDoneTitle)}
+      container.setAccentColor(Colors.Warning).addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `# ${t(key.resetDoneTitle)}
 ${t(key.resetDoneDescription, { timestamp: restoreUntil })}`,
-          ),
-        );
+        ),
+      );
       return [
         container,
         new ActionRowBuilder<ButtonBuilder>().addComponents(
-          button("start-over", String(t(key.startOverButton)), ButtonStyle.Primary),
-          button("restore-backup", String(t(key.restoreButton)), ButtonStyle.Success),
+          button(
+            "start-over",
+            String(t(key.startOverButton)),
+            ButtonStyle.Primary,
+          ),
+          button(
+            "restore-backup",
+            String(t(key.restoreButton)),
+            ButtonStyle.Success,
+          ),
         ),
       ];
     }
     if (state.resetStage === "restored") {
-      container
-        .setAccentColor(Colors.Success)
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            `# ${t(key.restoredTitle)}
+      container.setAccentColor(Colors.Success).addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `# ${t(key.restoredTitle)}
 ${t(key.restoredDescription)}`,
-          ),
-        );
+        ),
+      );
       return [
         container,
         new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -1482,4 +1730,3 @@ ${levelLines.length > 0 ? levelLines.join("\n") : `*${t(key.none)}*`}`,
     ),
   ];
 }
-

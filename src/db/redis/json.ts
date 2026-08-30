@@ -79,7 +79,7 @@ export class PomeloRedis extends Redis {
     key: string,
     topic: T,
     value: InferSchemaType<(typeof Schemas)[T]>,
-    condition?: "NX" | "XX"
+    condition?: "NX" | "XX",
   ) {
     if (!topics.includes(topic)) throw new Error("Invalid topic | Not found");
     const validate = Schemas[topic].safeParse(value);
@@ -90,7 +90,7 @@ export class PomeloRedis extends Redis {
         `${topic}:${key}`,
         "$",
         JSON.stringify(validate.data),
-        ...(condition ? [condition] : [])
+        ...(condition ? [condition] : []),
       )) === "OK";
     if (result) await this.markDirty(topic, key);
     return result;
@@ -108,16 +108,19 @@ export class PomeloRedis extends Redis {
   async jsonUpdate<T extends keyof typeof Schemas>(
     key: string,
     topic: T,
-    value: NullPartial<InferSchemaType<(typeof Schemas)[T]>>
+    value: NullPartial<InferSchemaType<(typeof Schemas)[T]>>,
   ) {
     if (!topics.includes(topic)) throw new Error("Invalid topic | Not found");
     const schema = Schemas[topic] as unknown;
     const inner =
       schema instanceof ZodDefault || schema instanceof ZodOptional
-        ? (schema as ZodDefault<ZodObject<any>> | ZodOptional<ZodObject<any>>)._def
-            .innerType
+        ? (
+            schema as
+              | ZodDefault<ZodObject<z.ZodRawShape>>
+              | ZodOptional<ZodObject<z.ZodRawShape>>
+          )._def.innerType
         : schema;
-    const zodObj = inner as ZodObject<any>;
+    const zodObj = inner as ZodObject<z.ZodRawShape>;
     const validate = this.nullable(zodObj.partial()).safeParse(value);
     if (!validate.success) throw new Error(validate.error.message);
     if ("updatedAt" in zodObj.shape && !("updatedAt" in value))
@@ -127,7 +130,7 @@ export class PomeloRedis extends Redis {
         "JSON.MERGE",
         `${topic}:${key}`,
         "$",
-        JSON.stringify(value)
+        JSON.stringify(value),
       )) === "OK";
     if (result) await this.markDirty(topic, key);
     return result;
@@ -152,13 +155,13 @@ export class PomeloRedis extends Redis {
   async jsonDel(
     key: string,
     topic: keyof typeof Schemas,
-    path?: `$.${string}`
+    path?: `$.${string}`,
   ) {
     if (!topics.includes(topic)) throw new Error("Invalid topic | Not found");
     const deleted = (await this.call(
       "JSON.DEL",
       `${topic}:${key}`,
-      path ?? "$"
+      path ?? "$",
     )) as number;
     if (deleted > 0) await this.markDirty(topic, key);
     return deleted;
@@ -173,12 +176,12 @@ export class PomeloRedis extends Redis {
    */
   async jsonKeys(
     topic: keyof typeof Schemas,
-    pattern?: string
+    pattern?: string,
   ): Promise<string[]> {
     if (!topics.includes(topic)) throw new Error("Invalid topic | Not found");
     const keyBuffers = await this.keysBuffer(`${topic}:${pattern ?? "*"}`);
     const keys = keyBuffers.map((key) =>
-      key.toString().replace(`${topic}:`, "")
+      key.toString().replace(`${topic}:`, ""),
     );
     return keys;
   }
@@ -191,12 +194,12 @@ export class PomeloRedis extends Redis {
    */
   async jsonGetAll<T extends keyof typeof Schemas>(
     topic: T,
-    pattern?: string
+    pattern?: string,
   ): Promise<NonNullable<z.TypeOf<(typeof Schemas)[T]>>[]> {
     if (!topics.includes(topic)) throw new Error("Invalid topic | Not found");
     const keys = await this.jsonKeys(topic, pattern);
     const values = await Promise.all(
-      keys.map((key) => this.jsonGet(key, topic))
+      keys.map((key) => this.jsonGet(key, topic)),
     );
     return values.filter((value) => value !== null);
   }
@@ -237,7 +240,7 @@ export class PomeloRedis extends Redis {
       if (container.logger)
         container.logger.warn(
           `Failed to mark ${topic}:${key} for backup:`,
-          error
+          error,
         );
     }
   }
@@ -247,14 +250,19 @@ export class PomeloRedis extends Redis {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const entries = Object.entries(schema.shape) as [
       keyof TSchema["shape"],
-      z.ZodTypeAny
+      z.ZodTypeAny,
     ][];
 
-    const newProps = entries.reduce((acc, [key, value]) => {
-      acc[key] = value.nullable();
-      return acc;
-      // eslint-disable-next-line @typescript-eslint/prefer-reduce-type-parameter
-    }, {} as { [key in keyof TSchema["shape"]]: z.ZodNullable<TSchema["shape"][key]> });
+    const newProps = entries.reduce(
+      (acc, [key, value]) => {
+        acc[key] = value.nullable();
+        return acc;
+        // eslint-disable-next-line @typescript-eslint/prefer-reduce-type-parameter
+      },
+      {} as {
+        [key in keyof TSchema["shape"]]: z.ZodNullable<TSchema["shape"][key]>;
+      },
+    );
 
     return z.object(newProps);
   }

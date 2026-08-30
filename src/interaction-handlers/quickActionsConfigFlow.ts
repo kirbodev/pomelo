@@ -11,7 +11,6 @@ import {
   MessageFlags,
   ModalBuilder,
   PermissionFlagsBits,
-  StringSelectMenuBuilder,
   TextDisplayBuilder,
   TextInputBuilder,
   TextInputStyle,
@@ -31,6 +30,14 @@ import type { SubActionType } from "../lib/moderation/types.js";
 
 const QA_TRIGGERS_FEATURE = "qa-triggers";
 const QA_WIZARD_FEATURE = "qa-wiz";
+const SubActionTypeSchema = z.enum([
+  "warn",
+  "mute",
+  "addRole",
+  "sendDm",
+  "kick",
+  "ban",
+]);
 
 const WizardSessionSchema = z.object({
   userId: z.string(),
@@ -73,7 +80,11 @@ export class QuickActionsConfigFlowHandler extends InteractionHandler {
 
     parts = parseComponentId(QA_TRIGGERS_FEATURE, interaction.customId);
     if (parts && parts.length === 2 && parts[1] === "select") {
-      return this.some({ route: "triggersSelect", userId: parts[0], sessionId: "" });
+      return this.some({
+        route: "triggersSelect",
+        userId: parts[0],
+        sessionId: "",
+      });
     }
 
     parts = parseComponentId(QA_WIZARD_FEATURE, interaction.customId);
@@ -91,14 +102,16 @@ export class QuickActionsConfigFlowHandler extends InteractionHandler {
     if (!interaction.isStringSelectMenu()) return;
 
     if (parsed.route === "remove") {
-      if (interaction.user.id !== parsed.userId) return replyWrongTarget(interaction);
+      if (interaction.user.id !== parsed.userId)
+        return replyWrongTarget(interaction);
       const guildId = interaction.guildId;
       if (!guildId) return replyInteractionExpired(interaction);
       if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild))
         return replyWrongTarget(interaction);
       await this.handleRemove(interaction, guildId);
     } else if (parsed.route === "triggersSelect") {
-      if (interaction.user.id !== parsed.userId) return replyWrongTarget(interaction);
+      if (interaction.user.id !== parsed.userId)
+        return replyWrongTarget(interaction);
       const guildId = interaction.guildId;
       if (!guildId) return replyInteractionExpired(interaction);
       await this.handleTriggersSelect(interaction, parsed.userId, guildId);
@@ -113,14 +126,16 @@ export class QuickActionsConfigFlowHandler extends InteractionHandler {
     const settings = await container.redis.jsonGet(guildId, "GuildSettings");
     if (!settings) return replyInteractionExpired(interaction);
 
-    const current = settings.quickActions ?? { actions: [] };
+    const current = settings.quickActions;
     const index = Number.parseInt(interaction.values[0] ?? "", 10);
     if (Number.isNaN(index) || index < 0 || index >= current.actions.length) {
       return replyInteractionExpired(interaction);
     }
 
     const removed = current.actions[index];
-    const actions = current.actions.filter((_: unknown, i: number) => i !== index);
+    const actions = current.actions.filter(
+      (_: unknown, i: number) => i !== index,
+    );
 
     await container.redis.jsonUpdate(guildId, "GuildSettings", {
       quickActions: { ...current, actions },
@@ -140,14 +155,23 @@ export class QuickActionsConfigFlowHandler extends InteractionHandler {
     });
   }
 
-  private async handleTriggersSelect(interaction: Interaction, userId: string, guildId: string) {
+  private async handleTriggersSelect(
+    interaction: Interaction,
+    userId: string,
+    guildId: string,
+  ) {
     if (!interaction.isStringSelectMenu()) return;
 
     const allowed = new Set(["mute", "warn"]);
     const triggers = interaction.values.filter((v) => allowed.has(v));
     if (triggers.length === 0) return;
 
-    await saveComponentSession(QA_TRIGGERS_FEATURE, userId, { userId, guildId, triggers }, 300);
+    await saveComponentSession(
+      QA_TRIGGERS_FEATURE,
+      userId,
+      { userId, guildId, triggers },
+      300,
+    );
 
     const t = await fetchT(interaction);
     const triggerLabels = triggers
@@ -174,23 +198,35 @@ export class QuickActionsConfigFlowHandler extends InteractionHandler {
 
   private async handleSelectSub(interaction: Interaction, sessionId: string) {
     if (!interaction.isStringSelectMenu()) return;
-    const session = await getComponentSession(QA_WIZARD_FEATURE, sessionId, WizardSessionSchema);
+    const session = await getComponentSession(
+      QA_WIZARD_FEATURE,
+      sessionId,
+      WizardSessionSchema,
+    );
     if (!session) return replyInteractionExpired(interaction);
-    if (interaction.user.id !== session.userId) return replyWrongTarget(interaction);
+    if (interaction.user.id !== session.userId)
+      return replyWrongTarget(interaction);
 
-    const subType = interaction.values[0] as SubActionType;
-    if (!subType) return replyInteractionExpired(interaction);
+    const subTypeResult = SubActionTypeSchema.safeParse(interaction.values[0]);
+    if (!subTypeResult.success) return replyInteractionExpired(interaction);
+    const subType: SubActionType = subTypeResult.data;
 
     const t = await fetchT(interaction);
     const modal = this.buildSubactionModal(sessionId, subType, t);
     await interaction.showModal(modal);
   }
 
-  private buildSubactionModal(sessionId: string, type: SubActionType, t: (key: string) => string): ModalBuilder {
+  private buildSubactionModal(
+    sessionId: string,
+    type: SubActionType,
+    t: (key: string) => string,
+  ): ModalBuilder {
     const label = t(SUBACTION_TYPE_KEYS[type] ?? type);
     const modal = new ModalBuilder()
       .setCustomId(`qa-sub-modal:${sessionId}:${type}`)
-      .setTitle(`${t(LanguageKeys.Commands.Moderation.QuickActions.configureSubaction)}: ${label}`);
+      .setTitle(
+        `${t(LanguageKeys.Commands.Moderation.QuickActions.configureSubaction)}: ${label}`,
+      );
 
     switch (type) {
       case "warn":
@@ -198,7 +234,11 @@ export class QuickActionsConfigFlowHandler extends InteractionHandler {
           new ActionRowBuilder<TextInputBuilder>().addComponents(
             new TextInputBuilder()
               .setCustomId("warnAmount")
-              .setLabel(t(LanguageKeys.Commands.Moderation.QuickActions.warnAmountLabel))
+              .setLabel(
+                t(
+                  LanguageKeys.Commands.Moderation.QuickActions.warnAmountLabel,
+                ),
+              )
               .setPlaceholder("1")
               .setStyle(TextInputStyle.Short)
               .setMinLength(1)
@@ -208,7 +248,9 @@ export class QuickActionsConfigFlowHandler extends InteractionHandler {
           new ActionRowBuilder<TextInputBuilder>().addComponents(
             new TextInputBuilder()
               .setCustomId("warnReason")
-              .setLabel(t(LanguageKeys.Commands.Moderation.QuickActions.reasonLabel))
+              .setLabel(
+                t(LanguageKeys.Commands.Moderation.QuickActions.reasonLabel),
+              )
               .setStyle(TextInputStyle.Short)
               .setRequired(false),
           ),
@@ -219,7 +261,9 @@ export class QuickActionsConfigFlowHandler extends InteractionHandler {
           new ActionRowBuilder<TextInputBuilder>().addComponents(
             new TextInputBuilder()
               .setCustomId("muteDuration")
-              .setLabel(t(LanguageKeys.Commands.Moderation.QuickActions.durationLabel))
+              .setLabel(
+                t(LanguageKeys.Commands.Moderation.QuickActions.durationLabel),
+              )
               .setPlaceholder("10m")
               .setStyle(TextInputStyle.Short)
               .setRequired(true),
@@ -231,7 +275,9 @@ export class QuickActionsConfigFlowHandler extends InteractionHandler {
           new ActionRowBuilder<TextInputBuilder>().addComponents(
             new TextInputBuilder()
               .setCustomId("roleId")
-              .setLabel(t(LanguageKeys.Commands.Moderation.QuickActions.roleIdLabel))
+              .setLabel(
+                t(LanguageKeys.Commands.Moderation.QuickActions.roleIdLabel),
+              )
               .setPlaceholder("123456789012345678")
               .setStyle(TextInputStyle.Short)
               .setRequired(true),
@@ -243,7 +289,9 @@ export class QuickActionsConfigFlowHandler extends InteractionHandler {
           new ActionRowBuilder<TextInputBuilder>().addComponents(
             new TextInputBuilder()
               .setCustomId("dmMessage")
-              .setLabel(t(LanguageKeys.Commands.Moderation.QuickActions.messageLabel))
+              .setLabel(
+                t(LanguageKeys.Commands.Moderation.QuickActions.messageLabel),
+              )
               .setStyle(TextInputStyle.Paragraph)
               .setMinLength(1)
               .setMaxLength(2000)
@@ -256,7 +304,9 @@ export class QuickActionsConfigFlowHandler extends InteractionHandler {
           new ActionRowBuilder<TextInputBuilder>().addComponents(
             new TextInputBuilder()
               .setCustomId("kickReason")
-              .setLabel(t(LanguageKeys.Commands.Moderation.QuickActions.reasonLabel))
+              .setLabel(
+                t(LanguageKeys.Commands.Moderation.QuickActions.reasonLabel),
+              )
               .setStyle(TextInputStyle.Short)
               .setRequired(false),
           ),
@@ -267,14 +317,18 @@ export class QuickActionsConfigFlowHandler extends InteractionHandler {
           new ActionRowBuilder<TextInputBuilder>().addComponents(
             new TextInputBuilder()
               .setCustomId("banReason")
-              .setLabel(t(LanguageKeys.Commands.Moderation.QuickActions.reasonLabel))
+              .setLabel(
+                t(LanguageKeys.Commands.Moderation.QuickActions.reasonLabel),
+              )
               .setStyle(TextInputStyle.Short)
               .setRequired(false),
           ),
           new ActionRowBuilder<TextInputBuilder>().addComponents(
             new TextInputBuilder()
               .setCustomId("banDuration")
-              .setLabel(t(LanguageKeys.Commands.Moderation.QuickActions.durationLabel))
+              .setLabel(
+                t(LanguageKeys.Commands.Moderation.QuickActions.durationLabel),
+              )
               .setPlaceholder("7d")
               .setStyle(TextInputStyle.Short)
               .setRequired(false),

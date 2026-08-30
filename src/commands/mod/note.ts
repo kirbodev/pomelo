@@ -269,7 +269,7 @@ export class NoteCommand extends CommandUtils.PomeloSubcommand {
       const [existing] = await db
         .select()
         .from(modCases)
-        .where(eq(modCases.id, caseId))
+        .where(and(eq(modCases.id, caseId), eq(modCases.guildId, guildId)))
         .limit(1);
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!existing || existing.actionType !== "note") {
@@ -286,8 +286,14 @@ export class NoteCommand extends CommandUtils.PomeloSubcommand {
         return;
       }
 
-      await db.delete(caseNotes).where(eq(caseNotes.caseId, caseId));
-      await db.delete(modCases).where(eq(modCases.id, caseId));
+      await db
+        .delete(caseNotes)
+        .where(
+          and(eq(caseNotes.caseId, caseId), eq(caseNotes.guildId, guildId)),
+        );
+      await db
+        .delete(modCases)
+        .where(and(eq(modCases.id, caseId), eq(modCases.guildId, guildId)));
 
       const embed = new EmbedUtils.EmbedConstructor()
         .setColor(Colors.Success)

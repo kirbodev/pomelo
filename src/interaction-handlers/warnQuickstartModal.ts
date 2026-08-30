@@ -64,6 +64,8 @@ export class WarnQuickstartModalHandler extends InteractionHandler {
     if (!interaction.isModalSubmit()) return;
     const guildId = interaction.guildId;
     if (!guildId) return this.replyUnavailable(interaction);
+    if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild))
+      return this.replyUnavailable(interaction);
 
     const state = await warnWorkflowRepository.get(parsed.sessionId);
     if (

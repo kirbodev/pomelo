@@ -467,6 +467,7 @@
     "botHierarchyTooLow": "I can't action that user — I need a higher role.",
     "durationTooLong": "That duration is too long. The maximum is 28 days.",
     "warnSettingsNotConfigured": "Warn settings haven't been configured yet. Run `/modsettings quickstart` to set up the warn system.",
+    "warnLimitExceeded": "I can't add that many warns. The max is {{maxWarns}} here.",
     "caseNotFound": "I couldn't find that case.",
     "warnAlreadyRevoked": "That warn has already been removed.",
     "cannotActionSelf": "You can't action yourself.",
