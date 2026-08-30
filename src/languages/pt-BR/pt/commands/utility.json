@@ -52,7 +52,9 @@
     "subcommandUserName": "usuário",
     "subcommandGuildName": "servidor",
     "subcommandUserDescription": "Gerenciar configurações do usuário.",
-    "subcommandGuildDescription": "Gerenciar configurações do servidor."
+    "subcommandGuildDescription": "Gerenciar configurações do servidor.",
+    "subcommandModName": "mod",
+    "subcommandModDescription": "Set up and manage the moderation system."
   },
   "afk": {
     "commandName": "afk",
@@ -78,6 +80,7 @@
     "removeTitle": "AFK Removido",
     "removeDescription": "Você não está mais AFK. Você estava AFK para {{time}}.",
     "removeTip": "Para não remover seu status AFK ao enviar uma mensagem, adicione --afk no final",
+    "autoRemoveDescription": "Welcome back! You're online again, so I removed your AFK status. You were AFK for {{time}}.",
     "blockedAfk": "Você não pode pingar este usuário porque ele está AFK.",
     "recommended": [
       "Volte em breve",
@@ -130,5 +133,14 @@
     "title": "Changelog",
     "lastUpdate": "The last update you have seen was {{lastUpdate}}.",
     "updateDisclaimer": "You may need to accept new features or change configuration when new updates are released because of [Pomelo's Update Plan](https://kdvpom.notion.site/Pomelo-s-Project-Plan-2714a55251b9809f8875c42a49e1441c)."
+  },
+  "snipe": {
+    "commandName": "snipe",
+    "commandDescription": "Show the last deleted message in this channel.",
+    "noSnipeData": "There's nothing to snipe here.",
+    "deletedBy": "Deleted by",
+    "deletedAt": "Deleted",
+    "noTextContent": "No text content",
+    "messageContent": "Sniped: \"{{content}}\""
   }
 }
