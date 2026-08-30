@@ -21,6 +21,10 @@
     "allowUrgentPings": {
       "name": "Permitir pings urgentes",
       "description": "Pings urgentes permitem que usuários te mencionem enquanto você está AFK colocando !! antes da menção."
+    },
+    "autoAfkRemoval": {
+      "name": "Auto-Remove AFK",
+      "description": "I'll clear your AFK status once you go offline and come back online. This can't work if you stay invisible, and I can only see your status in servers we share."
     }
   },
   "guild": {
