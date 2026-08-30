@@ -193,5 +193,30 @@
     "title": "<:clockerror:1397690377065988308> Not AFK",
     "desc": "That user is not AFK.",
     "desc_detailed": "That user is not AFK."
+  },
+  "interactionExpired": {
+    "title": "<:hourglassoff:1397692063658545152> Expired",
+    "desc": "Those controls aren't active anymore. Run the command again for a fresh set.",
+    "desc_detailed": "Those controls aren't active anymore. Run the command again for a fresh set."
+  },
+  "qrScanFailed": {
+    "title": "<:pomwarning:1397677600012501042> QR Scan Failed",
+    "desc": "I couldn't scan that QR code.",
+    "desc_detailed": "I couldn't scan that QR code. It might be too blurry or damaged."
+  },
+  "qrImageTooLarge": {
+    "title": "<:attachmenterror:1397690751680254042> Image Too Large",
+    "desc": "That image is too large for me to scan.",
+    "desc_detailed": "That image is too large for me to scan. Try a smaller one."
+  },
+  "qrInvalidPattern": {
+    "title": "<:confused:1397678924011409542> Invalid Pattern",
+    "desc": "That pattern doesn't look right.",
+    "desc_detailed": "That pattern doesn't look right. Check the format and try again."
+  },
+  "qrFeatureDisabled": {
+    "title": "<:block:1397680563040817152> Feature Disabled",
+    "desc": "QR scanning isn't enabled here.",
+    "desc_detailed": "QR scanning isn't enabled for this server. Ask a moderator to turn it on."
   }
 }
